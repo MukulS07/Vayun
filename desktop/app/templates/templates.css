@@ -1,7 +1,8 @@
 /* Template pages (Life OS, Study OS). Colours come only from the tokens in tokens.css (--bg, --panel, …). */
 .tpl { position: relative; --red-solid: #D9534F; --today-pill: #E8C547; min-height: 100%; background: var(--bg); color: var(--text); font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; transition: background .25s, color .25s; }
 .tpl * { box-sizing: border-box; }
-.tpl button, .tpl input, .tpl select { font: inherit; color: inherit; }
+/* Zero specificity so component classes (.btn-solid, .lf-title-input, …) can set font and colour. */
+:where(.tpl) :where(button, input, select) { font: inherit; color: inherit; }
 .tpl button { cursor: pointer; }
 .tpl :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -37,22 +38,24 @@
 .lf-head-text { flex: 1; min-width: 0; }
 .lf-title-input { display: block; width: 100%; margin: 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--text); font-size: clamp(30px, 4vw, 42px); line-height: 1.1; letter-spacing: -1px; font-weight: 700; }
 .lf-sub-input { display: block; width: 100%; margin: 2px 0 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--muted); }
-.lf-hint { margin: 14px 0 0; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-text); font-size: 12.5px; }
+.lf-hint { margin: 12px 0 0; display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12.5px; }
 .lf-hint svg { stroke: currentColor; flex-shrink: 0; }
 
 /* Layout */
 .lf-layout { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 32px; }
-.lf-nav { flex: 1 1 220px; max-width: 100%; display: flex; flex-direction: column; gap: 22px; }
-.lf-nav-title { padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--line); font-size: 17px; font-weight: 600; }
-.lf-nav-items { display: flex; flex-direction: column; gap: 8px; }
-.lf-nav-item { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--nav); color: var(--text); text-decoration: none; font-size: 13.5px; font-weight: 500; }
-.lf-nav-glyph { width: 18px; text-align: center; opacity: .85; }
-.tpl[data-theme="dark"] .lf-nav-item.tone-blue { background: #1F3550; border-color: #2B4A70; color: #CFE3FF; }
-.tpl[data-theme="dark"] .lf-nav-item.tone-green { background: #1E4436; border-color: #2A5C49; color: #BFF0DD; }
-.tpl[data-theme="dark"] .lf-nav-item.tone-red { background: #4E2626; border-color: #6A3434; color: #FFD0CC; }
-.tpl[data-theme="light"] .lf-nav-item.tone-blue { background: #E8F0FD; border-color: #CADBF6; color: #1E4FA0; }
-.tpl[data-theme="light"] .lf-nav-item.tone-green { background: #E4F5EE; border-color: #C3E7D7; color: #0F6B58; }
-.tpl[data-theme="light"] .lf-nav-item.tone-red { background: #FCE9E7; border-color: #F3CBC7; color: #A3302B; }
+.lf-nav { flex: 1 1 200px; max-width: 100%; display: flex; flex-direction: column; gap: 20px; }
+.lf-nav-title { margin: 0 0 6px; padding: 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+.lf-nav-items { display: flex; flex-direction: column; gap: 1px; }
+.lf-nav-item { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 0 10px; border-radius: 8px; color: var(--text); text-decoration: none; font-size: 13.5px; font-weight: 450; transition: background .12s; }
+.lf-nav-item:hover { background: var(--panel); }
+.lf-nav-glyph { width: 18px; text-align: center; color: var(--muted); }
+/* Tone marks the glyph only, so the rail stays calm. */
+.lf-nav-item.tone-blue .lf-nav-glyph { color: #6EA8FF; }
+.lf-nav-item.tone-green .lf-nav-glyph { color: #4FC9A0; }
+.lf-nav-item.tone-red .lf-nav-glyph { color: #F07C74; }
+.tpl[data-theme="light"] .lf-nav-item.tone-blue .lf-nav-glyph { color: #1E4FA0; }
+.tpl[data-theme="light"] .lf-nav-item.tone-green .lf-nav-glyph { color: #0F6B58; }
+.tpl[data-theme="light"] .lf-nav-item.tone-red .lf-nav-glyph { color: #A3302B; }
 .lf-main { flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 .lf-widgets { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
 .lf-card { border-radius: 14px; background: var(--panel); border: 1px solid var(--line-2); padding: 18px 20px; display: flex; flex-direction: column; gap: 0; }
@@ -357,14 +360,14 @@
 .bw-grid-wrap { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .bw { display: flex; flex-direction: column; min-width: 0; border-radius: 14px; border: 1px solid var(--line-2); background: var(--panel); overflow: hidden; }
 .bw.wide { grid-column: span 2; }
-.bw-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line-3); }
-.bw-title { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .02em; }
+.bw-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding: 10px 18px 0; }
+.bw-title { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .bw-tools { display: flex; gap: 2px; }
 .bw-btn { min-width: 30px; min-height: 30px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); font-size: 14px; }
 .bw-btn:hover:not(:disabled) { border-color: var(--line); color: var(--text); }
 .bw-btn:disabled { opacity: .35; cursor: default; }
 .bw-remove:hover:not(:disabled) { color: #E0707A; }
-.bw-body { padding: 14px; min-width: 0; }
+.bw-body { padding: 8px 18px 18px; min-width: 0; }
 .bw-body > .lf-card, .bw-body > .st-card, .bw-body > .lf-section, .bw-body > .st-section, .bw-body > .lf-habits, .bw-body > .lf-stats, .bw-body > .st-half, .bw-body > .st-pomo { border: 0; padding: 0; margin: 0; background: transparent; min-height: 0; }
 .bw-body > .lf-habits, .bw-body > .lf-stats, .bw-body > .st-half { flex: none; }
 .bw-body h2, .bw-body .lf-h2, .bw-body .st-h2, .bw-body .st-h2-tight { display: none; }

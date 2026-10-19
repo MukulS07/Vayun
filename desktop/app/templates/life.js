@@ -101,7 +101,7 @@
           h('path', { class: 'lf-mtn-2', d: 'M0 200 L160 150 L300 185 L440 140 L580 190 L740 135 L900 185 L1060 145 L1220 190 L1440 150 L1440 230 L0 230 Z' }),
           h('path', { class: 'lf-ridge', d: 'M0 230 L0 215 L200 195 L420 220 L640 200 L860 222 L1100 198 L1300 220 L1440 205 L1440 230 Z' })),
         h('div', { class: 'lf-cover-bar' },
-          h('span', { class: 'lf-year' }, `© ${d.y}`),
+          h('span', { class: 'lf-year' }, String(d.y)),
           segmented('Theme', [{ value: 'dark', label: '☾ Dark' }, { value: 'light', label: '☀ Light' }], theme, pickTheme)));
       return cov;
     }
@@ -216,7 +216,6 @@
       const card = h('div', { class: 'lf-card' },
         h('div', { class: 'lf-row-between' },
           h('div', {},
-            h('div', { class: 'lf-muted small' }, 'Pomodoro'),
             refs.pomoTime,
             h('div', { class: 'lf-muted small', ref: el => { refs.pomoPhase = el; } })),
           refs.pomoDot),
