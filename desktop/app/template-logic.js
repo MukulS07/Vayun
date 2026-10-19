@@ -246,6 +246,40 @@
       .map(w => ({ id: w.id, wide: Boolean(w.wide) }));
     return out.length ? out : defaults.map(w => ({ ...w }));
   }
+  // Custom widgets: user-made instances. Ids start with "x" so they never clash with built-in widget ids.
+  const CUSTOM_TYPES = ['note', 'checklist', 'counter', 'list'];
+  const CUSTOM_TYPE_TITLES = { note: 'Note', checklist: 'Checklist', counter: 'Counter', list: 'List' };
+  function newCustomWidget(type, title) {
+    const base = { note: { text: '' }, checklist: { items: [] }, counter: { value: 0, step: 1 }, list: { items: [] } }[type];
+    const clean = String(title || '').trim().slice(0, 60);
+    return { type, title: clean || CUSTOM_TYPE_TITLES[type], data: base };
+  }
+  function sanitizeCustom(src) {
+    const out = {};
+    if (!src || typeof src !== 'object') return out;
+    for (const [id, w] of Object.entries(src)) {
+      if (!/^x[a-z0-9]+$/.test(id) || !w || !CUSTOM_TYPES.includes(w.type)) continue;
+      const d = w.data && typeof w.data === 'object' ? w.data : {};
+      const title = (typeof w.title === 'string' ? w.title : '').trim().slice(0, 60) || CUSTOM_TYPE_TITLES[w.type];
+      const items = () => (Array.isArray(d.items) ? d.items : []).filter(x => x && typeof x.id === 'string').slice(0, 200)
+        .map(x => ({ id: x.id, text: String(x.text || '').slice(0, 300), done: Boolean(x.done) }));
+      let data;
+      if (w.type === 'note') data = { text: typeof d.text === 'string' ? d.text.slice(0, 20000) : '' };
+      else if (w.type === 'counter') data = { value: clampInt(d.value, -999999, 999999, 0), step: clampInt(d.step, 1, 100, 1) };
+      else data = { items: items() };
+      out[id] = { type: w.type, title, data };
+    }
+    return out;
+  }
+  // Renamed built-in widgets: { [widgetId]: title }.
+  function sanitizeTitles(src) {
+    const out = {};
+    if (!src || typeof src !== 'object') return out;
+    for (const [id, t] of Object.entries(src)) {
+      if (/^[a-z]+$/.test(id) && typeof t === 'string' && t.trim()) out[id] = t.trim().slice(0, 60);
+    }
+    return out;
+  }
   // Keeps arrays and enums sane so a damaged file cannot crash a template page.
   function sanitizeLife(s) {
     const e = lifeEmpty();
@@ -269,7 +303,9 @@
       ambientSound: AMBIENT.includes(src.ambientSound) ? src.ambientSound : 'rain',
       notes: typeof src.notes === 'string' ? src.notes.slice(0, 20000) : '',
       todos: (Array.isArray(src.todos) ? src.todos : []).filter(t => t && typeof t.id === 'string').map(t => ({ id: t.id, text: String(t.text || ''), done: Boolean(t.done) })),
-      layout: sanitizeLayout(src.layout, LIFE_WIDGET_IDS, LIFE_LAYOUT),
+      custom: sanitizeCustom(src.custom),
+      titles: sanitizeTitles(src.titles),
+      layout: sanitizeLayout(src.layout, [...LIFE_WIDGET_IDS, ...Object.keys(sanitizeCustom(src.custom))], LIFE_LAYOUT),
     };
   }
 
@@ -294,7 +330,9 @@
       reminders: (Array.isArray(src.reminders) ? src.reminders : []).filter(r => r && typeof r.id === 'string').map(r => ({ id: r.id, date: String(r.date || ''), text: String(r.text || '') })),
       sessionsToday: src.sessionsToday && typeof src.sessionsToday.date === 'string' ? { date: src.sessionsToday.date, count: clampInt(src.sessionsToday.count, 0, 999, 0) } : { date: '', count: 0 },
       notes: typeof src.notes === 'string' ? src.notes.slice(0, 20000) : '',
-      layout: sanitizeLayout(src.layout, STUDY_WIDGET_IDS, STUDY_LAYOUT),
+      custom: sanitizeCustom(src.custom),
+      titles: sanitizeTitles(src.titles),
+      layout: sanitizeLayout(src.layout, [...STUDY_WIDGET_IDS, ...Object.keys(sanitizeCustom(src.custom))], STUDY_LAYOUT),
     };
   }
 
@@ -309,5 +347,6 @@
     pomodoroAdvance, pomodoroTick, studyTick, scene,
     lifeSample, studySample, lifeEmpty, studyEmpty, sanitizeLife, sanitizeStudy, makeTemplatePage,
     LIFE_WIDGET_IDS, STUDY_WIDGET_IDS, LIFE_LAYOUT, STUDY_LAYOUT, layoutAdd, layoutRemove, layoutMove, layoutToggleWide, sanitizeLayout,
+    CUSTOM_TYPES, CUSTOM_TYPE_TITLES, newCustomWidget, sanitizeCustom, sanitizeTitles,
   };
 });

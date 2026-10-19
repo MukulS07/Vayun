@@ -394,7 +394,7 @@
       container.dataset.template = 'study';
       container.dataset.theme = theme;
       const pick = id => todosAndReminders().querySelector('#' + id);
-      const registry = {
+      const builtins = {
         courses: { title: 'Courses', render: courses },
         tiles: { title: 'Sections', render: sectionTiles },
         wheel: { title: 'Wheel of life', render: wheel },
@@ -406,9 +406,11 @@
         calendar: { title: 'Academic calendar', render: calendarSection },
         notes: { title: 'Notes', render: notesWidget },
       };
+      const ctl = FolioCustom.controller(S, builtins, { change, draw, setLayout: layout => { S().layout = layout; change(); draw(); } });
       const grid = FolioBoard.board({
-        layout: S().layout, registry,
+        layout: S().layout, registry: ctl.registry,
         onLayout: layout => { S().layout = layout; change(); draw(); },
+        onAdd: ctl.onAdd, onEdit: ctl.onEdit,
       });
       container.append(
         h('div', { class: 'st-page' },

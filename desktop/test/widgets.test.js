@@ -46,3 +46,18 @@ test('sanitizers keep layout, notes and to-dos', () => {
   assert.strictEqual(study.notes, 'Exam prep');
   assert.strictEqual(study.layout.length, L.STUDY_LAYOUT.length);
 });
+
+test('custom widgets: new ones sanitized, bad types dropped, ids must start with x', () => {
+  const c = L.sanitizeCustom({ xa1: { type: 'counter', title: ' Water ', data: { value: 3, step: 500 } }, bad: { type: 'counter' }, xb2: { type: 'nope' }, xc3: { type: 'checklist', data: { items: [{ id: 'i1', text: 'Milk', done: 1 }, null] } } });
+  assert.deepStrictEqual(Object.keys(c).sort(), ['xa1', 'xc3']);
+  assert.strictEqual(c.xa1.title, 'Water');
+  assert.strictEqual(c.xa1.data.step, 100);
+  assert.deepStrictEqual(c.xc3.data.items, [{ id: 'i1', text: 'Milk', done: true }]);
+});
+
+test('custom widgets appear in the layout only when they exist', () => {
+  const life = L.sanitizeLife({ custom: { xq1: { type: 'note', title: 'Ideas', data: { text: 'hi' } } }, layout: [{ id: 'xq1' }, { id: 'xgone' }] });
+  assert.deepStrictEqual(life.layout, [{ id: 'xq1', wide: false }]);
+  assert.strictEqual(life.custom.xq1.data.text, 'hi');
+  assert.strictEqual(L.sanitizeLife({ titles: { tasks: 'My tasks', 'bad id': 'x' } }).titles.tasks, 'My tasks');
+});

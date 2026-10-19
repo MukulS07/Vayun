@@ -379,3 +379,25 @@
   .lf-layout > .lf-nav { flex: 0 0 220px; }
   .lf-layout > .lf-main { flex: 1 1 0; min-width: 0; }
 }
+
+/* Custom widgets and dialogs */
+.bw-add-main { min-height: 40px; padding: 0 16px; border: 0; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.bw-body .bw-add { display: none; }
+.dlg { max-width: 520px; }
+.dlg-h { margin: 16px 0 8px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.dlg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.dlg-card { min-height: 44px; padding: 0 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--card); color: var(--text); text-align: left; }
+.dlg-card:hover { border-color: var(--accent); }
+.dlg-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.dlg-type { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); }
+.dlg-type[aria-checked="true"] { background: var(--chip); color: var(--text); border-color: var(--accent); }
+.dlg-label { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; font-size: 13px; color: var(--muted); }
+.dlg-input { min-height: 38px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit; }
+.dlg-foot { align-items: center; }
+.dlg-buttons { display: flex; gap: 8px; }
+.dlg-danger { color: #E0707A; border-color: #E0707A !important; }
+.cw-counter { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.cw-value { font-family: 'Geist Mono', monospace; font-size: 40px; font-weight: 600; letter-spacing: -1px; }
+.cw-counter-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cw-step { width: 64px; min-height: 30px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--input); color: var(--text); font: inherit; }
+.small-btn { min-height: 30px; padding: 0 10px; font-size: 12px; }

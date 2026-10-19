@@ -430,7 +430,7 @@
       container.className = 'tpl tpl-life';
       container.dataset.template = 'life';
       container.dataset.theme = theme;
-      const registry = {
+      const builtins = {
         today: { title: 'Today', render: () => todayCard(d) },
         sound: { title: 'Ambient sound', render: soundCard },
         progress: { title: 'Time progress', render: () => progressCard(d) },
@@ -443,9 +443,11 @@
         notes: { title: 'Notes', render: notesWidget },
         todos: { title: 'To-dos', render: todosWidget },
       };
+      const ctl = FolioCustom.controller(S, builtins, { change, draw, setLayout: layout => { S().layout = layout; change(); draw(); } });
       const grid = FolioBoard.board({
-        layout: S().layout, registry,
+        layout: S().layout, registry: ctl.registry,
         onLayout: layout => { S().layout = layout; change(); draw(); },
+        onAdd: ctl.onAdd, onEdit: ctl.onEdit,
       });
       container.append(
         h('div', { class: 'lf-page' },
