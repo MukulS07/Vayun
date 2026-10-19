@@ -385,6 +385,9 @@
 /* Custom widgets and dialogs */
 .bw-add-main { min-height: 40px; padding: 0 16px; border: 0; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .bw-body .bw-add { display: none; }
+.bw-gallery { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 2px 12px; }
+.bw-tpl { min-height: 36px; padding: 0 14px; border: 1px dashed var(--line); border-radius: 8px; background: transparent; color: var(--text); font-size: 13px; }
+.bw-tpl:hover { border-color: var(--accent); color: var(--accent-text); }
 .bw-mode { min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--text); font-size: 13px; }
 .bw-mode[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); }
 .bw.editing { outline: 1px dashed var(--line); outline-offset: -4px; }

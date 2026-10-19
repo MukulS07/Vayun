@@ -1,5 +1,6 @@
-// Custom widgets and the Add / Edit dialogs. Used by the Life OS and Study OS boards.
-// Built-in widgets can be renamed; custom widgets (note, checklist, counter, list) hold their own data.
+// Custom widgets and the Edit dialog. Used by the Life OS and Study OS boards.
+// Adding is one click on a widget template (no dialog). Built-in widgets can be renamed;
+// custom widgets (note, checklist, counter, list) hold their own data.
 (function () {
   const { h, deleteButton } = FolioUI;
   const L = FolioTemplates;
@@ -43,45 +44,8 @@
         deleteButton('Delete item', () => { d.items = d.items.filter(x => x !== it); ctx.change(); ctx.draw(); })))));
   }
 
-  // Add dialog: built-in widgets not on the page, or a new custom widget with a title.
-  function openAdd({ builtins, onPick }) {
-    const backdrop = h('div', { class: 'settings-backdrop' });
-    const panel = h('div', { class: 'settings dlg', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Add widget' });
-    backdrop.append(panel);
-    backdrop.addEventListener('mousedown', e => { if (e.target === backdrop) backdrop.remove(); });
-    panel.addEventListener('keydown', e => { if (e.key === 'Escape') backdrop.remove(); });
-    const close = () => backdrop.remove();
-
-    let type = 'note';
-    const titleInput = h('input', { class: 'dlg-input', placeholder: 'Widget title', 'aria-label': 'Widget title', maxlength: 60 });
-    const typeRadios = L.CUSTOM_TYPES.map(t => h('button', {
-      type: 'button', role: 'radio', class: 'dlg-type', 'aria-checked': t === type ? 'true' : 'false',
-      onclick: e => { type = t; typeRadios.forEach(b => b.setAttribute('aria-checked', String(b === e.currentTarget))); },
-    }, L.CUSTOM_TYPE_TITLES[t]));
-
-    panel.append(
-      h('div', { class: 'settings-head' },
-        h('div', {}, h('h2', {}, 'Add widget'), h('p', { class: 'muted' }, 'Pick one that is ready to use, or make your own.')),
-        h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Close', onclick: close }, '×')),
-      h('h3', { class: 'dlg-h' }, 'Ready widgets'),
-      h('div', { class: 'dlg-grid' }, builtins.length
-        ? builtins.map(b => h('button', { type: 'button', class: 'dlg-card', onclick: () => { onPick({ kind: 'builtin', id: b.id }); close(); } }, b.title))
-        : h('p', { class: 'tiny muted' }, 'All ready widgets are already on this page.')),
-      h('h3', { class: 'dlg-h' }, 'Make your own'),
-      h('div', { class: 'dlg-row', role: 'radiogroup', 'aria-label': 'Widget type' }, typeRadios),
-      h('label', { class: 'dlg-label' }, 'Title', titleInput),
-      h('div', { class: 'settings-foot' },
-        h('button', { type: 'button', onclick: close }, 'Cancel'),
-        h('button', { type: 'button', class: 'primary', onclick: () => {
-          onPick({ kind: 'custom', type, title: titleInput.value.trim() || L.CUSTOM_TYPE_TITLES[type] });
-          close();
-        } }, 'Add widget')));
-    document.body.append(backdrop);
-    titleInput.focus();
-  }
-
   // Edit dialog: rename any widget. Custom widgets can also be deleted.
-  function openEdit({ id, title, custom, onRename, onDelete, onResetName }) {
+  function openEdit({ title, custom, onRename, onDelete, onResetName }) {
     const backdrop = h('div', { class: 'settings-backdrop' });
     const panel = h('div', { class: 'settings dlg', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Edit widget' });
     backdrop.append(panel);
@@ -110,10 +74,9 @@
     document.body.append(backdrop);
     titleInput.focus();
     titleInput.select();
-    void id;
   }
 
-  // Ties the board to the page state: registry (built-in plus custom), Add and Edit actions.
+  // Ties the board to the page state: registry (built-in plus custom), template options, add and edit actions.
   // builtins: { [id]: { title, render } }. ctx: { change, draw, setLayout }.
   function controller(S, builtins, ctx) {
     const registry = {};
@@ -123,30 +86,37 @@
     for (const id of Object.keys(S().custom)) {
       registry[id] = { title: S().custom[id].title, render: () => renderCustom(S, id, ctx), custom: true };
     }
+    // One click adds one of these: ready widgets not on the page, then starter custom widgets.
+    const PRESETS = [
+      { label: 'Checklist', type: 'checklist' },
+      { label: 'Counter', type: 'counter' },
+      { label: 'Note', type: 'note' },
+      { label: 'List', type: 'list' },
+    ];
     return {
       registry,
-      onAdd() {
+      options() {
         const layout = S().layout;
-        const available = Object.keys(builtins).filter(id => !layout.some(w => w.id === id)).map(id => ({ id, title: registry[id].title }));
-        openAdd({
-          builtins: available,
-          onPick(choice) {
-            if (choice.kind === 'builtin') {
-              ctx.setLayout(L.layoutAdd(S().layout, choice.id, false));
-              return;
-            }
-            const id = 'x' + uid();
-            S().custom[id] = L.newCustomWidget(choice.type, choice.title);
-            ctx.setLayout(L.layoutAdd(S().layout, id, false));
-          },
-        });
+        const ready = Object.keys(builtins).filter(id => !layout.some(w => w.id === id))
+          .map(id => ({ label: registry[id].title, choice: { kind: 'builtin', id } }));
+        const starters = PRESETS.map(p => ({ label: p.label, choice: { kind: 'custom', type: p.type, title: p.label } }));
+        return [...ready, ...starters];
+      },
+      onPick(choice) {
+        if (choice.kind === 'builtin') {
+          ctx.setLayout(L.layoutAdd(S().layout, choice.id, false));
+          return;
+        }
+        const id = 'x' + uid();
+        S().custom[id] = L.newCustomWidget(choice.type, choice.title);
+        ctx.setLayout(L.layoutAdd(S().layout, id, false));
       },
       onEdit(id) {
         const w = registry[id];
         if (!w) return;
         const custom = Boolean(S().custom[id]);
         openEdit({
-          id, title: w.title, custom,
+          title: w.title, custom,
           onRename(title) {
             if (custom) S().custom[id].title = title;
             else S().titles[id] = title;
@@ -167,5 +137,5 @@
     };
   }
 
-  window.FolioCustom = { controller, renderCustom, openAdd, openEdit };
+  window.FolioCustom = { controller, renderCustom, openEdit };
 })();

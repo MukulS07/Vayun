@@ -447,7 +447,7 @@
       const grid = FolioBoard.board({
         layout: S().layout, registry: ctl.registry,
         onLayout: layout => { S().layout = layout; change(); draw(); },
-        onAdd: ctl.onAdd, onEdit: ctl.onEdit, onRedraw: draw,
+        options: ctl.options(), onPick: ctl.onPick, onEdit: ctl.onEdit, onRedraw: draw,
       });
       container.append(
         h('div', { class: 'lf-page' },

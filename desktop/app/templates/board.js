@@ -1,9 +1,10 @@
 // Widget board shared by Life OS and Study OS. A widget is a frame around a render function. The layout is data;
-// the template stores it per page and redraws on every change. Edit mode (per session) shows the tools and drag handles.
+// the template stores it per page and redraws on every change. Edit mode and the template gallery are per session.
 (function () {
   const { h } = FolioUI;
   const L = FolioTemplates;
   let editing = false;
+  let adding = false;
 
   // Moves the item at `from` to index `to`.
   function reorder(layout, from, to) {
@@ -14,9 +15,9 @@
   }
 
   // registry: { [id]: { title, render: () => Element } }. layout: [{ id, wide }].
-  // onAdd(): opens the add dialog. onEdit(id): opens the edit dialog. onLayout(layout): stores a new layout.
-  // onRedraw(): redraws the page after the edit mode toggle.
-  function board({ layout, registry, onLayout, onAdd, onEdit, onRedraw }) {
+  // options: [{ label, choice }] shown as one-click templates. onPick(choice): adds it.
+  // onEdit(id): opens the edit dialog. onLayout(layout): stores a new layout. onRedraw(): redraws after a mode toggle.
+  function board({ layout, registry, options, onPick, onLayout, onEdit, onRedraw }) {
     let dragId = null;
     const frames = layout.map((entry, i) => {
       const w = registry[entry.id];
@@ -51,12 +52,17 @@
 
     const toggle = h('button', { type: 'button', class: 'bw-mode', 'aria-pressed': editing ? 'true' : 'false',
       onclick: () => { editing = !editing; onRedraw && onRedraw(); } }, editing ? 'Done' : 'Edit widgets');
-    const add = h('div', { class: 'bw-add' },
-      h('button', { type: 'button', class: 'bw-add-main', onclick: () => onAdd && onAdd() }, '+ Add widget'),
-      toggle,
-      h('span', { class: 'tiny muted' }, editing ? 'Drag a widget by ⠿ to move it. ✎ renames, × removes.' : 'Add, rename or rearrange your widgets.'));
+    const addBtn = h('button', { type: 'button', class: 'bw-add-main', 'aria-expanded': adding ? 'true' : 'false',
+      onclick: () => { adding = !adding; onRedraw && onRedraw(); } }, adding ? 'Close' : '+ Add widget');
+    const gallery = adding ? h('div', { class: 'bw-gallery', role: 'group', 'aria-label': 'Widget templates' },
+      options.length
+        ? options.map(o => h('button', { type: 'button', class: 'bw-tpl', onclick: () => { adding = false; onPick(o.choice); } }, o.label))
+        : h('p', { class: 'tiny muted' }, 'Every ready widget is already on this page.')) : null;
+    const add = h('div', { class: 'bw-add' }, addBtn, toggle,
+      h('span', { class: 'tiny muted' }, adding ? 'Click a widget to add it. More are added the same way.'
+        : editing ? 'Drag a widget by ⠿ to move it. ✎ renames, × removes.' : 'Add, rename or rearrange your widgets.'));
 
-    return h('div', { class: 'bw-board' }, h('div', { class: 'bw-grid-wrap' }, frames), add);
+    return h('div', { class: 'bw-board' }, h('div', { class: 'bw-grid-wrap' }, frames), add, gallery);
   }
 
   window.FolioBoard = { board };
