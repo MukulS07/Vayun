@@ -29,6 +29,37 @@
           h('label', { class: 'tiny muted' }, 'Step ', step),
           h('button', { type: 'button', class: 'btn-ghost small-btn', onclick: () => { d.value = 0; ctx.change(); ctx.draw(); } }, 'Reset')));
     }
+    if (inst.type === 'progress') {
+      return h('div', { class: 'pg' },
+        h('div', { class: 'pg-value', 'aria-live': 'polite' }, `${d.value}%`),
+        h('div', { class: 'pg-bar', role: 'progressbar', 'aria-label': `${inst.title} progress`, 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': d.value },
+          h('div', { class: 'pg-fill', ref: el => { el.style.width = `${d.value}%`; } })),
+        h('div', { class: 'cw-counter-row' },
+          h('button', { type: 'button', class: 'bw-btn', 'aria-label': `Less ${inst.title}`, onclick: () => { d.value = Math.max(0, d.value - 10); ctx.change(); ctx.draw(); } }, '−'),
+          h('button', { type: 'button', class: 'bw-btn', 'aria-label': `More ${inst.title}`, onclick: () => { d.value = Math.min(100, d.value + 10); ctx.change(); ctx.draw(); } }, '+'),
+          h('button', { type: 'button', class: 'btn-ghost small-btn', onclick: () => { d.value = 0; ctx.change(); ctx.draw(); } }, 'Reset')));
+    }
+    if (inst.type === 'countdown') {
+      let label = 'Pick a date';
+      if (d.date) {
+        const days = Math.round((new Date(`${d.date}T00:00`) - new Date(new Date().toDateString())) / 86400000);
+        const n = Math.abs(days);
+        label = days > 0 ? `${n} day${n === 1 ? '' : 's'} left` : days === 0 ? 'Today' : `${n} day${n === 1 ? '' : 's'} ago`;
+      }
+      return h('div', { class: 'cd' },
+        h('div', { class: 'cw-value', 'aria-live': 'polite' }, label),
+        h('input', { type: 'date', class: 'st-input', 'aria-label': `${inst.title} date`, value: d.date,
+          onchange: e => { d.date = e.target.value; ctx.change(); ctx.draw(); } }));
+    }
+    if (inst.type === 'habit') {
+      const names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const done = d.days.filter(Boolean).length;
+      return h('div', { class: 'hb' },
+        h('div', { class: 'tiny muted' }, `${done} of 7 days`),
+        h('div', { class: 'hb-row' }, names.map((n, i) => h('button', { type: 'button', class: 'hb-day', 'aria-pressed': d.days[i] ? 'true' : 'false',
+          'aria-label': `${n}: ${d.days[i] ? 'done' : 'not done'}`,
+          onclick: () => { d.days[i] = !d.days[i]; ctx.change(); ctx.draw(); } }, n))));
+    }
     // checklist and list: a list of items with add and delete
     const input = h('input', { class: 'lf-input', placeholder: 'Add an item and press Enter…', 'aria-label': `New item in ${inst.title}`,
       onkeydown: e => { if (e.key === 'Enter') add(); } });
@@ -92,6 +123,9 @@
       { label: 'Counter', type: 'counter' },
       { label: 'Note', type: 'note' },
       { label: 'List', type: 'list' },
+      { label: 'Progress', type: 'progress' },
+      { label: 'Countdown', type: 'countdown' },
+      { label: 'Habit week', type: 'habit' },
     ];
     return {
       registry,

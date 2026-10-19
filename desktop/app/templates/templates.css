@@ -385,6 +385,13 @@
 /* Custom widgets and dialogs */
 .bw-add-main { min-height: 40px; padding: 0 16px; border: 0; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .bw-body .bw-add { display: none; }
+.pg-value { font-size: 22px; font-weight: 600; font-family: var(--mono, monospace); margin-bottom: 8px; }
+.pg-bar { height: 10px; border-radius: 5px; background: var(--line-3); overflow: hidden; margin-bottom: 10px; }
+.pg-fill { height: 100%; background: var(--accent); border-radius: 5px; }
+.cd { display: flex; flex-direction: column; gap: 10px; }
+.hb-row { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 8px; }
+.hb-day { min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); font-size: 12px; }
+.hb-day[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
 .bw-gallery { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 2px 12px; }
 .bw-tpl { min-height: 36px; padding: 0 14px; border: 1px dashed var(--line); border-radius: 8px; background: transparent; color: var(--text); font-size: 13px; }
 .bw-tpl:hover { border-color: var(--accent); color: var(--accent-text); }

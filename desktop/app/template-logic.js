@@ -247,10 +247,13 @@
     return out.length ? out : defaults.map(w => ({ ...w }));
   }
   // Custom widgets: user-made instances. Ids start with "x" so they never clash with built-in widget ids.
-  const CUSTOM_TYPES = ['note', 'checklist', 'counter', 'list'];
-  const CUSTOM_TYPE_TITLES = { note: 'Note', checklist: 'Checklist', counter: 'Counter', list: 'List' };
+  const CUSTOM_TYPES = ['note', 'checklist', 'counter', 'list', 'progress', 'countdown', 'habit'];
+  const CUSTOM_TYPE_TITLES = { note: 'Note', checklist: 'Checklist', counter: 'Counter', list: 'List', progress: 'Progress', countdown: 'Countdown', habit: 'Habit week' };
   function newCustomWidget(type, title) {
-    const base = { note: { text: '' }, checklist: { items: [] }, counter: { value: 0, step: 1 }, list: { items: [] } }[type];
+    const base = {
+      note: { text: '' }, checklist: { items: [] }, counter: { value: 0, step: 1 }, list: { items: [] },
+      progress: { value: 0 }, countdown: { date: '' }, habit: { days: [false, false, false, false, false, false, false] },
+    }[type];
     const clean = String(title || '').trim().slice(0, 60);
     return { type, title: clean || CUSTOM_TYPE_TITLES[type], data: base };
   }
@@ -266,6 +269,9 @@
       let data;
       if (w.type === 'note') data = { text: typeof d.text === 'string' ? d.text.slice(0, 20000) : '' };
       else if (w.type === 'counter') data = { value: clampInt(d.value, -999999, 999999, 0), step: clampInt(d.step, 1, 100, 1) };
+      else if (w.type === 'progress') data = { value: clampInt(d.value, 0, 100, 0) };
+      else if (w.type === 'countdown') data = { date: /^\d{4}-\d{2}-\d{2}$/.test(d.date) ? d.date : '' };
+      else if (w.type === 'habit') data = { days: Array.from({ length: 7 }, (_, i) => Array.isArray(d.days) && d.days[i] === true) };
       else data = { items: items() };
       out[id] = { type: w.type, title, data };
     }

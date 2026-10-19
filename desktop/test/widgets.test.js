@@ -55,6 +55,20 @@ test('custom widgets: new ones sanitized, bad types dropped, ids must start with
   assert.deepStrictEqual(c.xc3.data.items, [{ id: 'i1', text: 'Milk', done: true }]);
 });
 
+test('custom widgets: progress, countdown and habit data is clamped and validated', () => {
+  const c = L.sanitizeCustom({
+    xp1: { type: 'progress', data: { value: 250 } },
+    xd1: { type: 'countdown', data: { date: '2026-12-01' } },
+    xd2: { type: 'countdown', data: { date: 'soon' } },
+    xh1: { type: 'habit', data: { days: [true, 1, 'yes'] } },
+  });
+  assert.strictEqual(c.xp1.data.value, 100);
+  assert.strictEqual(c.xd1.data.date, '2026-12-01');
+  assert.strictEqual(c.xd2.data.date, '');
+  assert.deepStrictEqual(c.xh1.data.days, [true, false, false, false, false, false, false]);
+  assert.deepStrictEqual(L.newCustomWidget('habit', '').data.days.length, 7);
+});
+
 test('custom widgets appear in the layout only when they exist', () => {
   const life = L.sanitizeLife({ custom: { xq1: { type: 'note', title: 'Ideas', data: { text: 'hi' } } }, layout: [{ id: 'xq1' }, { id: 'xgone' }] });
   assert.deepStrictEqual(life.layout, [{ id: 'xq1', wide: false }]);
