@@ -138,17 +138,16 @@
       refs.hour = svg('line', { x1: 60, y1: 60, x2: 60, y2: 32, 'stroke-width': 3, 'stroke-linecap': 'round', class: 'st-hand' });
       refs.min = svg('line', { x1: 60, y1: 60, x2: 60, y2: 18, 'stroke-width': 2, 'stroke-linecap': 'round', class: 'st-hand' });
       refs.sec = svg('line', { x1: 60, y1: 66, x2: 60, y2: 16, 'stroke-width': 1, 'stroke-linecap': 'round', class: 'st-hand-accent' });
-      refs.clockDigital = svg('text', { x: 60, y: 84, 'font-size': 8, 'text-anchor': 'middle', class: 'st-axis' });
-      clock.append(ticks, refs.hour, refs.min, refs.sec, svg('circle', { cx: 60, cy: 60, r: 3, class: 'st-hand-accent-fill' }), refs.clockDigital);
-      refs.clockDigital.textContent = '';
-      const clockDate = svg('text', { x: 60, y: 94, 'font-size': 6.5, 'text-anchor': 'middle', class: 'st-axis' });
-      clockDate.textContent = `${DOWS[now.getDay()]}, ${MON[now.getMonth()]} ${now.getDate()}`;
-      clock.append(clockDate);
+      clock.append(ticks, refs.hour, refs.min, refs.sec, svg('circle', { cx: 60, cy: 60, r: 3, class: 'st-hand-accent-fill' }));
+      refs.clockDigital = h('div', { class: 'st-clock-time' });
+      const clockDate = h('div', { class: 'st-clock-date' }, `${DOWS[now.getDay()]}, ${MON[now.getMonth()]} ${now.getDate()}`);
       return h('aside', { class: 'st-rail' },
         h('div', { class: 'st-card st-clock-card' }, clock,
+          h('div', { class: 'st-clock-readout' }, refs.clockDigital, clockDate),
           h('div', { class: 'st-progress' }, progress.map(([label, pct]) => h('div', { class: 'st-progress-row' },
-            h('div', { class: 'st-progress-box' }, h('div', { class: 'st-progress-fill', style: `width: ${pct}%` })),
-            h('span', { class: 'tiny st-text2' }, `${label}: ${pct}%`))))),
+            h('span', { class: 'st-progress-label' }, label),
+            h('div', { class: 'st-thin' }, h('div', { class: 'st-thin-fill accent', style: `width: ${pct}%` })),
+            h('span', { class: 'st-mono tiny st-progress-pct' }, `${pct}%`))))),
         h('div', { class: 'st-card st-panel2' }, h('h2', { class: 'st-rail-title' }, 'Quick actions'),
           quick.map(([g, label, anchor]) => h('a', { href: `#${anchor}`, class: 'st-quick' }, h('span', { class: 'st-quick-glyph', 'aria-hidden': 'true' }, g), label))),
         h('div', { class: 'st-card st-panel2' }, h('h2', { class: 'st-rail-title' }, 'Goal tracker'), h('div', { class: 'st-stack' }, quarters)),
