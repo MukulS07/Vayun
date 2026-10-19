@@ -1,5 +1,5 @@
 /* Template pages (Life OS, Study OS). Colours come only from the tokens in tokens.css (--bg, --panel, …). */
-.tpl { --red-solid: #D9534F; --today-pill: #E8C547; min-height: 100%; background: var(--bg); color: var(--text); font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; transition: background .25s, color .25s; }
+.tpl { position: relative; --red-solid: #D9534F; --today-pill: #E8C547; min-height: 100%; background: var(--bg); color: var(--text); font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; transition: background .25s, color .25s; }
 .tpl * { box-sizing: border-box; }
 .tpl button, .tpl input, .tpl select { font: inherit; color: inherit; }
 .tpl button { cursor: pointer; }
@@ -19,7 +19,7 @@
 .lf-sky-0 { stop-color: var(--sky-0); } .lf-sky-1 { stop-color: var(--sky-1); } .lf-sky-2 { stop-color: var(--sky-2); } .lf-sky-3 { stop-color: var(--sky-3); }
 .lf-mtn-1 { fill: var(--mtn-1); } .lf-mtn-2 { fill: var(--mtn-2); } .lf-ridge { fill: var(--bg); }
 .lf-cover-bar { position: absolute; inset: 0; max-width: 1280px; margin: 0 auto; padding: 18px clamp(16px, 4vw, 40px) 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; box-sizing: border-box; }
-.lf-year { font-family: 'Geist Mono', monospace; font-weight: 600; font-size: 18px; letter-spacing: 6px; color: rgba(255, 255, 255, .85); padding-top: 6px; }
+.lf-year { font-family: 'Geist Mono', monospace; font-weight: 600; font-size: 16px; letter-spacing: 3px; color: rgba(255, 255, 255, .85); padding-top: 6px; }
 
 /* Segmented control (theme switch, density, radius, width) */
 .seg { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface, var(--panel)); border: 1px solid var(--line); }
@@ -233,7 +233,9 @@
 .st-progress-row { display: flex; align-items: center; gap: 12px; }
 .st-progress-box { flex: 1; height: 24px; box-sizing: border-box; border: 2px solid var(--text); border-radius: 4px; padding: 2px; }
 .st-progress-fill { height: 100%; background: var(--text); border-radius: 1px; }
-.st-rail-title { margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; }
+.st-rail-title { margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+.st-row-between { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.st-row-between.wrap { flex-wrap: wrap; }
 .st-quick { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 0 10px; margin-top: 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--text); text-decoration: none; font-size: 13px; }
 .st-quick-glyph { color: var(--accent-text); width: 14px; text-align: center; }
 .st-stack { display: flex; flex-direction: column; gap: 8px; }
@@ -245,8 +247,8 @@
 .st-thin-fill.accent { background: var(--accent); }
 .st-nav-link { display: flex; align-items: center; gap: 10px; min-height: 30px; font-size: 13px; color: var(--text-2); text-decoration: none; }
 .st-nav-glyph { width: 14px; text-align: center; color: var(--muted); }
-.st-h2 { margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; }
-.st-h2-tight { margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; }
+.st-h2 { margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
+.st-h2-tight { margin: 0 0 10px; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); }
 .st-section { padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); }
 .st-course-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 12px; }
 .st-course { position: relative; border-radius: 10px; border: 1px solid var(--line); background: var(--card); overflow: hidden; }
@@ -260,13 +262,18 @@
 .st-step { width: 24px; height: 24px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--text); }
 .st-count { min-width: 30px; text-align: center; color: var(--text); }
 .st-course-add { border-radius: 10px; border: 1.5px dashed var(--line); padding: 14px; display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 220px; }
+.st-course-add .st-input { flex: none; }
+.st-course-body .st-text { white-space: nowrap; }
+/* Tile tools show on hover or keyboard focus so the cover art stays clean. */
+.st-course .del, .st-course .st-course-edit { opacity: 0; transition: opacity .15s; }
+.st-course:hover .del, .st-course:hover .st-course-edit, .st-course:focus-within .del, .st-course:focus-within .st-course-edit { opacity: 1; }
 .st-input { min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font-size: 13px; flex: 1 1 200px; min-width: 0; }
 .st-input.narrow { flex: 0 0 72px; }
 .st-input.grow { flex: 1 1 200px; }
 .st-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
 .st-tile-card { display: block; border-radius: 10px; border: 1px solid var(--line); background: var(--card); overflow: hidden; color: var(--text); text-decoration: none; }
 .st-tile-art { height: 104px; }
-.st-tile-foot { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; font-size: 12px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase; }
+.st-tile-foot { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
 .st-radar-svg { display: block; max-width: 400px; margin: 4px auto 0; }
 .st-ring { fill: none; stroke: var(--line-2); }
 .st-radar { fill: var(--radar-fill); stroke: var(--radar-stroke); }

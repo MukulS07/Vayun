@@ -43,6 +43,14 @@ button:focus-visible, [contenteditable]:focus-visible { outline:2px solid var(--
 .actions button:hover { background:var(--hover); color:var(--fg); }
 .actions button.on { background:var(--sel); color:var(--accent); font-weight:600; }
 #del-btn { color:#e0707a; }
+/* The shell never scrolls; only the sidebar and the page do. */
+body:has(> .app) { overflow:hidden; }
+.more { position:relative; }
+#more-btn { letter-spacing:1px; }
+.menu { position:absolute; right:0; top:calc(100% + 6px); z-index:50; min-width:200px; display:flex; flex-direction:column; padding:6px; background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:0 12px 32px var(--shadow, rgba(0,0,0,.35)); }
+.menu[hidden] { display:none; }
+.actions .menu button { text-align:left; padding:7px 10px; color:var(--fg); }
+.actions .menu #del-btn { color:#e0707a; margin-top:4px; border-top:1px solid var(--line); border-radius:0 0 6px 6px; }
 
 .page { flex:1; min-height:0; overflow:auto; width:100%; max-width:840px; margin:0 auto; padding:56px 56px 30vh; }
 

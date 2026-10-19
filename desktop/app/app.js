@@ -263,20 +263,51 @@ function renderToolbar() {
   const bar = $('#toolbar');
   bar.innerHTML = '';
   const add = (...els) => els.forEach(el => bar.append(el));
-  if (current.kind === 'template') { add(button('Delete page', deletePage, { id: 'del-btn' })); return; }
-  if (isDb(current)) {
-    const v = viewOf(current);
-    for (const t of VIEW_TYPES) add(button(t[0].toUpperCase() + t.slice(1), () => { current.view = { ...v, type: t }; render(); save(); }, { active: v.type === t, id: `view-${t}` }));
+  const more = [];
+  if (current.kind !== 'template') {
+    if (isDb(current)) {
+      const v = viewOf(current);
+      for (const t of VIEW_TYPES) add(button(t[0].toUpperCase() + t.slice(1), () => { current.view = { ...v, type: t }; render(); save(); }, { active: v.type === t, id: `view-${t}` }));
+      add(button('+ Row', addRow, { id: 'add-row' }), button('+ Property', addProperty, { id: 'add-prop' }));
+    }
+    add(button('Mindmap', () => { mode = mode === 'mindmap' ? 'doc' : 'mindmap'; render(); }, { id: 'mm-btn', active: mode === 'mindmap' }));
+    more.push(button('Add subpage', () => createPage(current.id), { id: 'sub-btn' }));
+    const exp = isDb(current) ? [['CSV', 'csv']] : [['HTML', 'html'], ['Markdown', 'md']];
+    for (const [label, ext] of exp) more.push(button(`Export ${label}`, () => exportCurrent(ext), { id: `exp-${ext}` }));
+    more.push(button('Duplicate', duplicatePage, { id: 'dup-btn' }), button('Move to…', movePage, { id: 'move-btn' }));
   }
-  add(button('+ Add subpage', () => createPage(current.id), { id: 'sub-btn' }));
-  add(button('Mindmap', () => { mode = mode === 'mindmap' ? 'doc' : 'mindmap'; render(); }, { id: 'mm-btn', active: mode === 'mindmap' }));
-  if (isDb(current)) {
-    add(button('+ Row', addRow, { id: 'add-row' }), button('+ Property', addProperty, { id: 'add-prop' }));
+  more.push(button('Delete page', deletePage, { id: 'del-btn' }));
+  add(moreMenu(more));
+}
+
+// "•••" button with a dropdown of secondary page actions. Closes on pick, outside click or Escape.
+function moreMenu(items) {
+  const wrap = document.createElement('div');
+  wrap.className = 'more';
+  const menu = document.createElement('div');
+  menu.className = 'menu';
+  menu.setAttribute('role', 'menu');
+  menu.hidden = true;
+  const toggle = button('•••', () => setOpen(menu.hidden), { id: 'more-btn' });
+  toggle.setAttribute('aria-label', 'More page actions');
+  toggle.setAttribute('aria-haspopup', 'menu');
+  toggle.setAttribute('aria-expanded', 'false');
+  const outside = e => { if (!wrap.contains(e.target)) setOpen(false); };
+  function setOpen(open) {
+    menu.hidden = !open;
+    toggle.setAttribute('aria-expanded', String(open));
+    if (open) { document.addEventListener('mousedown', outside); menu.querySelector('button')?.focus(); }
+    else document.removeEventListener('mousedown', outside);
   }
-  const exp = isDb(current) ? [['CSV', 'csv']] : [['HTML', 'html'], ['Markdown', 'md']];
-  for (const [label, ext] of exp) add(button(`Export ${label}`, () => exportCurrent(ext), { id: `exp-${ext}` }));
-  add(button('Duplicate', duplicatePage, { id: 'dup-btn' }), button('Move to…', movePage, { id: 'move-btn' }));
-  add(button('Delete page', deletePage, { id: 'del-btn' }));
+  for (const b of items) {
+    const run = b.onclick;
+    b.setAttribute('role', 'menuitem');
+    b.onclick = e => { setOpen(false); run(e); };
+    menu.append(b);
+  }
+  menu.addEventListener('keydown', e => { if (e.key === 'Escape') { setOpen(false); toggle.focus(); } });
+  wrap.append(toggle, menu);
+  return wrap;
 }
 
 async function exportCurrent(ext) {
