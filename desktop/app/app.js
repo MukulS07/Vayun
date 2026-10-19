@@ -90,6 +90,9 @@ function renderTemplate() {
   if (current.template === 'life') {
     current.state = FolioTemplates.sanitizeLife(current.state);
     activeTemplate = FolioLife.mount(host, current, { resolvedTheme: resolved, onChange: () => save() });
+  } else if (current.template === 'study') {
+    current.state = FolioTemplates.sanitizeStudy(current.state);
+    activeTemplate = FolioStudy.mount(host, current, { resolvedTheme: resolved, onChange: () => save() });
   }
 }
 function render() {
