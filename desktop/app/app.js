@@ -239,7 +239,10 @@ function renderSidebar() {
   const walk = (parentId, depth) => data.pages.filter(p => p.parentId === parentId).forEach(p => {
     const a = document.createElement('a');
     a.href = '#';
-    a.textContent = (isDb(p) ? '▦ ' : (p.kind === 'template' ? (p.template === 'life' ? '◷ ' : '▤ ') : '')) + (p.title || 'Untitled');
+    const label = document.createElement('span');
+    label.className = 'tree-label';
+    label.textContent = p.title || 'Untitled';
+    a.append(icon(isDb(p) ? 'table' : p.kind === 'template' ? p.template : 'page'), label);
     a.style.paddingLeft = `${12 + depth * 14}px`;
     if (p === current) { a.className = 'active'; a.setAttribute('aria-current', 'page'); }
     a.onclick = e => { e.preventDefault(); openPage(p.id); };
@@ -247,6 +250,24 @@ function renderSidebar() {
     walk(p.id, depth + 1);
   });
   walk(null, 0);
+}
+
+// Stroke icons (24px grid) for the page tree.
+const ICONS = {
+  page: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z M14 3v5h5',
+  table: 'M4 5h16v14H4z M4 10h16 M10 5v14',
+  life: 'M3 19l6-9 4 6 3-4 5 7z',
+  study: 'M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2z M5 19V5',
+};
+function icon(name) {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('class', 'ico');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', ICONS[name] || ICONS.page);
+  svg.append(path);
+  return svg;
 }
 
 function button(label, onClick, extra = {}) {

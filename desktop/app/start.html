@@ -1,50 +1,54 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pages</title>
-<link rel="stylesheet" href="fonts.css">
-<link rel="stylesheet" href="tokens.css">
-<script src="theme.js"></script>
-<script src="themes-data.js"></script>
-<script src="theme-boot.js"></script>
-<link rel="stylesheet" href="style.css">
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pages</title>
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="tokens.css">
+  <script src="theme.js"></script>
+  <script src="themes-data.js"></script>
+  <script src="theme-boot.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<main class="start">
-  <header class="start-head">
-    <div class="ws-mark" aria-hidden="true">P</div>
-    <div>
-      <h1>Pages</h1>
-      <p class="muted">Pick a workspace or create a new one. Everything stays on this PC.</p>
-    </div>
-  </header>
+  <main class="start">
+    <header class="start-head">
+      <div class="ws-mark" aria-hidden="true">P</div>
+      <div>
+        <h1>Pages</h1>
+        <p class="muted">Pick a workspace or create a new one. Everything stays on this PC.</p>
+      </div>
+    </header>
 
-  <section class="start-block" aria-labelledby="ws-heading">
-    <h2 id="ws-heading">Your workspaces</h2>
-    <div id="ws-grid" class="ws-grid"></div>
-  </section>
+    <section class="start-block" aria-labelledby="ws-heading">
+      <h2 id="ws-heading">Your workspaces</h2>
+      <div id="ws-grid" class="ws-grid"></div>
+    </section>
 
-  <section class="start-block" aria-labelledby="new-heading">
-    <h2 id="new-heading">New workspace</h2>
-    <form id="new-form" class="new-form">
-      <label>Name
-        <input id="new-name" type="text" maxlength="60" placeholder="For example: Home, Work, Study" required autocomplete="off">
-      </label>
-      <label>Start with
-        <select id="new-template">
-          <option value="blank">A blank page</option>
-          <option value="tasks">A Tasks database</option>
-        </select>
-      </label>
-      <p id="new-error" class="error" role="alert" hidden></p>
-      <button type="submit" class="primary">Create workspace</button>
-    </form>
-  </section>
-</main>
-<script src="model.js"></script>
-<script src="start.js"></script>
+    <section class="start-block" aria-labelledby="new-heading">
+      <h2 id="new-heading">New workspace</h2>
+      <form id="new-form" class="new-form">
+        <label>Name
+          <input id="new-name" type="text" maxlength="60" placeholder="For example: Home, Work, Study" required
+            autocomplete="off">
+        </label>
+        <label>Start with
+          <select id="new-template">
+            <option value="blank">A blank page</option>
+            <option value="tasks">A Tasks database</option>
+          </select>
+        </label>
+        <p id="new-error" class="error" role="alert" hidden></p>
+        <button type="submit" class="primary">Create workspace</button>
+      </form>
+    </section>
+  </main>
+  <script src="model.js"></script>
+  <script src="start.js"></script>
 </body>
+
 </html>
