@@ -21,11 +21,18 @@ function flush() {
 }
 window.addEventListener('beforeunload', () => { clearTimeout(saveTimer); api.save(data); });
 
+// Appearance: the shell theme, accent, font, density, corners and width. Mirrors into localStorage so
+// theme-boot.js can paint the right theme before the workspace file loads.
 function applyTheme() {
-  document.documentElement.dataset.theme = data.theme === 'system' ? '' : data.theme;
-  $('#theme-btn').title = `Theme: ${data.theme}`;
+  if (!data.appearance) data.appearance = { theme: data.theme === 'light' ? 'paper' : 'midnight' };
+  const a = (data.appearance = FolioTheme.sanitizeAppearance(data.appearance));
+  const info = FOLIO_APP_THEMES[a.theme] || { dark: true };
+  const root = document.documentElement;
+  root.dataset.appTheme = a.theme;
+  root.dataset.theme = info.dark ? 'dark' : 'light';
+  for (const [k, v] of Object.entries(FolioTheme.appearanceVars(a, info))) root.style.setProperty(k, v);
+  try { localStorage.setItem('folio-appearance', JSON.stringify(a)); } catch { /* private window: skip the cache */ }
 }
-
 /* Pages */
 
 function openPage(id, nextMode = 'doc') {
@@ -971,11 +978,7 @@ $('#title').addEventListener('keydown', e => {
 });
 $('#new-btn').onclick = () => createPage(null);
 $('#new-db-btn').onclick = createDatabase;
-$('#theme-btn').onclick = () => {
-  data.theme = { system: 'light', light: 'dark', dark: 'system' }[data.theme];
-  applyTheme();
-  save();
-};
+$('#theme-btn').onclick = () => FolioAppearance.open(() => data.appearance, a => { data.appearance = a; applyTheme(); save(); });
 
 // Each imported file becomes a top-level page.
 function addImportedPages(files) {
