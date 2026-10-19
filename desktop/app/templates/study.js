@@ -160,8 +160,30 @@
       const tiles = S().courses.map((c, i) => {
         const pct = c.total ? Math.round(c.done / c.total * 100) : 0;
         const open = S().tasks.filter(t => t.courseId === c.id && t.status !== 'Done').length;
+        const art = pixelCanvas(24, 10, 'city', PALETTES[c.paletteIndex % PALETTES.length], 11 + c.paletteIndex * 13 + i * 7, 'st-course-art');
+        if (ui.editCourse === c.id) {
+          const name = h('input', { class: 'st-input', 'aria-label': 'Course name', value: c.name });
+          const total = h('input', { class: 'st-input narrow', type: 'number', min: 1, max: 99, 'aria-label': 'Assignments total', value: c.total });
+          const exam = h('input', { class: 'st-input', 'aria-label': 'Next exam', value: c.nextExam });
+          const save = () => {
+            const v = name.value.trim(); if (v) c.name = v.slice(0, 60);
+            c.total = Math.min(99, Math.max(1, parseInt(total.value, 10) || 1));
+            c.done = Math.min(c.done, c.total);
+            c.nextExam = exam.value.trim().slice(0, 40) || 'TBD';
+            ui.editCourse = null; change(); draw();
+          };
+          return h('div', { class: 'st-course' }, art,
+            h('div', { class: 'st-course-body' },
+              h('label', { class: 'tiny st-muted' }, 'Name', name),
+              h('label', { class: 'tiny st-muted' }, 'Assignments total', total),
+              h('label', { class: 'tiny st-muted' }, 'Next exam', exam),
+              h('div', { class: 'st-course-count' },
+                h('button', { type: 'button', class: 'btn-accent', onclick: save }, 'Save'),
+                h('button', { type: 'button', onclick: () => { ui.editCourse = null; draw(); } }, 'Cancel'))));
+        }
         return h('div', { class: 'st-course' },
-          pixelCanvas(24, 10, 'city', PALETTES[c.paletteIndex % PALETTES.length], 11 + c.paletteIndex * 13 + i * 7, 'st-course-art'),
+          art,
+          h('button', { type: 'button', class: 'st-course-edit', 'aria-label': `Edit course ${c.name}`, onclick: () => { ui.editCourse = c.id; draw(); } }, '✎'),
           deleteButton(`Delete course ${c.name}`, () => { S().courses = S().courses.filter(x => x !== c); S().tasks.forEach(t => { if (t.courseId === c.id) t.courseId = null; }); change(); draw(); }),
           h('div', { class: 'st-course-body' },
             h('div', { class: 'st-course-name' }, h('span', { class: 'st-mono tiny st-muted', 'aria-hidden': 'true' }, c.glyph), h('span', { class: 'st-ellipsis' }, c.name)),
