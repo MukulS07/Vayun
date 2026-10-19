@@ -259,3 +259,5 @@ body { font-family:var(--app-font, ui-sans-serif, system-ui, "Segoe UI", sans-se
 .settings-foot { display:flex; justify-content:flex-end; gap:8px; margin-top:22px; }
 .settings-foot button { min-height:38px; padding:0 16px; border-radius:var(--radius); border:1px solid var(--line); background:transparent; }
 .settings-foot button.primary { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:500; }
+
+.page:has(> #tpl:not([hidden])) { max-width:none; padding:0; }

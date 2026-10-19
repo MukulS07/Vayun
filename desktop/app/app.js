@@ -71,6 +71,27 @@ function deletePage() {
   openPage(parentId && byId(parentId) ? parentId : data.pages[0]?.id);
 }
 
+// Template pages (Life OS, Study OS) render in their own container with their own widgets.
+let activeTemplate = null;
+function unmountTemplate() {
+  if (activeTemplate) activeTemplate.destroy();
+  activeTemplate = null;
+}
+function renderTemplate() {
+  for (const id of ['#title', '#props', '#doc', '#dbview', '#mindmap']) $(id).hidden = true;
+  const host = $('#tpl');
+  host.hidden = false;
+  unmountTemplate();
+  const appDark = (FOLIO_APP_THEMES[data.appearance && data.appearance.theme] || { dark: true }).dark;
+  const resolved = FolioTheme.resolveTheme({
+    pageTheme: current.theme, appMode: appDark ? 'dark' : 'light',
+    prefersDark: matchMedia('(prefers-color-scheme: dark)').matches,
+  });
+  if (current.template === 'life') {
+    current.state = FolioTemplates.sanitizeLife(current.state);
+    activeTemplate = FolioLife.mount(host, current, { resolvedTheme: resolved, onChange: () => save() });
+  }
+}
 function render() {
   renderSidebar();
   renderCrumb();
@@ -78,6 +99,10 @@ function render() {
   renderMeta();
   renderFavs();
   renderToolbar();
+  if (current.kind === 'template') { renderTemplate(); return; }
+  unmountTemplate();
+  $('#tpl').hidden = true;
+  $('#title').hidden = false;
   $('#title').textContent = current.title;
   const db = isDb(current);
   $('#mindmap').hidden = mode !== 'mindmap';
@@ -211,6 +236,7 @@ function renderToolbar() {
   const bar = $('#toolbar');
   bar.innerHTML = '';
   const add = (...els) => els.forEach(el => bar.append(el));
+  if (current.kind === 'template') { add(button('Delete page', deletePage, { id: 'del-btn' })); return; }
   if (isDb(current)) {
     const v = viewOf(current);
     for (const t of VIEW_TYPES) add(button(t[0].toUpperCase() + t.slice(1), () => { current.view = { ...v, type: t }; render(); save(); }, { active: v.type === t, id: `view-${t}` }));
