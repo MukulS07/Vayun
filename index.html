@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quick Search Demo</title>
+<style>
+  :root { --bg:#fff; --fg:#37352f; --muted:#787774; --line:#e9e9e7; --hl:#fbf3db; --sel:#f1f1ef; --shadow:rgba(15,15,15,.2); }
+  @media (prefers-color-scheme: dark) { :root { --bg:#191919; --fg:#e6e6e4; --muted:#9b9a97; --line:#2f2f2f; --hl:#5a4a1a; --sel:#2a2a2a; --shadow:rgba(0,0,0,.6); } }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--fg); }
+  main { max-width:720px; margin:0 auto; padding:48px 16px; }
+  kbd { border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:12px; }
+  button.open { font:inherit; color:var(--muted); background:none; border:1px solid var(--line); border-radius:6px; padding:6px 12px; cursor:pointer; }
+  .backdrop { position:fixed; inset:0; background:rgba(15,15,15,.4); display:none; align-items:flex-start; justify-content:center; padding:12vh 16px 0; }
+  .backdrop.visible { display:flex; }
+  .panel { width:100%; max-width:640px; background:var(--bg); border-radius:10px; box-shadow:0 12px 40px var(--shadow); overflow:hidden; }
+  .panel input { width:100%; border:0; border-bottom:1px solid var(--line); padding:14px 16px; font:inherit; font-size:17px; background:none; color:inherit; outline:none; }
+  .label { padding:8px 16px 4px; font-size:12px; color:var(--muted); }
+  ul { list-style:none; margin:0; padding:0 0 8px; max-height:50vh; overflow:auto; }
+  li { padding:8px 16px; cursor:pointer; }
+  li[aria-selected="true"] { background:var(--sel); }
+  li .title { font-weight:500; }
+  li .snippet { color:var(--muted); font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  mark { background:var(--hl); color:inherit; border-radius:2px; }
+  .empty { padding:16px; color:var(--muted); }
+  footer.hint { border-top:1px solid var(--line); padding:6px 16px; font-size:12px; color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="page-title">Welcome</h1>
+  <p id="page-body">Press <kbd>Ctrl</kbd>+<kbd>K</kbd> (or <kbd>⌘</kbd>+<kbd>K</kbd>) to search pages.</p>
+  <button class="open" type="button" id="open-btn">Search…</button>
+</main>
+
+<div class="backdrop" id="backdrop">
+  <div class="panel" role="dialog" aria-modal="true" aria-label="Search">
+    <input id="q" type="search" placeholder="Search pages…" autocomplete="off"
+           role="combobox" aria-controls="results" aria-expanded="true" aria-activedescendant="">
+    <div class="label" id="label">Recent</div>
+    <ul id="results" role="listbox" aria-labelledby="label"></ul>
+    <footer class="hint">↑↓ to navigate · Enter to open · Esc to close</footer>
+  </div>
+</div>
+
+<script>
+// Sample workspace. Replace with your own data source.
+const PAGES = [
+  { id: 'roadmap', title: 'Product Roadmap', body: 'Q3 goals: launch quick search, improve onboarding, ship mobile offline mode.' },
+  { id: 'meeting', title: 'Weekly Team Meeting Notes', body: 'Discussed search ranking, recent pages, and keyboard shortcuts for power users.' },
+  { id: 'onboard', title: 'Onboarding Checklist', body: 'Set up your account, join the workspace, read the engineering handbook.' },
+  { id: 'handbook', title: 'Engineering Handbook', body: 'Code review rules, deploy process, on-call rotation and incident response.' },
+  { id: 'recipes', title: 'Team Lunch Recipes', body: 'Pasta, curry, tacos. Vote for next Friday lunch in the comments.' },
+  { id: 'design', title: 'Design System', body: 'Colors, typography, spacing tokens and the search modal component spec.' },
+];
+
+const RECENT_KEY = 'qs-recent';
+const recent = (() => { try { return JSON.parse(localStorage.getItem(RECENT_KEY)) || []; } catch { return []; } })();
+
+const tokenize = s => s.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+
+// Every query term must match a word prefix; title hits outrank body hits.
+function search(query, pages) {
+  const terms = tokenize(query);
+  if (!terms.length) return [];
+  const out = [];
+  for (const p of pages) {
+    const tw = tokenize(p.title), bw = tokenize(p.body);
+    let score = 0;
+    for (const t of terms) {
+      const inTitle = tw.some(w => w.startsWith(t)), inBody = bw.some(w => w.startsWith(t));
+      if (!inTitle && !inBody) { score = -1; break; }
+      score += (inTitle ? 10 : 0) + (inBody ? 1 : 0) + (tw.includes(t) ? 2 : 0);
+    }
+    if (score > 0) out.push({ page: p, score });
+  }
+  return out.sort((a, b) => b.score - a.score || a.page.title.localeCompare(b.page.title)).map(r => r.page);
+}
+
+const esc = s => s.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+function highlight(text, terms) {
+  if (!terms.length) return esc(text);
+  const re = new RegExp('(^|[^\\p{L}\\p{N}])(' + terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'giu');
+  return esc(text).replace(re, '$1<mark>$2</mark>');
+}
+function snippet(body, terms) {
+  const lower = body.toLowerCase();
+  const i = terms.map(t => lower.indexOf(t)).filter(i => i >= 0).sort((a, b) => a - b)[0] ?? 0;
+  const start = Math.max(0, i - 30);
+  return (start ? '…' : '') + body.slice(start, start + 120);
+}
+
+const backdrop = document.getElementById('backdrop');
+const input = document.getElementById('q');
+const list = document.getElementById('results');
+const label = document.getElementById('label');
+let items = [], active = 0;
+
+function render() {
+  const terms = tokenize(input.value);
+  items = terms.length ? search(input.value, PAGES)
+                       : recent.map(id => PAGES.find(p => p.id === id)).filter(Boolean);
+  label.textContent = terms.length ? 'Pages' : 'Recent';
+  active = Math.min(active, Math.max(0, items.length - 1));
+  list.innerHTML = items.length
+    ? items.map((p, i) => `<li id="r-${i}" role="option" aria-selected="${i === active}" data-i="${i}">
+        <div class="title">${highlight(p.title, terms)}</div>
+        <div class="snippet">${highlight(snippet(p.body, terms), terms)}</div></li>`).join('')
+    : `<li class="empty" aria-disabled="true">${terms.length ? 'No results' : 'No recent pages'}</li>`;
+  input.setAttribute('aria-activedescendant', items.length ? `r-${active}` : '');
+  list.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
+}
+
+function openResult(p) {
+  document.getElementById('page-title').textContent = p.title;
+  document.getElementById('page-body').textContent = p.body;
+  recent.splice(0, recent.length, p.id, ...recent.filter(id => id !== p.id).slice(0, 4));
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(recent)); } catch {}
+  hide();
+}
+
+function show() { backdrop.classList.add('visible'); input.value = ''; active = 0; render(); input.focus(); }
+function hide() { backdrop.classList.remove('visible'); }
+const toggle = () => backdrop.classList.contains('visible') ? hide() : show();
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'p')) { e.preventDefault(); toggle(); }
+});
+input.addEventListener('input', () => { active = 0; render(); });
+input.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' && items.length) { e.preventDefault(); active = (active + 1) % items.length; render(); }
+  else if (e.key === 'ArrowUp' && items.length) { e.preventDefault(); active = (active - 1 + items.length) % items.length; render(); }
+  else if (e.key === 'Enter' && items[active]) { e.preventDefault(); openResult(items[active]); }
+  else if (e.key === 'Escape') hide();
+});
+list.addEventListener('click', e => { const li = e.target.closest('li[data-i]'); if (li) openResult(items[+li.dataset.i]); });
+// Like Notion's Quick Search window closing on blur: click outside the panel closes it.
+backdrop.addEventListener('mousedown', e => { if (e.target === backdrop) hide(); });
+document.getElementById('open-btn').addEventListener('click', show);
+
+// Self-check for the ranking logic.
+console.assert(search('search', PAGES).length === 3, 'body-only hits found');
+console.assert(search('road', PAGES)[0].id === 'roadmap', 'title prefix match first');
+console.assert(search('engineering hand', PAGES)[0].id === 'handbook', 'multi-term AND');
+console.assert(search('zzz', PAGES).length === 0, 'no match');
+console.assert(search('', PAGES).length === 0, 'empty query');
+</script>
+</body>
+</html>

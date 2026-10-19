@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Folio — workspace</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;family=Newsreader:opsz,wght@6..72,400;6..72,600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:inherit;text-decoration:none}a:hover{opacity:.85}
+button{font:inherit;color:inherit;cursor:pointer}
+.navbtn:hover{background:var(--side-hover) !important}
+.ghost:hover{background:var(--hover) !important}
+@media (max-width:860px){
+.hide-sm{display:none !important}
+.doc-pad{padding:32px 20px 80px !important}
+.doc-title{font-size:32px !important}
+}
+</style>
+</helmet>
+<div style="{{rootStyle}}">
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: var(--bg); color: var(--text); font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; transition: background .25s, color .25s">
+
+<!-- ============ SIDEBAR ============ -->
+<aside style="flex: 1 1 252px; max-width: 100%; min-width: 0; box-sizing: border-box; background: var(--side); border-right: 1px solid var(--line); padding: 12px 10px; display: flex; flex-direction: column; gap: 1px; color: var(--side-text)">
+<button class="navbtn" type="button" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 4px 8px; border: 0; border-radius: var(--radius); background: transparent; text-align: left; color: var(--side-strong); font-weight: 600">
+<span style="width: 26px; height: 26px; border-radius: 7px; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; font-size: 12px; font-weight: 700">A</span>
+Acme Studio
+<svg style="margin-left: auto" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 10l5 5 5-5"></path></svg>
+</button>
+
+<button class="navbtn" type="button" onClick="{{openPalette}}" style="margin-top: 6px; display: flex; align-items: center; gap: 10px; min-height: 36px; padding: var(--row) 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); text-align: left; color: var(--text-2)">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>Search
+<kbd style="margin-left: auto; font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--muted)">⌘K</kbd>
+</button>
+
+<div style="height: 8px"></div>
+<sc-for list="{{topNav}}" as="n" hint-placeholder-count="3">
+<button class="navbtn" type="button" onClick="{{n.go}}" style="{{n.style}}">
+<span style="width: 18px; height: 18px; display: grid; place-items: center; color: var(--side-muted)">{{n.glyph}}</span>{{n.label}}
+<sc-if value="{{n.badge}}" hint-placeholder-val="{{ false }}"><span style="margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: var(--accent); color: var(--on-accent); font-size: 11px; display: grid; place-items: center">{{n.badge}}</span></sc-if>
+</button>
+</sc-for>
+
+<div style="margin: 18px 8px 4px; font-size: 12px; font-weight: 500; color: var(--side-muted)">Favorites</div>
+<sc-for list="{{pagesNav}}" as="n" hint-placeholder-count="3">
+<button class="navbtn" type="button" onClick="{{n.go}}" style="{{n.style}}">
+<span style="{{n.dot}}"></span>{{n.label}}
+</button>
+</sc-for>
+
+<div style="margin: 18px 8px 4px; font-size: 12px; font-weight: 500; color: var(--side-muted)">Teamspaces</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: var(--row) 8px"><span style="width: 18px; height: 18px; border-radius: 5px; background: var(--tag-orange)"></span>Engineering</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: var(--row) 8px"><span style="width: 18px; height: 18px; border-radius: 5px; background: var(--tag-purple)"></span>Marketing</div>
+<div style="display: flex; align-items: center; gap: 10px; padding: var(--row) 8px"><span style="width: 18px; height: 18px; border-radius: 5px; background: var(--tag-gray)"></span>Company wiki</div>
+
+<div style="margin-top: auto; padding-top: 16px; display: flex; flex-direction: column; gap: 1px">
+<button class="navbtn" type="button" onClick="{{openSettings}}" style="display: flex; align-items: center; gap: 10px; min-height: 36px; padding: var(--row) 8px; border: 0; border-radius: var(--radius); background: transparent; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>Settings
+</button>
+<button class="navbtn" type="button" onClick="{{openSettings}}" style="display: flex; align-items: center; gap: 10px; min-height: 36px; padding: var(--row) 8px; border: 0; border-radius: var(--radius); background: transparent; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-1.2-1-2-2.2-2H16a2 2 0 0 1-2-2V5.2C14 4 13.2 3 12 3z"></path><circle cx="7.5" cy="11" r="1.2"></circle><circle cx="10" cy="7" r="1.2"></circle></svg>Themes
+<span style="margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--side-muted)"><span style="width: 10px; height: 10px; border-radius: 5px; background: var(--accent)"></span>{{themeName}}</span>
+</button>
+</div>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; background: var(--bg)">
+<!-- topbar -->
+<div style="min-height: 48px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 16px; border-bottom: 1px solid var(--line-soft); color: var(--muted); font-size: 13px">
+<span>Favorites  /  <span style="color: var(--text)">{{pageTitle}}</span></span>
+<div style="display: flex; align-items: center; gap: 4px">
+<div class="hide-sm" style="display: flex; margin-right: 8px">
+<span style="width: 26px; height: 26px; border-radius: 13px; background: #FFB199; border: 2px solid var(--bg); display: grid; place-items: center; font-size: 11px; font-weight: 600; color: #5B1E0B">M</span>
+<span style="width: 26px; height: 26px; margin-left: -8px; border-radius: 13px; background: #9FD8B8; border: 2px solid var(--bg); display: grid; place-items: center; font-size: 11px; font-weight: 600; color: #0E4126">J</span>
+<span style="width: 26px; height: 26px; margin-left: -8px; border-radius: 13px; background: #B9C4FF; border: 2px solid var(--bg); display: grid; place-items: center; font-size: 11px; font-weight: 600; color: #1A2670">R</span>
+</div>
+<button class="ghost" type="button" onClick="{{openSettings}}" style="display: flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius); background: transparent; color: var(--text)">
+<span style="width: 12px; height: 12px; border-radius: 6px; background: var(--accent)"></span>Customize
+</button>
+<button class="ghost" type="button" style="min-height: 36px; padding: 0 12px; border: 0; border-radius: var(--radius); background: transparent; color: var(--text)">Share</button>
+<button class="ghost" type="button" aria-label="More options" style="width: 36px; height: 36px; border: 0; border-radius: var(--radius); background: transparent; display: grid; place-items: center; color: var(--text-2)"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="19" cy="12" r="1.6"></circle></svg></button>
+</div>
+</div>
+
+<!-- ======== DOC PAGE ======== -->
+<sc-if value="{{isDoc}}" hint-placeholder-val="{{ true }}">
+<div style="height: 168px; background: var(--cover); position: relative"></div>
+<div class="doc-pad" style="padding: 0 64px 96px">
+<article style="max-width: var(--page-w); margin: 0 auto; font-family: var(--doc-font); font-size: var(--doc-size)">
+<div style="margin-top: -40px; width: 76px; height: 76px; border-radius: 20px; background: var(--bg); display: grid; place-items: center; box-shadow: 0 0 0 1px var(--line)">
+<svg width="44" height="44" viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="4" width="40" height="40" rx="12" fill="var(--accent)"></rect><path d="M16 31l8-14 8 14z" fill="var(--on-accent)"></path></svg>
+</div>
+<h1 class="doc-title" style="margin: 20px 0 0; font-family: var(--doc-font); font-size: 42px; line-height: 1.1; letter-spacing: -0.8px; font-weight: 600">Q4 launch plan</h1>
+
+<div style="margin-top: 18px; display: grid; grid-template-columns: 140px 1fr; row-gap: var(--gap); font-family: 'Geist', sans-serif; font-size: 14px">
+<span style="color: var(--muted)">Owner</span><span style="display: flex; align-items: center; gap: 8px"><span style="width: 22px; height: 22px; border-radius: 11px; background: #FFB199; color: #5B1E0B; display: grid; place-items: center; font-size: 10px; font-weight: 600">M</span>Maya Chen</span>
+<span style="color: var(--muted)">Status</span><span><span style="padding: 2px 8px; border-radius: 6px; background: var(--tag-yellow)">In progress</span></span>
+<span style="color: var(--muted)">Launch date</span><span>Nov 18, 2026</span>
+<span style="color: var(--muted)">Tags</span><span style="display: flex; gap: 6px"><span style="padding: 2px 8px; border-radius: 6px; background: var(--tag-blue)">Onboarding</span><span style="padding: 2px 8px; border-radius: 6px; background: var(--tag-green)">Growth</span></span>
+</div>
+<div style="margin: 22px 0; height: 1px; background: var(--line-soft)"></div>
+
+<p style="margin: 0; line-height: 1.7">Our goal is to ship the new onboarding to <span style="background: var(--highlight); padding: 0 3px; border-radius: 3px">every self‑serve workspace</span> before the holiday freeze. This page tracks scope, owners and open risks.</p>
+
+<h2 style="margin: 28px 0 10px; font-family: var(--doc-font); font-size: 1.45em; font-weight: 600">This week</h2>
+<div style="display: flex; flex-direction: column; gap: var(--gap)">
+<sc-for list="{{todos}}" as="t" hint-placeholder-count="4">
+<button type="button" onClick="{{t.toggle}}" aria-pressed="{{t.pressed}}" style="display: flex; align-items: center; gap: 12px; min-height: 32px; padding: 2px 4px; margin-left: -4px; border: 0; border-radius: 6px; background: transparent; text-align: left; font-family: var(--doc-font); font-size: var(--doc-size)">
+<span style="{{t.boxStyle}}"><sc-if value="{{t.done}}" hint-placeholder-val="{{ false }}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--on-accent)" stroke-width="3.5" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></sc-if></span>
+<span style="{{t.textStyle}}">{{t.label}}</span>
+<span style="font-family: 'Geist', sans-serif; padding: 1px 7px; border-radius: 5px; background: var(--accent-soft); color: var(--accent-text); font-size: 12px">@{{t.who}}</span>
+</button>
+</sc-for>
+</div>
+<p style="margin: 10px 0 0; font-family: 'Geist', sans-serif; font-size: 12px; color: var(--muted)">{{doneCount}} of 4 done · click a task to toggle it</p>
+
+<div style="margin-top: 24px; display: flex; gap: 12px; padding: 16px; border-radius: var(--radius-lg); background: var(--accent-soft)">
+<svg style="flex-shrink: 0; margin-top: 2px" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2z"></path></svg>
+<div style="font-family: 'Geist', sans-serif; font-size: 14px">
+<strong style="font-weight: 600; color: var(--accent-text)">Folio AI summary</strong>
+<div style="margin-top: 4px; color: var(--text-2)">Two blockers remain: mobile QA hasn’t started, and the walkthrough video is waiting on final pricing copy.</div>
+<div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px">
+<span style="padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; color: var(--text-2)">↗ Launch tasks</span>
+<span style="padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; color: var(--text-2)">↗ Eng standup · Oct 17</span>
+</div>
+</div>
+</div>
+
+<h2 style="margin: 28px 0 10px; font-family: var(--doc-font); font-size: 1.45em; font-weight: 600">Linked database</h2>
+<button type="button" onClick="{{goBoard}}" style="width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); text-align: left; font-family: 'Geist', sans-serif">
+<span style="width: 36px; height: 36px; border-radius: 9px; background: var(--bg); border: 1px solid var(--line); display: grid; place-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="5" height="16" rx="1.5"></rect><rect x="10" y="4" width="5" height="11" rx="1.5"></rect><rect x="17" y="4" width="4" height="7" rx="1.5"></rect></svg></span>
+<span><strong style="font-weight: 600">Launch roadmap</strong><br><span style="font-size: 13px; color: var(--muted)">Board view · 7 items · synced from Engineering</span></span>
+<span style="margin-left: auto; color: var(--muted)">Open →</span>
+</button>
+
+<div style="margin-top: 22px; display: flex; align-items: center; gap: 10px; color: var(--muted)">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+<span>Type “/” for commands, or press space for AI</span>
+</div>
+</article>
+</div>
+</sc-if>
+
+<!-- ======== BOARD PAGE ======== -->
+<sc-if value="{{isBoard}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 36px 32px 64px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
+<svg width="36" height="36" viewBox="0 0 48 48" aria-hidden="true"><rect x="4" y="4" width="40" height="40" rx="12" fill="var(--tag-blue-solid)"></rect><rect x="13" y="14" width="6" height="20" rx="2" fill="#FFFFFF"></rect><rect x="21" y="14" width="6" height="14" rx="2" fill="#FFFFFF"></rect><rect x="29" y="14" width="6" height="9" rx="2" fill="#FFFFFF"></rect></svg>
+<h1 style="margin: 0; font-family: var(--doc-font); font-size: 34px; letter-spacing: -0.6px; font-weight: 600">Launch roadmap</h1>
+</div>
+<div style="margin-top: 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--line-soft); padding-bottom: 10px">
+<div style="display: flex; gap: 4px; font-size: 14px">
+<span style="padding: 6px 12px; border-radius: var(--radius); background: var(--hover); color: var(--text); font-weight: 500">Board</span>
+<span style="padding: 6px 12px; color: var(--muted)">Table</span>
+<span style="padding: 6px 12px; color: var(--muted)">Timeline</span>
+<span style="padding: 6px 12px; color: var(--muted)">Calendar</span>
+</div>
+<div style="display: flex; gap: 6px; font-size: 13px; color: var(--text-2)">
+<span style="padding: 6px 10px; border-radius: var(--radius); border: 1px solid var(--line)">Filter</span>
+<span style="padding: 6px 10px; border-radius: var(--radius); border: 1px solid var(--line)">Group: Status</span>
+<span style="padding: 6px 14px; border-radius: var(--radius); background: var(--accent); color: var(--on-accent); font-weight: 500">New</span>
+</div>
+</div>
+<div style="margin-top: 20px; overflow-x: auto">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(250px, 1fr)); gap: 14px; min-width: 780px">
+<sc-for list="{{columns}}" as="c" hint-placeholder-count="3">
+<div style="border-radius: var(--radius-lg); background: var(--surface); padding: 10px; display: flex; flex-direction: column; gap: var(--gap)">
+<div style="display: flex; align-items: center; gap: 8px; padding: 4px; font-size: 13px"><span style="{{c.headStyle}}">{{c.title}}</span><span style="color: var(--muted)">{{c.count}}</span></div>
+<sc-for list="{{c.items}}" as="r" hint-placeholder-count="2">
+<div style="border-radius: var(--radius); background: var(--card); border: 1px solid var(--line); padding: var(--card-pad); box-shadow: 0 1px 2px rgba(0,0,0,0.05)">
+<div style="font-weight: 500; font-size: 14px">{{r.name}}</div>
+<div style="margin-top: 8px; display: flex; gap: 6px"><span style="{{r.tagStyle}}">{{r.area}}</span></div>
+<div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted)">
+<span style="display: flex; align-items: center; gap: 6px"><span style="{{r.avatarStyle}}">{{r.initial}}</span>{{r.who}}</span>
+<span>{{r.due}}</span>
+</div>
+</div>
+</sc-for>
+<span style="padding: 6px; font-size: 13px; color: var(--muted)">+ New</span>
+</div>
+</sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+</main>
+</div>
+
+<!-- ============ COMMAND PALETTE ============ -->
+<sc-if value="{{paletteOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: fixed; inset: 0; z-index: 40; background: var(--scrim); display: flex; justify-content: center; align-items: flex-start; padding: 12vh 16px 0; box-sizing: border-box; font-family: 'Geist', sans-serif; color: var(--text)">
+<button type="button" aria-label="Close search" onClick="{{closePalette}}" style="position: absolute; inset: 0; border: 0; background: transparent; cursor: default"></button>
+<div role="dialog" aria-label="Search" style="position: relative; width: 100%; max-width: 620px; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); box-shadow: 0 30px 80px -20px rgba(0,0,0,0.45); overflow: hidden">
+<div style="display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--line-soft)">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+<label for="pal" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search or run a command</label>
+<input id="pal" type="text" placeholder="Search pages or type a command…" style="flex: 1; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 16px">
+<kbd style="font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--muted); padding: 2px 6px; border: 1px solid var(--line); border-radius: 5px">esc</kbd>
+</div>
+<div style="padding: 8px; font-size: 14px">
+<div style="padding: 6px 10px; font-size: 12px; color: var(--muted)">Recent</div>
+<button type="button" onClick="{{palDoc}}" style="width: 100%; display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 8px; background: var(--hover); text-align: left"><span style="width: 16px; height: 16px; border-radius: 4px; background: var(--accent)"></span>Q4 launch plan<span style="margin-left: auto; font-size: 12px; color: var(--muted)">↵</span></button>
+<button type="button" onClick="{{palBoard}}" class="ghost" style="width: 100%; display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; text-align: left"><span style="width: 16px; height: 16px; border-radius: 4px; background: var(--tag-blue-solid)"></span>Launch roadmap</button>
+<div style="padding: 10px 10px 6px; font-size: 12px; color: var(--muted)">Commands</div>
+<button type="button" onClick="{{palTheme}}" class="ghost" style="width: 100%; display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-1.2-1-2-2.2-2H16a2 2 0 0 1-2-2V5.2C14 4 13.2 3 12 3z"></path></svg>Change theme…<span style="margin-left: auto; font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--muted)">⌘⇧T</span></button>
+<button type="button" onClick="{{palToggleDark}}" class="ghost" style="width: 100%; display: flex; align-items: center; gap: 12px; min-height: 40px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; text-align: left">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"></path></svg>Toggle light / dark<span style="margin-left: auto; font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--muted)">⌘⇧L</span></button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<!-- ============ SETTINGS · APPEARANCE ============ -->
+<sc-if value="{{settingsOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: fixed; inset: 0; z-index: 50; background: var(--scrim); display: flex; justify-content: center; align-items: center; padding: 16px; box-sizing: border-box; font-family: 'Geist', sans-serif; color: var(--text)">
+<button type="button" aria-label="Close settings" onClick="{{closeSettings}}" style="position: absolute; inset: 0; border: 0; background: transparent; cursor: default"></button>
+<div role="dialog" aria-label="Settings" style="position: relative; width: 100%; max-width: 980px; max-height: calc(100vh - 32px); display: flex; flex-wrap: wrap; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); box-shadow: 0 40px 100px -24px rgba(0,0,0,0.5); overflow: hidden">
+
+<nav aria-label="Settings sections" style="flex: 1 1 200px; background: var(--side); border-right: 1px solid var(--line); padding: 16px 10px; display: flex; flex-direction: column; gap: 1px; font-size: 14px; color: var(--text-2)">
+<div style="padding: 4px 10px 8px; font-size: 12px; color: var(--muted); font-weight: 500">Account</div>
+<span style="padding: 7px 10px">Profile</span>
+<span style="padding: 7px 10px">Notifications</span>
+<span style="padding: 7px 10px; border-radius: var(--radius); background: var(--hover); color: var(--text); font-weight: 500">Appearance</span>
+<span style="padding: 7px 10px">Shortcuts</span>
+<div style="padding: 16px 10px 8px; font-size: 12px; color: var(--muted); font-weight: 500">Workspace</div>
+<span style="padding: 7px 10px">General</span>
+<span style="padding: 7px 10px">Members</span>
+<span style="padding: 7px 10px">Brand &amp; themes</span>
+<span style="padding: 7px 10px">Security</span>
+</nav>
+
+<div style="flex: 999 1 520px; min-width: 0; max-height: calc(100vh - 32px); overflow-y: auto; box-sizing: border-box; padding: 28px 32px 32px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+<div>
+<h2 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.3px">Appearance</h2>
+<p style="margin: 4px 0 0; color: var(--muted); font-size: 14px">Make Folio feel like yours. Changes preview live behind this window.</p>
+</div>
+<button type="button" aria-label="Close" onClick="{{closeSettings}}" class="ghost" style="flex-shrink: 0; width: 36px; height: 36px; border: 0; border-radius: var(--radius); background: transparent; display: grid; place-items: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+</div>
+
+<!-- theme gallery -->
+<div style="margin-top: 26px; display: flex; align-items: center; gap: 10px">
+<h3 style="margin: 0; font-size: 14px; font-weight: 600">Folio themes</h3>
+<span style="padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-text); font-size: 11px; font-weight: 600">Official</span>
+</div>
+<div style="margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px">
+<sc-for list="{{officialThemes}}" as="th" hint-placeholder-count="6">
+<button type="button" onClick="{{th.pick}}" aria-pressed="{{th.pressed}}" style="{{th.cardStyle}}">
+<div style="{{th.prevStyle}}">
+<div style="{{th.prevSide}}"></div>
+<div style="flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 5px">
+<div style="{{th.prevTitle}}"></div>
+<div style="{{th.prevLine}}"></div>
+<div style="{{th.prevLine2}}"></div>
+<div style="{{th.prevBtn}}"></div>
+</div>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 4px 2px; font-size: 13px">
+<span style="font-weight: 500">{{th.name}}</span>
+<span style="font-size: 11px; color: var(--muted)">{{th.mode}}</span>
+</div>
+</button>
+</sc-for>
+</div>
+
+<div style="margin-top: 24px; display: flex; align-items: center; gap: 10px">
+<h3 style="margin: 0; font-size: 14px; font-weight: 600">Your workspace themes</h3>
+<span style="font-size: 12px; color: var(--muted)">Shared with everyone at Acme Studio</span>
+</div>
+<div style="margin-top: 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px">
+<sc-for list="{{customThemes}}" as="th" hint-placeholder-count="1">
+<button type="button" onClick="{{th.pick}}" aria-pressed="{{th.pressed}}" style="{{th.cardStyle}}">
+<div style="{{th.prevStyle}}">
+<div style="{{th.prevSide}}"></div>
+<div style="flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 5px">
+<div style="{{th.prevTitle}}"></div>
+<div style="{{th.prevLine}}"></div>
+<div style="{{th.prevLine2}}"></div>
+<div style="{{th.prevBtn}}"></div>
+</div>
+</div>
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 4px 2px; font-size: 13px">
+<span style="font-weight: 500">{{th.name}}</span>
+<span style="font-size: 11px; color: var(--muted)">{{th.mode}}</span>
+</div>
+</button>
+</sc-for>
+<button type="button" style="min-height: 120px; border: 1.5px dashed var(--line); border-radius: var(--radius-lg); background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--text-2); font-size: 13px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+Create theme
+<span style="font-size: 11px; color: var(--muted)">from your brand colors</span>
+</button>
+</div>
+
+<div style="margin: 28px 0 4px; height: 1px; background: var(--line-soft)"></div>
+
+<!-- fine-tuning rows -->
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line-soft)">
+<div style="min-width: 180px"><div style="font-weight: 500">Accent color</div><div style="font-size: 13px; color: var(--muted)">Buttons, links, selection and checkboxes</div></div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{accents}}" as="a" hint-placeholder-count="7">
+<button type="button" aria-label="{{a.name}}" aria-pressed="{{a.pressed}}" onClick="{{a.pick}}" style="{{a.style}}"></button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line-soft)">
+<div style="min-width: 180px"><div style="font-weight: 500">Page font</div><div style="font-size: 13px; color: var(--muted)">Default for new pages; override per page</div></div>
+<div style="display: flex; gap: 8px">
+<sc-for list="{{fonts}}" as="f" hint-placeholder-count="3">
+<button type="button" onClick="{{f.pick}}" aria-pressed="{{f.pressed}}" style="{{f.style}}"><span style="{{f.sample}}">Ag</span><span style="font-size: 12px; color: var(--muted)">{{f.label}}</span></button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line-soft)">
+<div style="min-width: 180px"><div style="font-weight: 500">Density</div><div style="font-size: 13px; color: var(--muted)">Spacing in sidebar, lists and boards</div></div>
+<div role="radiogroup" aria-label="Density" style="display: flex; padding: 3px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line)">
+<sc-for list="{{densities}}" as="o" hint-placeholder-count="2">
+<button type="button" role="radio" aria-checked="{{o.pressed}}" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0; border-bottom: 1px solid var(--line-soft)">
+<div style="min-width: 180px"><div style="font-weight: 500">Corners</div><div style="font-size: 13px; color: var(--muted)">Roundness of cards, buttons and menus</div></div>
+<div role="radiogroup" aria-label="Corners" style="display: flex; padding: 3px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line)">
+<sc-for list="{{radii}}" as="o" hint-placeholder-count="3">
+<button type="button" role="radio" aria-checked="{{o.pressed}}" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 0">
+<div style="min-width: 180px"><div style="font-weight: 500">Page width</div><div style="font-size: 13px; color: var(--muted)">How wide docs read on large screens</div></div>
+<div role="radiogroup" aria-label="Page width" style="display: flex; padding: 3px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line)">
+<sc-for list="{{widths}}" as="o" hint-placeholder-count="2">
+<button type="button" role="radio" aria-checked="{{o.pressed}}" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<div style="margin-top: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px; border-radius: var(--radius-lg); background: var(--surface); border: 1px solid var(--line)">
+<div style="font-size: 13px; color: var(--text-2)"><strong style="color: var(--text); font-weight: 600">Workspace admins</strong> can lock a brand theme for every member.</div>
+<div style="display: flex; gap: 8px">
+<button type="button" onClick="{{resetAll}}" class="ghost" style="min-height: 38px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius); background: transparent">Reset</button>
+<button type="button" onClick="{{closeSettings}}" style="min-height: 38px; padding: 0 16px; border: 0; border-radius: var(--radius); background: var(--accent); color: var(--on-accent); font-weight: 500">Done</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"startWithSettingsOpen":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      page: 'doc', theme: 'paper', accent: null, font: 'sans', density: 'comfy', radius: 'soft', width: 'default',
+      settings: null, palette: false, done: { a: true, b: false, c: false, d: false }
+    };
+  }
+  renderVals() {
+    var s = this.state, self = this;
+    var set = function (o) { return function () { self.setState(o); }; };
+    var THEMES = {
+      paper:    { name: 'Paper',    mode: 'Light', bg: '#FFFFFF', side: '#F7F7F5', surface: '#F7F7F5', card: '#FFFFFF', text: '#1A1A1E', text2: '#46464F', muted: '#6E6E78', line: '#E6E5E1', lineSoft: '#EFEEEB', hover: 'rgba(26,26,30,0.06)', accent: '#3D5AFE', cover: 'linear-gradient(120deg,#E9ECFF,#FFF4D1)', dark: false },
+      midnight: { name: 'Midnight', mode: 'Dark',  bg: '#17171B', side: '#111114', surface: '#1E1E23', card: '#222228', text: '#EDEDF0', text2: '#C4C4CC', muted: '#93939D', line: '#2C2C33', lineSoft: '#24242A', hover: 'rgba(255,255,255,0.07)', accent: '#8C9EFF', cover: 'linear-gradient(120deg,#20254A,#3A2A4A)', dark: true },
+      sepia:    { name: 'Sepia',    mode: 'Light', bg: '#FBF6EC', side: '#F2EADA', surface: '#F2EADA', card: '#FFFBF3', text: '#2E2418', text2: '#54452F', muted: '#7A6A55', line: '#E3D6BE', lineSoft: '#EDE3D0', hover: 'rgba(46,36,24,0.07)', accent: '#B5541C', cover: 'linear-gradient(120deg,#F1DDBB,#E8C9A6)', dark: false },
+      forest:   { name: 'Forest',   mode: 'Light', bg: '#F6F8F4', side: '#E9EFE6', surface: '#E9EFE6', card: '#FFFFFF', text: '#14241A', text2: '#38503F', muted: '#5C6E60', line: '#D4DFD0', lineSoft: '#E2EADF', hover: 'rgba(20,36,26,0.06)', accent: '#1F7A4D', cover: 'linear-gradient(120deg,#CFE6D4,#EEF3C9)', dark: false },
+      ocean:    { name: 'Deep Sea', mode: 'Dark',  bg: '#0E1923', side: '#0A131B', surface: '#13212D', card: '#162634', text: '#E4EEF6', text2: '#B7C8D6', muted: '#8AA0B2', line: '#1F3242', lineSoft: '#182A38', hover: 'rgba(228,238,246,0.07)', accent: '#4FB3FF', cover: 'linear-gradient(120deg,#0F3550,#1B5E6B)', dark: true },
+      ember:    { name: 'Life OS',  mode: 'Dark',  bg: '#161616', side: '#121212', surface: '#1E1E1E', card: '#232323', text: '#ECECEA', text2: '#C6C6C2', muted: '#9A9A97', line: '#2E2E2E', lineSoft: '#242424', hover: 'rgba(255,255,255,0.07)', accent: '#2FB39A', cover: 'linear-gradient(180deg,#1B2440 0%,#6B3A2A 70%,#D98A4A 100%)', dark: true },
+      grove:    { name: 'Study OS', mode: 'Dark',  bg: '#191919', side: '#141414', surface: '#202020', card: '#252525', text: '#E9E9E7', text2: '#C2C2BE', muted: '#979792', line: '#303030', lineSoft: '#262626', hover: 'rgba(255,255,255,0.07)', accent: '#E0A243', cover: 'linear-gradient(180deg,#0E2A22 0%,#1F5A3A 60%,#5FA36A 100%)', dark: true },
+      rose:     { name: 'Rosé',     mode: 'Light', bg: '#FFF8F7', side: '#FAECEA', surface: '#FAECEA', card: '#FFFFFF', text: '#2A1716', text2: '#563937', muted: '#80605C', line: '#EFD8D5', lineSoft: '#F6E5E2', hover: 'rgba(42,23,22,0.06)', accent: '#C9405F', cover: 'linear-gradient(120deg,#FBD3DA,#FFE7CC)', dark: false },
+      acme:     { name: 'Acme Brand', mode: 'Custom', bg: '#FFFFFF', side: '#14122B', surface: '#F5F4FB', card: '#FFFFFF', text: '#14122B', text2: '#3D3A5C', muted: '#6B6888', line: '#E3E1EF', lineSoft: '#EEEDF6', hover: 'rgba(20,18,43,0.06)', accent: '#6B4EFF', cover: 'linear-gradient(120deg,#14122B,#6B4EFF)', dark: false, darkSide: true }
+    };
+    var t = THEMES[s.theme];
+    var accent = s.accent || t.accent;
+    var hexA = function (hex, a) {
+      var h = hex.replace('#', ''); var n = parseInt(h, 16);
+      return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    };
+    var sideText = t.darkSide ? '#C9C6E6' : t.text2;
+    var fonts = { sans: "'Geist', ui-sans-serif, system-ui, sans-serif", serif: "'Newsreader', Georgia, serif", mono: "'Geist Mono', ui-monospace, monospace" };
+    var vars = {
+      '--bg': t.bg, '--side': t.side, '--surface': t.surface, '--card': t.card,
+      '--text': t.text, '--text-2': t.text2, '--muted': t.muted, '--line': t.line, '--line-soft': t.lineSoft, '--hover': t.hover,
+      '--accent': accent, '--side-text': t.darkSide ? '#CFCCEA' : t.text2, '--side-strong': t.darkSide ? '#FFFFFF' : t.text, '--side-muted': t.darkSide ? '#A19DC8' : t.muted, '--side-hover': t.darkSide ? 'rgba(255,255,255,0.10)' : t.hover, '--on-accent': '#FFFFFF',
+      '--accent-soft': hexA(accent, t.dark ? 0.16 : 0.10), '--accent-text': t.dark ? accent : accent,
+      '--highlight': t.dark ? 'rgba(255,214,90,0.28)' : 'rgba(255,214,90,0.55)',
+      '--cover': t.cover, '--scrim': t.dark ? 'rgba(0,0,0,0.6)' : 'rgba(20,20,26,0.38)',
+      '--tag-yellow': t.dark ? 'rgba(245,190,40,0.22)' : 'rgba(245,190,40,0.28)',
+      '--tag-blue': t.dark ? 'rgba(90,140,255,0.24)' : 'rgba(90,140,255,0.16)',
+      '--tag-green': t.dark ? 'rgba(60,190,120,0.24)' : 'rgba(60,190,120,0.18)',
+      '--tag-orange': t.dark ? 'rgba(240,120,60,0.30)' : 'rgba(240,120,60,0.22)',
+      '--tag-purple': t.dark ? 'rgba(150,100,240,0.30)' : 'rgba(150,100,240,0.20)',
+      '--tag-gray': t.dark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.08)',
+      '--tag-blue-solid': '#4C7DF0',
+      '--doc-font': fonts[s.font], '--doc-size': s.font === 'mono' ? '14.5px' : (s.font === 'serif' ? '17.5px' : '16px'),
+      '--row': s.density === 'compact' ? '3px' : '6px', '--gap': s.density === 'compact' ? '4px' : '10px', '--card-pad': s.density === 'compact' ? '10px' : '14px',
+      '--radius': s.radius === 'sharp' ? '3px' : (s.radius === 'round' ? '12px' : '7px'),
+      '--radius-lg': s.radius === 'sharp' ? '4px' : (s.radius === 'round' ? '18px' : '12px'),
+      '--page-w': s.width === 'full' ? '100%' : '720px'
+    };
+    var rootStyle = Object.keys(vars).map(function (k) { return k + ': ' + vars[k]; }).join('; ') + ';';
+
+    var navStyle = function (on) {
+      return 'display: flex; align-items: center; gap: 10px; min-height: 34px; padding: var(--row) 8px; border: 0; border-radius: var(--radius); text-align: left; ' +
+        (on ? 'background: var(--side-hover); color: var(--side-strong); font-weight: 500;' : 'background: transparent; color: var(--side-text);');
+    };
+    var topNav = [
+      { label: 'Home', glyph: '⌂', on: false },
+      { label: 'Inbox', glyph: '✉', on: false, badge: '3' },
+      { label: 'Calendar', glyph: '▦', on: false }
+    ].map(function (n) { return Object.assign(n, { style: navStyle(n.on), go: function () {} }); });
+    var pagesNav = [
+      { label: 'Q4 launch plan', key: 'doc', dot: 'var(--accent)' },
+      { label: 'Launch roadmap', key: 'board', dot: 'var(--tag-blue-solid)' },
+      { label: 'Design reviews', key: null, dot: 'var(--tag-green)' }
+    ].map(function (n) {
+      return { label: n.label, style: navStyle(s.page === n.key), dot: 'width: 18px; height: 18px; border-radius: 5px; background: ' + n.dot,
+        go: n.key ? set({ page: n.key }) : function () {} };
+    });
+
+    var themeCard = function (key) {
+      var th = THEMES[key], on = s.theme === key;
+      return {
+        name: th.name, mode: th.mode, pressed: on ? 'true' : 'false',
+        pick: set({ theme: key, accent: null }),
+        cardStyle: 'padding: 6px; border-radius: var(--radius-lg); background: transparent; text-align: left; color: var(--text); ' +
+          (on ? 'border: 2px solid var(--accent); box-shadow: 0 0 0 3px ' + hexA(accent, 0.18) + ';' : 'border: 2px solid var(--line);'),
+        prevStyle: 'display: flex; height: 84px; border-radius: calc(var(--radius) + 2px); overflow: hidden; background: ' + th.bg + '; border: 1px solid ' + th.line + ';',
+        prevSide: 'width: 30%; background: ' + th.side + '; border-right: 1px solid ' + th.line + ';',
+        prevTitle: 'width: 70%; height: 8px; border-radius: 4px; background: ' + th.text + ';',
+        prevLine: 'width: 90%; height: 5px; border-radius: 3px; background: ' + th.muted + '; opacity: .55;',
+        prevLine2: 'width: 60%; height: 5px; border-radius: 3px; background: ' + th.muted + '; opacity: .55;',
+        prevBtn: 'margin-top: auto; width: 34px; height: 12px; border-radius: 4px; background: ' + th.accent + ';'
+      };
+    };
+    var officialThemes = ['ember', 'grove', 'paper', 'midnight', 'sepia', 'forest', 'ocean', 'rose'].map(themeCard);
+    var customThemes = ['acme'].map(themeCard);
+
+    var accentList = [
+      ['Theme default', null], ['Cobalt', '#3D5AFE'], ['Violet', '#7B4FE0'], ['Rose', '#C9405F'],
+      ['Ember', '#D2561E'], ['Emerald', '#1F7A4D'], ['Teal', '#0E7C86'], ['Graphite', '#3A3A44']
+    ];
+    var accents = accentList.map(function (a) {
+      var on = s.accent === a[1];
+      var fill = a[1] || t.accent;
+      return {
+        name: a[0], pressed: on ? 'true' : 'false', pick: set({ accent: a[1] }),
+        style: 'width: 32px; height: 32px; border-radius: 16px; padding: 0; background: ' + fill + '; ' +
+          (a[1] === null ? 'background-image: linear-gradient(135deg, transparent 46%, rgba(255,255,255,0.9) 46%, rgba(255,255,255,0.9) 54%, transparent 54%); ' : '') +
+          (on ? 'border: 2px solid var(--bg); box-shadow: 0 0 0 2px ' + fill + ';' : 'border: 2px solid transparent;')
+      };
+    });
+    var fontsList = [['sans', 'Default', fonts.sans], ['serif', 'Serif', fonts.serif], ['mono', 'Mono', fonts.mono]].map(function (f) {
+      var on = s.font === f[0];
+      return {
+        label: f[1], pressed: on ? 'true' : 'false', pick: set({ font: f[0] }),
+        sample: 'font-family: ' + f[2] + '; font-size: 24px; line-height: 1; color: var(--text);',
+        style: 'width: 76px; height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-radius: var(--radius-lg); background: transparent; ' +
+          (on ? 'border: 2px solid var(--accent);' : 'border: 2px solid var(--line);')
+      };
+    });
+    var seg = function (key, opts) {
+      return opts.map(function (o) {
+        var on = s[key] === o[0]; var u = {}; u[key] = o[0];
+        return { label: o[1], pressed: on ? 'true' : 'false', pick: set(u),
+          style: 'min-height: 34px; padding: 0 14px; border: 0; border-radius: 7px; font-size: 13px; ' +
+            (on ? 'background: var(--bg); color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.12);' : 'background: transparent; color: var(--muted);') };
+      });
+    };
+
+    var todoDefs = [
+      { k: 'a', label: 'Finalize pricing page copy', who: 'Maya' },
+      { k: 'b', label: 'QA the welcome checklist on mobile', who: 'Ravi' },
+      { k: 'c', label: 'Record walkthrough video', who: 'Jonah' },
+      { k: 'd', label: 'Schedule launch email to waitlist', who: 'Maya' }
+    ];
+    var doneCount = 0;
+    var todos = todoDefs.map(function (d) {
+      var done = !!s.done[d.k]; if (done) doneCount++;
+      return Object.assign({}, d, {
+        done: done, pressed: done ? 'true' : 'false',
+        toggle: function () { var n = Object.assign({}, self.state.done); n[d.k] = !n[d.k]; self.setState({ done: n }); },
+        boxStyle: 'flex-shrink: 0; width: 18px; height: 18px; border-radius: 5px; display: grid; place-items: center; box-sizing: border-box; ' +
+          (done ? 'background: var(--accent); border: 0;' : 'border: 1.5px solid var(--muted);'),
+        textStyle: done ? 'color: var(--muted); text-decoration: line-through;' : 'color: var(--text);'
+      });
+    });
+
+    var people = { Maya: 'background: #FFB199; color: #5B1E0B;', Ravi: 'background: #B9C4FF; color: #1A2670;', Jonah: 'background: #9FD8B8; color: #0E4126;' };
+    var areaTag = { Marketing: 'var(--tag-purple)', Engineering: 'var(--tag-orange)', Support: 'var(--tag-green)', Design: 'var(--tag-blue)' };
+    var statusTag = { 'Not started': 'var(--tag-gray)', 'In progress': 'var(--tag-yellow)', 'Done': 'var(--tag-green)' };
+    var rows = [
+      { name: 'Finalize pricing page copy', status: 'Done', who: 'Maya', due: 'Oct 30', area: 'Marketing' },
+      { name: 'Onboarding illustrations', status: 'Done', who: 'Jonah', due: 'Oct 28', area: 'Design' },
+      { name: 'Welcome checklist — mobile QA', status: 'In progress', who: 'Ravi', due: 'Nov 6', area: 'Engineering' },
+      { name: 'Record walkthrough video', status: 'In progress', who: 'Jonah', due: 'Nov 4', area: 'Marketing' },
+      { name: 'Help center articles', status: 'Not started', who: 'Maya', due: 'Nov 10', area: 'Support' },
+      { name: 'Feature flag rollout plan', status: 'Not started', who: 'Ravi', due: 'Nov 12', area: 'Engineering' },
+      { name: 'Launch email to waitlist', status: 'Not started', who: 'Maya', due: 'Nov 13', area: 'Marketing' }
+    ].map(function (r) {
+      return Object.assign({}, r, { initial: r.who.charAt(0),
+        avatarStyle: 'width: 20px; height: 20px; border-radius: 10px; display: inline-grid; place-items: center; font-size: 10px; font-weight: 600; ' + people[r.who],
+        tagStyle: 'padding: 1px 7px; border-radius: 5px; font-size: 12px; background: ' + areaTag[r.area] + ';' });
+    });
+    var columns = ['Not started', 'In progress', 'Done'].map(function (st) {
+      var items = rows.filter(function (r) { return r.status === st; });
+      return { title: st, count: String(items.length), items: items, headStyle: 'padding: 2px 8px; border-radius: 6px; font-weight: 500; background: ' + statusTag[st] + ';' };
+    });
+
+    var settingsOpen = s.settings === null ? !!this.props.startWithSettingsOpen : s.settings;
+    return {
+      rootStyle: rootStyle,
+      themeName: t.name,
+      pageTitle: s.page === 'doc' ? 'Q4 launch plan' : 'Launch roadmap',
+      isDoc: s.page === 'doc', isBoard: s.page === 'board',
+      goBoard: set({ page: 'board' }),
+      topNav: topNav, pagesNav: pagesNav,
+      settingsOpen: settingsOpen, paletteOpen: s.palette,
+      openSettings: set({ settings: true, palette: false }), closeSettings: set({ settings: false }),
+      openPalette: set({ palette: true }), closePalette: set({ palette: false }),
+      palDoc: set({ page: 'doc', palette: false }), palBoard: set({ page: 'board', palette: false }),
+      palTheme: set({ palette: false, settings: true }),
+      palToggleDark: set({ palette: false, theme: t.dark ? 'paper' : 'midnight', accent: null }),
+      officialThemes: officialThemes, customThemes: customThemes,
+      accents: accents, fonts: fontsList,
+      densities: seg('density', [['comfy', 'Comfortable'], ['compact', 'Compact']]),
+      radii: seg('radius', [['sharp', 'Sharp'], ['soft', 'Soft'], ['round', 'Round']]),
+      widths: seg('width', [['default', 'Default'], ['full', 'Full width']]),
+      resetAll: set({ theme: 'paper', accent: null, font: 'sans', density: 'comfy', radius: 'soft', width: 'default' }),
+      todos: todos, doneCount: String(doneCount),
+      columns: columns
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+﻿node_modules/
+*.log
+desktop/samples/*.png
+desktop/node_modules/

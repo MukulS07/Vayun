@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'">
+<title>Quick Search</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="quick">
+<div class="panel" role="dialog" aria-label="Quick Search">
+  <input id="q" type="search" placeholder="Search pages…" autocomplete="off" role="combobox" aria-controls="results" aria-expanded="true">
+  <div class="label" id="label">Recent</div>
+  <ul id="results" role="listbox" aria-labelledby="label"></ul>
+  <footer>↑↓ to navigate · Enter to open · Esc to close</footer>
+</div>
+<script src="search.js"></script>
+<script src="quick.js"></script>
+</body>
+</html>

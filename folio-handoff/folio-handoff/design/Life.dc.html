@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Folio — Life OS template</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="{{rootStyle}}">
+<div style="min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; transition: background .25s, color .25s">
+
+<!-- COVER -->
+<div style="position: relative; height: 230px; overflow: hidden">
+<svg width="100%" height="230" viewBox="0 0 1440 230" preserveAspectRatio="xMidYMid slice" aria-hidden="true" style="display: block">
+<defs>
+<linearGradient id="lsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color: var(--sky-0)"></stop><stop offset="0.55" style="stop-color: var(--sky-1)"></stop><stop offset="0.85" style="stop-color: var(--sky-2)"></stop><stop offset="1" style="stop-color: var(--sky-3)"></stop></linearGradient>
+<radialGradient id="lsun" cx="0.62" cy="1" r="0.35"><stop offset="0" stop-color="#FFC27A" stop-opacity="0.9"></stop><stop offset="1" stop-color="#FFC27A" stop-opacity="0"></stop></radialGradient>
+</defs>
+<rect width="1440" height="230" fill="url(#lsky)"></rect>
+<rect width="1440" height="230" fill="url(#lsun)"></rect>
+<path d="M0 170 L120 120 L230 150 L360 90 L480 140 L600 100 L720 150 L860 80 L980 130 L1120 95 L1260 140 L1440 110 L1440 230 L0 230 Z" style="fill: var(--mtn-1)"></path>
+<path d="M0 200 L160 150 L300 185 L440 140 L580 190 L740 135 L900 185 L1060 145 L1220 190 L1440 150 L1440 230 L0 230 Z" style="fill: var(--mtn-2)"></path>
+<path d="M0 230 L0 215 L200 195 L420 220 L640 200 L860 222 L1100 198 L1300 220 L1440 205 L1440 230 Z" style="fill: var(--bg)"></path>
+</svg>
+<div style="position: absolute; inset: 0; max-width: 1280px; margin: 0 auto; padding: 18px clamp(16px, 4vw, 40px) 0; box-sizing: border-box; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px">
+<span style="font-family: 'Geist Mono', monospace; font-weight: 600; font-size: 18px; letter-spacing: 6px; color: rgba(255,255,255,0.85); padding-top: 6px">{{yearLabel}}</span>
+<div role="radiogroup" aria-label="Theme" style="display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: rgba(10,10,14,0.45); border: 1px solid rgba(255,255,255,0.18); backdrop-filter: blur(6px)">
+<sc-for list="{{themeOpts}}" as="o" hint-placeholder-count="2">
+<button type="button" role="radio" aria-checked="{{o.pressed}}" onClick="{{o.pick}}" style="{{o.style}}">{{o.glyph}} {{o.label}}</button>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="max-width: 1280px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px) 96px; box-sizing: border-box">
+<div style="margin-top: -34px; position: relative; display: flex; align-items: flex-end; gap: 16px">
+<span style="flex-shrink: 0; width: 68px; height: 68px; border-radius: 18px; background: var(--card); border: 1px solid var(--line); display: grid; place-items: center">
+<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="stroke: var(--accent)"><path d="M3 20l6-10 4 6 3-4 5 8z"></path><circle cx="17" cy="6" r="2"></circle></svg>
+</span>
+<div style="flex: 1; min-width: 0">
+<label for="life-title" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Page title</label>
+<input id="life-title" value="{{title}}" onChange="{{setTitle}}" style="display: block; width: 100%; margin: 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: clamp(30px, 4vw, 42px); line-height: 1.1; letter-spacing: -1px; font-weight: 700">
+<label for="life-sub" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Page description</label>
+<input id="life-sub" value="{{subtitle}}" onChange="{{setSubtitle}}" style="display: block; width: 100%; margin: 2px 0 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--muted); font: inherit">
+</div>
+</div>
+<p style="margin: 14px 0 0; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-text); font-size: 12.5px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg>
+Everything here is editable — rename the page, add tasks and habits, click any chip to change it.
+</p>
+
+<div style="margin-top: 28px; display: flex; flex-wrap: wrap; gap: 32px">
+
+<!-- LEFT NAV -->
+<nav aria-label="Life OS sections" style="flex: 1 1 220px; max-width: 100%; display: flex; flex-direction: column; gap: 22px">
+<sc-for list="{{navGroups}}" as="g" hint-placeholder-count="4">
+<div>
+<div style="padding-bottom: 8px; margin-bottom: 10px; border-bottom: 1px solid var(--line); font-size: 17px; font-weight: 600">{{g.title}}</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{g.items}}" as="i" hint-placeholder-count="3">
+<a href="#{{i.anchor}}" style="{{i.style}}"><span aria-hidden="true" style="width: 18px; text-align: center; opacity: .85">{{i.glyph}}</span>{{i.label}}</a>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</nav>
+
+<!-- MAIN -->
+<div style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px">
+
+<div style="border-radius: 14px; background: var(--panel); border: 1px solid var(--line-2); padding: 18px 20px; display: flex; justify-content: space-between; gap: 16px">
+<div>
+<div style="font-family: 'Geist Mono', monospace; font-size: 11px; letter-spacing: 1.5px; color: var(--muted)">{{weekdayUpper}}</div>
+<div style="margin-top: 4px; font-size: 30px; font-weight: 700; letter-spacing: -0.6px">{{dateLabel}}</div>
+<div style="margin-top: 2px; color: var(--muted)">{{greeting}}</div>
+</div>
+<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 6px">
+<span style="font-family: 'Geist Mono', monospace; font-size: 22px; font-weight: 500">{{clock}}</span>
+<span style="padding: 2px 8px; border-radius: 6px; background: var(--amber-bg); color: var(--amber-fg); font-size: 12px">{{openCount}} tasks open</span>
+<span style="padding: 2px 8px; border-radius: 6px; background: var(--green-bg); color: var(--green-fg); font-size: 12px">{{habitsLeft}} habits left today</span>
+</div>
+</div>
+
+<div style="border-radius: 14px; background: var(--panel); border: 1px solid var(--line-2); padding: 18px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px">
+<button type="button" onClick="{{togglePlay}}" aria-label="{{playLabel}}" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: var(--text); color: var(--bg); display: grid; place-items: center; flex-shrink: 0; cursor: pointer">
+<sc-if value="{{playing}}" hint-placeholder-val="{{ false }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg></sc-if>
+<sc-if value="{{notPlaying}}" hint-placeholder-val="{{ true }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5l11 7-11 7z"></path></svg></sc-if>
+</button>
+<div style="flex: 1 1 100px; min-width: 0">
+<div style="font-weight: 600">{{soundName}}</div>
+<div style="font-size: 12px; color: var(--muted)">{{soundState}}</div>
+</div>
+<div style="display: flex; gap: 6px">
+<sc-for list="{{sounds}}" as="sd" hint-placeholder-count="4">
+<button type="button" onClick="{{sd.pick}}" aria-pressed="{{sd.pressed}}" style="{{sd.style}}">{{sd.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<div style="border-radius: 14px; background: var(--panel); border: 1px solid var(--line-2); padding: 18px 20px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start">
+<div><div style="font-size: 12px; color: var(--muted)">Year progress</div><div style="font-size: 30px; font-weight: 700; color: var(--accent-text); letter-spacing: -0.5px">{{yearPct}}%</div><div style="font-size: 12px; color: var(--muted)">Day {{dayOfYear}} of {{daysInYear}}</div></div>
+<svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true"><circle cx="26" cy="26" r="21" fill="none" stroke-width="5" style="stroke: var(--track)"></circle><circle cx="26" cy="26" r="21" fill="none" stroke-width="5" stroke-linecap="round" stroke-dasharray="{{yearDash}}" transform="rotate(-90 26 26)" style="stroke: var(--accent)"></circle></svg>
+</div>
+<div style="margin-top: 16px; display: flex; justify-content: space-between; font-size: 12px; color: var(--muted)"><span>Month</span><span style="color: var(--text)">{{monthPct}}%</span></div>
+<div style="margin-top: 6px; height: 6px; border-radius: 3px; background: var(--track)"><div style="{{monthBar}}"></div></div>
+<div style="margin-top: 14px; display: flex; justify-content: space-between; font-size: 12px; color: var(--muted)"><span>Week</span><span style="color: var(--text)">{{weekPct}}%</span></div>
+<div style="margin-top: 6px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px">
+<sc-for list="{{weekPills}}" as="w" hint-placeholder-count="7"><span style="{{w.style}}">{{w.label}}</span></sc-for>
+</div>
+<div style="margin-top: 14px; display: flex; justify-content: space-between; font-size: 12px; color: var(--muted)"><span>Day</span><span style="color: var(--text)">{{dayPct}}%</span></div>
+<div style="margin-top: 6px; height: 6px; border-radius: 3px; background: var(--track)"><div style="{{dayBar}}"></div></div>
+</div>
+
+<div style="border-radius: 14px; background: var(--panel); border: 1px solid var(--line-2); padding: 18px 20px">
+<div style="display: flex; justify-content: space-between; align-items: flex-start">
+<div><div style="font-size: 12px; color: var(--muted)">Pomodoro</div><div style="{{pomoTimeStyle}}">{{pomoTime}}</div><div style="font-size: 12px; color: var(--muted)">{{pomoPhase}} · cycle {{cycleNum}} of 4</div></div>
+<span style="{{pomoDot}}"></span>
+</div>
+<div style="margin-top: 14px; font-size: 12px; color: var(--muted); display: flex; justify-content: space-between"><span>Cycles</span><span style="color: var(--text)">{{cyclesDone}} / 4</span></div>
+<div style="margin-top: 6px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+<sc-for list="{{cycleBars}}" as="c" hint-placeholder-count="4"><span style="{{c.style}}"></span></sc-for>
+</div>
+<div style="margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px">
+<div style="display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border: 1px solid var(--line); border-radius: 8px"><span style="color: var(--muted)">Work</span>
+<button type="button" aria-label="Less work time" onClick="{{workDown}}" style="width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer">−</button>
+<span style="min-width: 34px; text-align: center; font-family: 'Geist Mono', monospace">{{workMin}}m</span>
+<button type="button" aria-label="More work time" onClick="{{workUp}}" style="width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer">+</button></div>
+<div style="display: flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; border: 1px solid var(--line); border-radius: 8px"><span style="color: var(--muted)">Break</span>
+<button type="button" aria-label="Less break time" onClick="{{breakDown}}" style="width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer">−</button>
+<span style="min-width: 28px; text-align: center; font-family: 'Geist Mono', monospace">{{breakMin}}m</span>
+<button type="button" aria-label="More break time" onClick="{{breakUp}}" style="width: 26px; height: 26px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer">+</button></div>
+</div>
+<div style="margin-top: 14px; display: flex; gap: 8px">
+<button type="button" onClick="{{pomoToggle}}" style="min-height: 38px; padding: 0 18px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer">{{pomoBtn}}</button>
+<button type="button" onClick="{{pomoReset}}" style="min-height: 38px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--text); font: inherit; cursor: pointer">Reset</button>
+<button type="button" onClick="{{pomoSkip}}" style="min-height: 38px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--text); font: inherit; cursor: pointer">Skip</button>
+</div>
+</div>
+</div>
+
+<!-- priorities -->
+<section id="priorities" style="margin-top: 20px">
+<h2 style="margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 20px; font-weight: 600">Problems &amp; priorities</h2>
+<div style="border-radius: 12px; border: 1px solid var(--line-2); background: var(--panel-2); padding: 10px 12px">
+<ol style="margin: 0; padding: 0 0 0 22px; display: flex; flex-direction: column; color: var(--text-2)">
+<sc-for list="{{priorities}}" as="p" hint-placeholder-count="4">
+<li style="padding: 4px 0"><span style="display: flex; align-items: center; gap: 8px"><span style="flex: 1">{{p.text}}</span><button type="button" onClick="{{p.remove}}" aria-label="Remove priority" style="width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer">×</button></span></li>
+</sc-for>
+</ol>
+<div style="margin-top: 8px; display: flex; gap: 8px">
+<label for="prio-new" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">New priority</label>
+<input id="prio-new" value="{{prioDraft}}" onChange="{{setPrioDraft}}" onKeyDown="{{prioKey}}" placeholder="Add a priority and press Enter…" style="flex: 1; min-width: 0; min-height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit">
+<button type="button" onClick="{{addPrio}}" style="min-height: 38px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--text); color: var(--bg); font: inherit; font-weight: 500; cursor: pointer">Add</button>
+</div>
+</div>
+</section>
+
+<!-- task overview -->
+<section id="tasks" style="margin-top: 20px">
+<h2 style="margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 20px; font-weight: 600">Task overview</h2>
+<div role="tablist" aria-label="Task filter" style="display: flex; flex-wrap: wrap; gap: 4px">
+<sc-for list="{{taskTabs}}" as="t" hint-placeholder-count="5">
+<button type="button" role="tab" aria-selected="{{t.pressed}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}} <span style="opacity: .6">{{t.count}}</span></button>
+</sc-for>
+</div>
+<div style="margin-top: 10px; display: flex; flex-direction: column">
+<sc-for list="{{visibleTasks}}" as="r" hint-placeholder-count="6">
+<div style="display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 2px 4px; border-bottom: 1px solid var(--line-3)">
+<button type="button" onClick="{{r.cycleStatus}}" aria-label="Status: {{r.status}}. Click to change" style="{{r.statusStyle}}"><span style="{{r.dotStyle}}"></span>{{r.status}}</button>
+<span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{r.name}}</span>
+<span style="font-size: 12px; color: var(--muted); font-family: 'Geist Mono', monospace; white-space: nowrap">{{r.dueLabel}}</span>
+<button type="button" onClick="{{r.cyclePrio}}" aria-label="Priority: {{r.prio}}. Click to change" style="{{r.prioStyle}}">{{r.prio}}</button>
+<button type="button" onClick="{{r.remove}}" aria-label="Delete task" style="width: 28px; height: 28px; flex-shrink: 0; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer">×</button>
+</div>
+</sc-for>
+<sc-if value="{{noTasks}}" hint-placeholder-val="{{ false }}"><div style="padding: 18px 6px; color: var(--muted)">Nothing here — enjoy the quiet.</div></sc-if>
+</div>
+<div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; border-radius: 12px; border: 1px dashed var(--line); background: var(--panel-2)">
+<label for="task-new" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">New task name</label>
+<input id="task-new" value="{{taskDraft}}" onChange="{{setTaskDraft}}" onKeyDown="{{taskKey}}" placeholder="New task…" style="flex: 1 1 220px; min-width: 0; min-height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit">
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted)">Day
+<select value="{{taskDay}}" onChange="{{setTaskDay}}" style="min-height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit; font-size: 13px">
+<sc-for list="{{dayOpts}}" as="o" hint-placeholder-count="8"><option value="{{o.v}}">{{o.l}}</option></sc-for>
+</select></label>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted)">Priority
+<select value="{{taskPrio}}" onChange="{{setTaskPrio}}" style="min-height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit; font-size: 13px">
+<option value="Low">Low</option><option value="Normal">Normal</option><option value="Urgent">Urgent</option><option value="Very urgent">Very urgent</option>
+</select></label>
+<button type="button" onClick="{{addTask}}" style="min-height: 38px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer">+ Add task</button>
+</div>
+</section>
+</div>
+</div>
+
+<!-- THIS WEEK -->
+<section id="week" style="margin-top: 48px">
+<h2 style="margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 20px; font-weight: 600">This week</h2>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; margin-bottom: 10px">
+<strong style="font-weight: 600">{{weekRange}}</strong>
+<span style="color: var(--muted); font-size: 12px">Tasks with a day show up here · click a card to change its status</span>
+</div>
+<div style="overflow-x: auto">
+<div style="min-width: 980px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden">
+<sc-for list="{{weekDays}}" as="d" hint-placeholder-count="7">
+<div style="{{d.colStyle}}">
+<div style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--muted); padding: 2px 2px 6px">
+<span>{{d.dow}}</span><span style="{{d.numStyle}}">{{d.num}}</span>
+</div>
+<sc-for list="{{d.items}}" as="c" hint-placeholder-count="2">
+<button type="button" onClick="{{c.cycleStatus}}" aria-label="{{c.name}} — {{c.status}}. Click to change status" style="{{c.cardStyle}}">
+<span style="display: block; font-weight: 600; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.name}}</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px">
+<span style="{{c.statusStyle}}">{{c.status}}</span>
+<span style="{{c.diffStyle}}">{{c.diff}}</span>
+</span>
+<span style="display: block; margin-top: 6px; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">↳ {{c.project}}</span>
+</button>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<!-- HABITS + STATS -->
+<div style="margin-top: 48px; display: flex; flex-wrap: wrap; gap: 32px">
+<section id="habits" style="flex: 1 1 520px; min-width: 0">
+<h2 style="margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 20px; font-weight: 600">Habits</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px">
+<sc-for list="{{habits}}" as="h" hint-placeholder-count="6">
+<div style="border-radius: 12px; background: var(--panel); border: 1px solid var(--line-2); padding: 12px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 6px"><strong style="font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{h.name}}</strong>
+<span style="display: flex; align-items: center; gap: 2px"><span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--muted)">{{h.streak}}d</span><button type="button" onClick="{{h.remove}}" aria-label="Delete habit {{h.name}}" style="width: 24px; height: 24px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer">×</button></span></div>
+<div style="margin-top: 8px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px">
+<sc-for list="{{h.cells}}" as="c" hint-placeholder-count="35">
+<button type="button" aria-label="{{c.label}}" aria-pressed="{{c.pressed}}" onClick="{{c.toggle}}" style="{{c.style}}"></button>
+</sc-for>
+</div>
+<button type="button" onClick="{{h.markToday}}" style="{{h.btnStyle}}">{{h.btnLabel}}</button>
+</div>
+</sc-for>
+<div style="border-radius: 12px; border: 1.5px dashed var(--line); padding: 12px; display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 150px">
+<label for="habit-new" style="font-size: 12px; color: var(--muted)">New habit</label>
+<input id="habit-new" value="{{habitDraft}}" onChange="{{setHabitDraft}}" onKeyDown="{{habitKey}}" placeholder="e.g. Read 20 pages" style="min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit; font-size: 13px">
+<button type="button" onClick="{{addHabit}}" style="min-height: 34px; border: 0; border-radius: 8px; background: var(--text); color: var(--bg); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer">+ Add habit</button>
+</div>
+</div>
+</section>
+
+<section id="stats" style="flex: 1 1 420px; min-width: 0">
+<h2 style="margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 20px; font-weight: 600">Your stats</h2>
+<div style="border-radius: 12px; background: var(--panel); border: 1px solid var(--line-2); padding: 16px 16px 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px">
+<div><div style="font-size: 12px; color: var(--muted)">Habits completed per day · last 5 weeks</div><div style="font-size: 26px; font-weight: 700">{{avgPerDay}} <span style="font-size: 13px; font-weight: 400; color: var(--muted)">avg / day</span></div></div>
+<span style="padding: 2px 8px; border-radius: 6px; background: var(--green-bg); color: var(--green-fg); font-size: 12px">Best: {{bestDay}} / {{habitCount}}</span>
+</div>
+<svg viewBox="0 0 420 220" width="100%" role="img" aria-label="Line chart of habits completed per day" style="display: block; margin-top: 10px">
+<defs><linearGradient id="lfill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-opacity="0.35" style="stop-color: var(--accent)"></stop><stop offset="1" stop-opacity="0" style="stop-color: var(--accent)"></stop></linearGradient></defs>
+<line x1="28" y1="20" x2="412" y2="20" style="stroke: var(--line-2)"></line>
+<line x1="28" y1="110" x2="412" y2="110" style="stroke: var(--line-2)"></line>
+<line x1="28" y1="200" x2="412" y2="200" style="stroke: var(--line)"></line>
+<text x="20" y="24" font-size="10" text-anchor="end" font-family="Geist Mono, monospace" style="fill: var(--muted)">{{habitCount}}</text>
+<text x="20" y="114" font-size="10" text-anchor="end" font-family="Geist Mono, monospace" style="fill: var(--muted)">{{halfCount}}</text>
+<text x="20" y="204" font-size="10" text-anchor="end" font-family="Geist Mono, monospace" style="fill: var(--muted)">0</text>
+<polygon points="{{statArea}}" fill="url(#lfill)"></polygon>
+<polyline points="{{statLine}}" fill="none" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" style="stroke: var(--accent)"></polyline>
+<text x="28" y="216" font-size="10" font-family="Geist Mono, monospace" style="fill: var(--muted)">5 weeks ago</text>
+<text x="412" y="216" font-size="10" text-anchor="end" font-family="Geist Mono, monospace" style="fill: var(--muted)">today</text>
+</svg>
+</div>
+</section>
+</div>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1440,"height":2600}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    var seedHabits = ['Journal', 'Morning focus', 'Move your body', 'Money check', 'Learn something', 'Make something'].map(function (n, h) {
+      var arr = [];
+      for (var i = 0; i < 35; i++) arr.push(i < 34 && ((h * 7 + i * 5 + (i % 3) * h) % 10) < 7);
+      return { id: 'h' + h, name: n, color: h, days: arr };
+    });
+    var T = function (id, name, status, prio, day, diff, project) { return { id: id, name: name, status: status, prio: prio, day: day, diff: diff, project: project }; };
+    this.state = {
+      theme: null, title: 'Life OS', subtitle: 'Plan the day, protect your focus, keep the streaks alive.',
+      now: Date.now(), playing: false, sound: 'rain', tab: 'open',
+      workMin: 25, breakMin: 5, phase: 'work', left: 25 * 60, running: false, cycles: 0,
+      priorities: [
+        'Cut down on miscommunication — write decisions down the same day.',
+        'Spend 30 minutes daily learning something new for the ML project.',
+        'Review each evening: keep what worked, fix one thing that didn’t.',
+        'Log off by 9 pm and make something with your hands.'
+      ],
+      prioDraft: '', taskDraft: '', taskDay: 'none', taskPrio: 'Normal', habitDraft: '', nextId: 100,
+      habits: seedHabits,
+      tasks: [
+        T(1, 'Research financial APIs', 'Done', 'Normal', 0, 'Normal', 'Data pipeline'),
+        T(2, 'Morning run (3 km)', 'Done', 'Low', 0, 'Easy', 'Rebuild routine'),
+        T(3, 'Review ML course notes', 'Done', 'Normal', 1, 'Normal', 'Predictive model'),
+        T(4, 'Debug ETL errors', 'To‑do', 'Very urgent', 2, 'Hard', 'Data pipeline'),
+        T(5, 'Book gym sessions', 'Done', 'Low', 3, 'Easy', 'Rebuild routine'),
+        T(6, 'Start hyperparameter sweep', 'In progress', 'Urgent', 3, 'Hard', 'Model development'),
+        T(7, 'Compare Budapest flights', 'In progress', 'Normal', 3, 'Normal', 'Travel'),
+        T(8, 'Update LinkedIn profile', 'Done', 'Normal', 4, 'Normal', 'Career'),
+        T(9, 'Automate data pull with cron', 'In progress', 'Urgent', 5, 'Very hard', 'Data pipeline'),
+        T(10, 'Coffee with mentor', 'Done', 'Normal', 5, 'Normal', 'Career'),
+        T(11, 'Ship model v0.3 to GitHub', 'In progress', 'Very urgent', 6, 'Very hard', 'Model development'),
+        T(12, 'Journal entry #7 — “Chaos & clarity”', 'To‑do', 'Low', 6, 'Easy', 'Second brain'),
+        T(13, 'Renew passport photos', 'To‑do', 'Normal', null, 'Easy', 'Admin'),
+        T(14, 'Draft a post about the project', 'Not started', 'Normal', null, 'Normal', 'Writing')
+      ]
+    };
+  }
+  componentDidMount() {
+    var self = this;
+    this._t = setInterval(function () {
+      var s = self.state, u = { now: Date.now() };
+      if (s.running) {
+        if (s.left > 1) u.left = s.left - 1;
+        else self.advance(u);
+      }
+      self.setState(u);
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  advance(u) {
+    var s = this.state;
+    if (s.phase === 'work') { u.phase = 'break'; u.left = s.breakMin * 60; u.cycles = Math.min(4, s.cycles + 1); }
+    else { u.phase = 'work'; u.left = s.workMin * 60; }
+    return u;
+  }
+  renderVals() {
+    var s = this.state, self = this;
+    var set = function (o) { return function () { self.setState(o); }; };
+    var theme = s.theme || this.props.theme || 'dark';
+    var dark = theme === 'dark';
+
+    var TOK = dark ? {
+      bg: '#161616', panel: '#1E1E1E', 'panel-2': '#1A1A1A', card: '#232323', nav: '#1C1C1C', input: '#141414',
+      line: '#2E2E2E', 'line-2': '#2A2A2A', 'line-3': '#232323', text: '#ECECEA', 'text-2': '#D6D6D2', muted: '#9A9A97', track: '#2E2E2E', chip: '#2C2C2C',
+      accent: '#2FB39A', 'accent-text': '#5FD1B8', 'accent-ink': '#0E2A24', 'accent-soft': 'rgba(47,179,154,0.14)',
+      'amber-bg': 'rgba(232,163,61,0.18)', 'amber-fg': '#F2BE6A', 'green-bg': 'rgba(47,179,154,0.2)', 'green-fg': '#8FE5D2',
+      'red-bg': 'rgba(217,83,79,0.24)', 'red-fg': '#FF9A95', 'blue-bg': 'rgba(80,140,230,0.28)', 'blue-fg': '#BCD5FF',
+      'purple-bg': 'rgba(160,100,220,0.32)', 'purple-fg': '#E2C7FF', 'gray-bg': '#2A2A2A', 'gray-fg': '#B8B8B4',
+      'cal-done': '#21342D', 'cal-prog': '#3A3020', 'cal-todo': '#3B2525', 'cal-none': '#262626', 'col': '#181818', 'col-today': '#1F1F1F',
+      'sky-0': '#121A33', 'sky-1': '#3B2A3E', 'sky-2': '#A4583A', 'sky-3': '#E39A55', 'mtn-1': '#2A1F2E', 'mtn-2': '#1A1620'
+    } : {
+      bg: '#FFFFFF', panel: '#FFFFFF', 'panel-2': '#FAFAF8', card: '#FFFFFF', nav: '#F7F7F5', input: '#FFFFFF',
+      line: '#E4E3DF', 'line-2': '#EAE9E6', 'line-3': '#F1F0ED', text: '#1C1B19', 'text-2': '#37352F', muted: '#6E6D68', track: '#ECEBE8', chip: '#EFEFEC',
+      accent: '#1A9A80', 'accent-text': '#137A65', 'accent-ink': '#FFFFFF', 'accent-soft': '#E4F4EF',
+      'amber-bg': '#FBEFD6', 'amber-fg': '#86560A', 'green-bg': '#DDF3EC', 'green-fg': '#0F6B58',
+      'red-bg': '#FDE4E2', 'red-fg': '#A3302B', 'blue-bg': '#E2ECFD', 'blue-fg': '#1E4FA0',
+      'purple-bg': '#EFE5FB', 'purple-fg': '#5B2E9A', 'gray-bg': '#EFEFEC', 'gray-fg': '#55544F',
+      'cal-done': '#EDF7F3', 'cal-prog': '#FCF4E3', 'cal-todo': '#FDEDEC', 'cal-none': '#F5F5F3', 'col': '#FFFFFF', 'col-today': '#FAFAF7',
+      'sky-0': '#8FB3E0', 'sky-1': '#C9C3E3', 'sky-2': '#F2C7A6', 'sky-3': '#FBE3C4', 'mtn-1': '#B8A9C9', 'mtn-2': '#E8DDE6'
+    };
+    var rootStyle = Object.keys(TOK).map(function (k) { return '--' + k + ': ' + TOK[k]; }).join('; ') + ';';
+
+    var now = new Date(s.now);
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var y = now.getFullYear();
+    var startY = new Date(y, 0, 1), endY = new Date(y + 1, 0, 1);
+    var daysInYear = Math.round((endY - startY) / 864e5);
+    var dayOfYear = Math.floor((now - startY) / 864e5) + 1;
+    var yearPct = Math.floor((now - startY) / (endY - startY) * 100);
+    var dim = new Date(y, now.getMonth() + 1, 0).getDate();
+    var monthPct = Math.floor(((now.getDate() - 1) + now.getHours() / 24) / dim * 100);
+    var dowMon = (now.getDay() + 6) % 7;
+    var weekPct = Math.floor((dowMon + now.getHours() / 24) / 7 * 100);
+    var dayPct = Math.floor((now.getHours() * 60 + now.getMinutes()) / 1440 * 100);
+    var hr = now.getHours();
+    var DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    var DOW3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var bar = function (p) { return 'width: ' + p + '%; height: 100%; border-radius: 3px; background: var(--accent);'; };
+    var circ = 2 * Math.PI * 21;
+    var todayDow = now.getDay();
+
+    var themeOpts = [['dark', 'Dark', '☾'], ['light', 'Light', '☀']].map(function (o) {
+      var on = theme === o[0];
+      return { label: o[1], glyph: o[2], pressed: on ? 'true' : 'false', pick: set({ theme: o[0] }),
+        style: 'min-height: 34px; padding: 0 14px; border: 0; border-radius: 7px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; ' + (on ? 'background: #FFFFFF; color: #161616;' : 'background: transparent; color: rgba(255,255,255,0.9);') };
+    });
+
+    var navItem = function (label, glyph, anchor, tone) {
+      var tones = dark
+        ? { blue: 'background: #1F3550; border-color: #2B4A70; color: #CFE3FF;', green: 'background: #1E4436; border-color: #2A5C49; color: #BFF0DD;', red: 'background: #4E2626; border-color: #6A3434; color: #FFD0CC;' }
+        : { blue: 'background: #E8F0FD; border-color: #CADBF6; color: #1E4FA0;', green: 'background: #E4F5EE; border-color: #C3E7D7; color: #0F6B58;', red: 'background: #FCE9E7; border-color: #F3CBC7; color: #A3302B;' };
+      return { label: label, glyph: glyph, anchor: anchor,
+        style: 'display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--line-2); background: var(--nav); color: var(--text); text-decoration: none; font-size: 13.5px; font-weight: 500; ' + (tones[tone] || '') };
+    };
+    var navGroups = [
+      { title: 'Planners', items: [navItem('Start here', '?', 'priorities', 'blue'), navItem('Today', '◷', 'tasks'), navItem('Week', '▦', 'week'), navItem('Tasks', '☰', 'tasks'), navItem('Distractions log', '◎', 'stats')] },
+      { title: 'Personal', items: [navItem('Best self', '✦', 'priorities'), navItem('Notes & thoughts', '✎', 'priorities')] },
+      { title: 'Accountability', items: [navItem('Habit tracker', '▤', 'habits')] },
+      { title: 'Misc', items: [navItem('Ambient room', '♪', 'tasks', 'green'), navItem('About', 'i', 'priorities'), navItem('Second brain', '◈', 'priorities', 'red')] }
+    ];
+
+    var soundDefs = [['rain', 'Rain', 'Soft rain on a window'], ['forest', 'Forest', 'Birds and wind'], ['cafe', 'Café', 'Vintage café murmur'], ['lofi', 'Lo‑fi', 'Slow beats to focus']];
+    var cur = soundDefs.filter(function (d) { return d[0] === s.sound; })[0];
+    var sounds = soundDefs.map(function (d) {
+      var on = s.sound === d[0];
+      return { label: d[1], pressed: on ? 'true' : 'false', pick: set({ sound: d[0], playing: true }),
+        style: 'min-height: 34px; padding: 0 10px; border-radius: 8px; font: inherit; font-size: 12px; cursor: pointer; ' + (on ? 'border: 1px solid var(--line); background: var(--chip); color: var(--text);' : 'border: 1px solid var(--line-2); background: transparent; color: var(--muted);') };
+    });
+
+    var weekPills = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(function (l, i) {
+      var st = i === dowMon ? 'background: #E8C547; color: #2A2205; font-weight: 700;' : (i < dowMon ? 'background: var(--green-bg); color: var(--green-fg);' : 'background: var(--chip); color: var(--muted);');
+      return { label: l, style: 'text-align: center; padding: 3px 0; border-radius: 5px; font-size: 11px; ' + st };
+    });
+
+    var mm = Math.floor(s.left / 60), ss = s.left % 60;
+    var cycleBars = [0, 1, 2, 3].map(function (i) {
+      return { style: 'height: 6px; border-radius: 3px; background: ' + (i < s.cycles ? 'var(--accent)' : (i === s.cycles && s.phase === 'work' ? 'var(--accent-soft)' : 'var(--track)')) + ';' };
+    });
+    var clampSet = function (k, d, min, max) {
+      return function () {
+        var v = Math.max(min, Math.min(max, self.state[k] + d)); var u = {}; u[k] = v;
+        if (!self.state.running && ((k === 'workMin' && self.state.phase === 'work') || (k === 'breakMin' && self.state.phase === 'break'))) u.left = v * 60;
+        self.setState(u);
+      };
+    };
+
+    // ---- priorities ----
+    var addPrio = function () {
+      var v = (self.state.prioDraft || '').trim(); if (!v) return;
+      self.setState({ priorities: self.state.priorities.concat([v]), prioDraft: '' });
+    };
+    var priorities = s.priorities.map(function (p, i) {
+      return { text: p, remove: function () { var n = self.state.priorities.slice(); n.splice(i, 1); self.setState({ priorities: n }); } };
+    });
+
+    // ---- tasks (one database, two views) ----
+    var STATUS = ['Not started', 'To‑do', 'In progress', 'Done'];
+    var PRIO = ['Low', 'Normal', 'Urgent', 'Very urgent'];
+    var stTok = { 'In progress': 'amber', 'To‑do': 'red', 'Done': 'green', 'Not started': 'gray' };
+    var prTok = { 'Very urgent': 'red', 'Urgent': 'amber', 'Normal': 'green', 'Low': 'gray' };
+    var dfTok = { Easy: 'green', Normal: 'blue', Hard: 'red', 'Very hard': 'purple' };
+    var chip = function (tok, size) { return 'display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 1px 8px; border: 0; border-radius: 6px; font: inherit; font-size: ' + (size || 12) + 'px; background: var(--' + tok + '-bg); color: var(--' + tok + '-fg);'; };
+    var updateTask = function (id, fn) { self.setState({ tasks: self.state.tasks.map(function (t) { return t.id === id ? fn(Object.assign({}, t)) : t; }) }); };
+    var cycler = function (list, key, id) { return function () { updateTask(id, function (t) { t[key] = list[(list.indexOf(t[key]) + 1) % list.length]; return t; }); }; };
+    var dueOf = function (t) {
+      if (t.day === null || t.day === undefined) return 'none';
+      if (t.day === todayDow) return 'today';
+      if (t.day === (todayDow + 1) % 7) return 'tomorrow';
+      return t.day < todayDow ? 'past' : 'later';
+    };
+    var filters = {
+      open: function (t) { return t.status !== 'Done'; }, today: function (t) { return dueOf(t) === 'today'; },
+      tomorrow: function (t) { return dueOf(t) === 'tomorrow'; }, none: function (t) { return dueOf(t) === 'none'; }, all: function () { return true; }
+    };
+    var tabDefs = [['open', '! Uncompleted'], ['today', '↓ Due today'], ['tomorrow', '→ Due tomorrow'], ['none', '? No date'], ['all', '∞ All']];
+    var taskTabs = tabDefs.map(function (t) {
+      var on = s.tab === t[0];
+      return { label: t[1], count: String(s.tasks.filter(filters[t[0]]).length), pressed: on ? 'true' : 'false', pick: set({ tab: t[0] }),
+        style: 'min-height: 34px; padding: 0 12px; border: 0; border-radius: 8px; font: inherit; font-size: 13px; cursor: pointer; ' + (on ? 'background: var(--chip); color: var(--text); font-weight: 500;' : 'background: transparent; color: var(--muted);') };
+    });
+    var dueLabel = function (t) { var d = dueOf(t); return d === 'none' ? '—' : (d === 'today' ? 'Today' : (d === 'tomorrow' ? 'Tomorrow' : DOW3[t.day])); };
+    var visibleTasks = s.tasks.filter(filters[s.tab]).map(function (t) {
+      var tok = stTok[t.status];
+      return Object.assign({}, t, {
+        statusStyle: chip(tok) + ' cursor: pointer; min-width: 104px;', dotStyle: 'width: 6px; height: 6px; border-radius: 3px; background: var(--' + tok + '-fg);',
+        prioStyle: chip(prTok[t.prio]) + ' cursor: pointer;', dueLabel: dueLabel(t),
+        cycleStatus: cycler(STATUS, 'status', t.id), cyclePrio: cycler(PRIO, 'prio', t.id),
+        remove: function () { self.setState({ tasks: self.state.tasks.filter(function (x) { return x.id !== t.id; }) }); }
+      });
+    });
+    var addTask = function () {
+      var st = self.state, v = (st.taskDraft || '').trim(); if (!v) return;
+      var day = st.taskDay === 'none' ? null : parseInt(st.taskDay, 10);
+      self.setState({ tasks: st.tasks.concat([{ id: st.nextId, name: v, status: 'To‑do', prio: st.taskPrio, day: day, diff: 'Normal', project: 'Inbox' }]), taskDraft: '', nextId: st.nextId + 1 });
+    };
+    var dayOpts = [{ v: 'none', l: 'No date' }].concat(DOW3.map(function (d, i) { return { v: String(i), l: d + (i === todayDow ? ' (today)' : '') }; }));
+
+    var sunday = new Date(y, now.getMonth(), now.getDate() - todayDow);
+    var sat = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + 6);
+    var weekRange = MON[sunday.getMonth()] + ' ' + sunday.getDate() + ' – ' + MON[sat.getMonth()] + ' ' + sat.getDate() + ', ' + sat.getFullYear();
+    var calBg = { 'Done': 'cal-done', 'In progress': 'cal-prog', 'To‑do': 'cal-todo', 'Not started': 'cal-none' };
+    var weekDays = DOW3.map(function (dw, i) {
+      var d = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate() + i);
+      var isToday = i === todayDow;
+      return {
+        dow: dw, num: d.getDate() === 1 ? MON[d.getMonth()] + ' 1' : String(d.getDate()),
+        numStyle: isToday ? 'min-width: 22px; padding: 0 6px; text-align: center; border-radius: 11px; background: #D9534F; color: #FFFFFF; font-weight: 700;' : 'color: var(--text); font-weight: 600;',
+        colStyle: 'min-height: 280px; padding: 8px; display: flex; flex-direction: column; gap: 8px; ' + (i > 0 ? 'border-left: 1px solid var(--line-2); ' : '') + 'background: var(--' + (isToday ? 'col-today' : 'col') + ');',
+        items: s.tasks.filter(function (t) { return t.day === i; }).map(function (c) {
+          return { name: c.name, status: c.status, diff: c.diff, project: c.project, cycleStatus: cycler(STATUS, 'status', c.id),
+            cardStyle: 'display: block; width: 100%; text-align: left; font: inherit; color: var(--text); cursor: pointer; border-radius: 8px; padding: 8px; border: 1px solid var(--line-3); background: var(--' + calBg[c.status] + ');',
+            statusStyle: chip(stTok[c.status], 10.5), diffStyle: chip(dfTok[c.diff], 10.5) };
+        })
+      };
+    });
+
+    // ---- habits ----
+    var HCOL = ['#9B7BEA', '#E8A33D', '#C98A6A', '#D9534F', '#4E8FE8', '#D46A9A', '#2FB39A', '#7A8F3A'];
+    var todayIdx = 34;
+    var habitsLeft = 0, perDay = [];
+    for (var di = 0; di < 35; di++) perDay.push(0);
+    var habits = s.habits.map(function (hb) {
+      var arr = hb.days, col = HCOL[hb.color % HCOL.length];
+      if (!arr[todayIdx]) habitsLeft++;
+      var start = arr[todayIdx] ? todayIdx : todayIdx - 1, streak = 0;
+      for (var k = start; k >= 0 && arr[k]; k--) streak++;
+      arr.forEach(function (v, i) { if (v) perDay[i]++; });
+      var toggleAt = function (i) { return function () {
+        self.setState({ habits: self.state.habits.map(function (x) { if (x.id !== hb.id) return x; var a = x.days.slice(); a[i] = !a[i]; return Object.assign({}, x, { days: a }); }) });
+      }; };
+      return {
+        name: hb.name, streak: String(streak),
+        remove: function () { self.setState({ habits: self.state.habits.filter(function (x) { return x.id !== hb.id; }) }); },
+        cells: arr.map(function (v, i) {
+          return { pressed: v ? 'true' : 'false', toggle: toggleAt(i), label: hb.name + ' — day ' + (i + 1) + (v ? ', done' : ', not done'),
+            style: 'aspect-ratio: 1; width: 100%; padding: 0; border: 0; border-radius: 4px; cursor: pointer; background: ' + (v ? col : 'var(--track)') + ';' + (i === todayIdx ? ' outline: 2px solid var(--text); outline-offset: 1px;' : '') };
+        }),
+        markToday: toggleAt(todayIdx),
+        btnLabel: arr[todayIdx] ? 'Done today ✓' : 'Mark done',
+        btnStyle: 'margin-top: 10px; width: 100%; min-height: 32px; border-radius: 8px; font: inherit; font-size: 12px; cursor: pointer; ' + (arr[todayIdx] ? 'border: 0; background: ' + col + '; color: #FFFFFF; font-weight: 600;' : 'border: 1px solid var(--line); background: transparent; color: var(--muted);')
+      };
+    });
+    var addHabit = function () {
+      var st = self.state, v = (st.habitDraft || '').trim(); if (!v) return;
+      var days = []; for (var i = 0; i < 35; i++) days.push(false);
+      self.setState({ habits: st.habits.concat([{ id: 'h' + st.nextId, name: v, color: st.habits.length, days: days }]), habitDraft: '', nextId: st.nextId + 1 });
+    };
+    var hc = Math.max(1, s.habits.length);
+    var pts = perDay.map(function (v, i) { return (28 + i * (384 / 34)).toFixed(1) + ',' + (200 - v / hc * 180).toFixed(1); });
+    var total = perDay.reduce(function (a, b) { return a + b; }, 0);
+    var onEnter = function (fn) { return function (e) { if (e && e.key === 'Enter') { e.preventDefault(); fn(); } }; };
+    var draft = function (k) { return function (e) { var u = {}; u[k] = e.target.value; self.setState(u); }; };
+
+    return {
+      rootStyle: rootStyle, themeOpts: themeOpts,
+      title: s.title, subtitle: s.subtitle, setTitle: draft('title'), setSubtitle: draft('subtitle'),
+      yearLabel: '© ' + y,
+      weekdayUpper: DOW[todayDow].toUpperCase(),
+      dateLabel: MON[now.getMonth()] + ' ' + now.getDate(),
+      greeting: hr < 12 ? 'Good morning — make it count.' : (hr < 18 ? 'Good afternoon — keep the momentum.' : 'Good evening — wind down well.'),
+      clock: pad(hr) + ':' + pad(now.getMinutes()),
+      openCount: String(s.tasks.filter(filters.open).length), habitsLeft: String(habitsLeft),
+      navGroups: navGroups,
+      playing: s.playing, notPlaying: !s.playing, playLabel: s.playing ? 'Pause sound' : 'Play sound',
+      togglePlay: set({ playing: !s.playing }),
+      soundName: cur[2], soundState: s.playing ? 'Playing · ambient loop' : 'Paused · pick a mood',
+      sounds: sounds,
+      yearPct: String(yearPct), dayOfYear: String(dayOfYear), daysInYear: String(daysInYear),
+      yearDash: (circ * yearPct / 100).toFixed(1) + ' ' + circ.toFixed(1),
+      monthPct: String(monthPct), monthBar: bar(monthPct), weekPct: String(weekPct), weekPills: weekPills, dayPct: String(dayPct), dayBar: bar(dayPct),
+      pomoTime: pad(mm) + ':' + pad(ss), pomoPhase: s.phase === 'work' ? 'Focus' : 'Break',
+      pomoTimeStyle: "font-family: 'Geist Mono', monospace; font-size: 34px; font-weight: 600; letter-spacing: -1px; color: " + (s.phase === 'work' ? 'var(--accent-text)' : 'var(--amber-fg)') + ';',
+      pomoDot: 'width: 10px; height: 10px; border-radius: 5px; margin-top: 4px; background: ' + (s.running ? 'var(--accent); box-shadow: 0 0 0 4px var(--accent-soft)' : 'var(--track)') + ';',
+      cycleNum: String(Math.min(4, s.cycles + 1)), cyclesDone: String(s.cycles), cycleBars: cycleBars,
+      workMin: String(s.workMin), breakMin: String(s.breakMin),
+      workDown: clampSet('workMin', -5, 5, 90), workUp: clampSet('workMin', 5, 5, 90),
+      breakDown: clampSet('breakMin', -1, 1, 30), breakUp: clampSet('breakMin', 1, 1, 30),
+      pomoBtn: s.running ? 'Pause' : 'Start', pomoToggle: set({ running: !s.running }),
+      pomoReset: set({ running: false, phase: 'work', left: s.workMin * 60, cycles: 0 }),
+      pomoSkip: function () { self.setState(self.advance({})); },
+      priorities: priorities, prioDraft: s.prioDraft, setPrioDraft: draft('prioDraft'), addPrio: addPrio, prioKey: onEnter(addPrio),
+      taskTabs: taskTabs, visibleTasks: visibleTasks, noTasks: visibleTasks.length === 0,
+      taskDraft: s.taskDraft, setTaskDraft: draft('taskDraft'), taskKey: onEnter(addTask), addTask: addTask,
+      taskDay: s.taskDay, setTaskDay: draft('taskDay'), taskPrio: s.taskPrio, setTaskPrio: draft('taskPrio'), dayOpts: dayOpts,
+      weekRange: weekRange, weekDays: weekDays,
+      habits: habits, habitDraft: s.habitDraft, setHabitDraft: draft('habitDraft'), addHabit: addHabit, habitKey: onEnter(addHabit),
+      habitCount: String(s.habits.length), halfCount: String(Math.round(s.habits.length / 2)),
+      statLine: pts.join(' '), statArea: '28,200 ' + pts.join(' ') + ' 412,200',
+      avgPerDay: (total / 35).toFixed(1), bestDay: String(Math.max.apply(null, perDay))
+    };
+  }
+}
+</script>
+</body>
+</html>

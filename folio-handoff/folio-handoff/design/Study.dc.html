@@ -1,0 +1,624 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Folio — Study OS template</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="{{rootStyle}}">
+<div style="min-height: 100vh; background: var(--bg); color: var(--text); font-family: 'Geist', ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; transition: background .25s, color .25s">
+
+<!-- PIXEL BANNER -->
+<div style="position: relative">
+<div aria-hidden="true" style="{{bannerGrid}}">
+<sc-for list="{{banner}}" as="p" hint-placeholder-count="64"><div style="{{p}}"></div></sc-for>
+</div>
+<div style="position: absolute; top: 16px; right: clamp(16px, 4vw, 40px)">
+<div role="radiogroup" aria-label="Theme" style="display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: rgba(8,14,10,0.5); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(6px)">
+<sc-for list="{{themeOpts}}" as="o" hint-placeholder-count="2">
+<button type="button" role="radio" aria-checked="{{o.pressed}}" onClick="{{o.pick}}" style="{{o.style}}">{{o.glyph}} {{o.label}}</button>
+</sc-for>
+</div>
+</div>
+</div>
+
+<div style="max-width: 1320px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px) 96px; box-sizing: border-box">
+<div style="margin-top: -28px; position: relative; width: 56px; height: 56px; border-radius: 12px; background: #2B6B45; border: 3px solid var(--bg); display: grid; place-items: center; font-family: 'Geist Mono', monospace; font-weight: 700; color: #E9F5EC">A+</div>
+<label for="study-title" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Page title</label>
+<input id="study-title" value="{{title}}" onChange="{{setTitle}}" style="display: block; width: 100%; margin: 14px 0 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--text); font: inherit; font-size: 32px; font-weight: 700; letter-spacing: -0.5px">
+<label for="study-sub" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Page description</label>
+<input id="study-sub" value="{{subtitle}}" onChange="{{setSubtitle}}" style="display: block; width: 100%; margin: 2px 0 0; padding: 0; border: 0; outline: 0; background: transparent; color: var(--muted); font: inherit">
+<p style="margin: 12px 0 0; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--accent-text); font-size: 12.5px">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"></path></svg>
+Make it yours — add courses and tasks, edit the timetable, tick things off. Everything updates live.
+</p>
+
+<div style="margin-top: 24px; display: flex; flex-wrap: wrap; gap: 24px">
+
+<!-- ================= LEFT RAIL ================= -->
+<aside style="flex: 1 1 250px; max-width: 100%; display: flex; flex-direction: column; gap: 18px">
+
+<div style="padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2); display: flex; flex-direction: column; align-items: center; gap: 14px">
+<svg width="140" height="140" viewBox="0 0 120 120" role="img" aria-label="Analog clock showing {{clockDigital}}">
+<g stroke-width="2" stroke-linecap="round" style="stroke: var(--text)">
+<line x1="60" y1="6" x2="60" y2="14"></line><line x1="60" y1="6" x2="60" y2="11" transform="rotate(30 60 60)"></line><line x1="60" y1="6" x2="60" y2="11" transform="rotate(60 60 60)"></line>
+<line x1="60" y1="6" x2="60" y2="14" transform="rotate(90 60 60)"></line><line x1="60" y1="6" x2="60" y2="11" transform="rotate(120 60 60)"></line><line x1="60" y1="6" x2="60" y2="11" transform="rotate(150 60 60)"></line>
+<line x1="60" y1="6" x2="60" y2="14" transform="rotate(180 60 60)"></line><line x1="60" y1="6" x2="60" y2="11" transform="rotate(210 60 60)"></line><line x1="60" y1="6" x2="60" y2="11" transform="rotate(240 60 60)"></line>
+<line x1="60" y1="6" x2="60" y2="14" transform="rotate(270 60 60)"></line><line x1="60" y1="6" x2="60" y2="11" transform="rotate(300 60 60)"></line><line x1="60" y1="6" x2="60" y2="11" transform="rotate(330 60 60)"></line>
+</g>
+<line x1="60" y1="60" x2="60" y2="32" stroke-width="3" stroke-linecap="round" transform="rotate({{hourDeg}} 60 60)" style="stroke: var(--text)"></line>
+<line x1="60" y1="60" x2="60" y2="18" stroke-width="2" stroke-linecap="round" transform="rotate({{minDeg}} 60 60)" style="stroke: var(--text)"></line>
+<line x1="60" y1="66" x2="60" y2="16" stroke-width="1" stroke-linecap="round" transform="rotate({{secDeg}} 60 60)" style="stroke: var(--accent)"></line>
+<circle cx="60" cy="60" r="3" style="fill: var(--accent)"></circle>
+<text x="60" y="84" font-size="8" text-anchor="middle" font-family="Geist Mono, monospace" style="fill: var(--muted)">{{clockDigital}}</text>
+<text x="60" y="94" font-size="6.5" text-anchor="middle" font-family="Geist, sans-serif" style="fill: var(--muted)">{{clockDate}}</text>
+</svg>
+<div style="width: 100%; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{progress}}" as="p" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 12px">
+<div style="flex: 1; height: 24px; box-sizing: border-box; border: 2px solid var(--text); border-radius: 4px; padding: 2px"><div style="{{p.fill}}"></div></div>
+<span style="width: 74px; font-size: 12px; color: var(--text-2)">{{p.label}}: {{p.pct}}%</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<div style="padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2)">
+<h2 style="margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase">Quick actions</h2>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{quick}}" as="q" hint-placeholder-count="5">
+<a href="#{{q.a}}" style="display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--text); text-decoration: none; font-size: 13px"><span aria-hidden="true" style="color: var(--accent-text); width: 14px; text-align: center">{{q.g}}</span>{{q.l}}</a>
+</sc-for>
+</div>
+</div>
+
+<div style="padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2)">
+<h2 style="margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase">Goal tracker</h2>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{quarters}}" as="q" hint-placeholder-count="4">
+<div style="{{q.box}}">
+<div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 500">{{q.name}}</span><span style="font-size: 11px; color: var(--muted)">{{q.tag}}</span></div>
+<div style="margin-top: 6px; display: flex; align-items: center; gap: 8px"><span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--muted); width: 30px">{{q.pct}}%</span><div style="flex: 1; height: 4px; border-radius: 2px; background: var(--track)"><div style="{{q.bar}}"></div></div></div>
+</div>
+</sc-for>
+</div>
+</div>
+
+<sc-for list="{{railNav}}" as="g" hint-placeholder-count="3">
+<div style="padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel-2)">
+<h2 style="margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase">{{g.title}}</h2>
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{g.items}}" as="i" hint-placeholder-count="4">
+<a href="#{{i.a}}" style="display: flex; align-items: center; gap: 10px; min-height: 30px; font-size: 13px; color: var(--text-2); text-decoration: none"><span aria-hidden="true" style="width: 14px; text-align: center; color: var(--muted)">{{i.g}}</span>{{i.l}}</a>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</aside>
+
+<!-- ================= MAIN ================= -->
+<div style="flex: 999 1 680px; min-width: 0; display: flex; flex-direction: column; gap: 28px">
+
+<!-- courses -->
+<section id="courses" style="padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel)">
+<h2 style="margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase">Courses</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 12px">
+<sc-for list="{{courses}}" as="c" hint-placeholder-count="5">
+<div style="position: relative; border-radius: 10px; border: 1px solid var(--line); background: var(--card); overflow: hidden">
+<div aria-hidden="true" style="{{c.grid}}"><sc-for list="{{c.px}}" as="p" hint-placeholder-count="20"><div style="{{p}}"></div></sc-for></div>
+<button type="button" onClick="{{c.remove}}" aria-label="Delete course {{c.name}}" style="position: absolute; top: 6px; right: 6px; width: 28px; height: 28px; border: 0; border-radius: 14px; background: rgba(0,0,0,0.55); color: #FFFFFF; cursor: pointer">×</button>
+<div style="padding: 10px 12px 12px; font-size: 12px; color: var(--text-2)">
+<div style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--text)"><span style="font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--muted)">{{c.glyph}}</span><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{c.name}}</span></div>
+<div style="margin-top: 8px; display: flex; align-items: center; justify-content: space-between; gap: 6px">
+<span>Assignments</span>
+<span style="display: flex; align-items: center; gap: 4px">
+<button type="button" onClick="{{c.dec}}" aria-label="One fewer completed" style="width: 24px; height: 24px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer">−</button>
+<span style="font-family: 'Geist Mono', monospace; color: var(--text); min-width: 30px; text-align: center">{{c.done}}/{{c.total}}</span>
+<button type="button" onClick="{{c.inc}}" aria-label="One more completed" style="width: 24px; height: 24px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--text); cursor: pointer">+</button>
+</span>
+</div>
+<div style="display: flex; align-items: center; gap: 8px; margin-top: 6px"><span style="font-family: 'Geist Mono', monospace; width: 32px">{{c.pct}}%</span><div style="flex: 1; height: 4px; border-radius: 2px; background: var(--track)"><div style="{{c.bar}}"></div></div></div>
+<div style="margin-top: 8px">{{c.taskCount}} open tasks · next exam <span style="color: var(--text)">{{c.exam}}</span></div>
+</div>
+</div>
+</sc-for>
+<div style="border-radius: 10px; border: 1.5px dashed var(--line); padding: 14px; display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 220px">
+<label for="course-new" style="font-size: 12px; color: var(--muted)">New course</label>
+<input id="course-new" value="{{courseDraft}}" onChange="{{setCourseDraft}}" onKeyDown="{{courseKey}}" placeholder="e.g. Linear Algebra" style="min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit; font-size: 13px">
+<button type="button" onClick="{{addCourse}}" style="min-height: 34px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer">+ Add course</button>
+<span style="font-size: 11px; color: var(--muted)">Gets its own pixel cover automatically.</span>
+</div>
+</div>
+</section>
+
+<!-- section covers -->
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px">
+<sc-for list="{{sections}}" as="c" hint-placeholder-count="4">
+<a href="#{{c.a}}" style="display: block; border-radius: 10px; border: 1px solid var(--line); background: var(--card); overflow: hidden; color: var(--text); text-decoration: none">
+<div aria-hidden="true" style="{{c.grid}}"><sc-for list="{{c.px}}" as="p" hint-placeholder-count="20"><div style="{{p}}"></div></sc-for></div>
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; font-size: 12px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase"><span>{{c.name}}</span><span style="font-family: 'Geist Mono', monospace; letter-spacing: 0; color: var(--muted); font-weight: 400">{{c.count}}</span></div>
+</a>
+</sc-for>
+</div>
+
+<!-- radar + pomodoro -->
+<div style="display: flex; flex-wrap: wrap; gap: 16px">
+<section id="wheel" style="flex: 1 1 340px; min-width: 0; padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel)">
+<h2 style="margin: 0 0 4px; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase">Wheel of life</h2>
+<p style="margin: 0; font-size: 12px; color: var(--muted)">Drag the sliders to rate each area out of 10.</p>
+<svg viewBox="0 0 300 250" width="100%" role="img" aria-label="Radar chart of six life areas" style="display: block; max-width: 400px; margin: 4px auto 0">
+<polygon points="{{ring4}}" fill="none" style="stroke: var(--line-2)"></polygon>
+<polygon points="{{ring3}}" fill="none" style="stroke: var(--line-2)"></polygon>
+<polygon points="{{ring2}}" fill="none" style="stroke: var(--line-2)"></polygon>
+<polygon points="{{ring1}}" fill="none" style="stroke: var(--line-2)"></polygon>
+<path d="{{spokes}}" style="stroke: var(--line-2)"></path>
+<polygon points="{{radarPts}}" stroke-width="2" stroke-linejoin="round" style="fill: var(--radar-fill); stroke: var(--radar-stroke)"></polygon>
+<sc-for list="{{radarLabels}}" as="l" hint-placeholder-count="6"><text x="{{l.x}}" y="{{l.y}}" font-size="10" text-anchor="{{l.anchor}}" font-family="Geist, sans-serif" style="fill: var(--text-2)">{{l.t}}</text></sc-for>
+</svg>
+<div style="margin-top: 6px; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px 14px">
+<sc-for list="{{areas}}" as="a" hint-placeholder-count="6">
+<label style="display: flex; flex-direction: column; font-size: 12px; color: var(--text-2)"><span style="display: flex; justify-content: space-between"><span>{{a.name}}</span><span style="font-family: 'Geist Mono', monospace; color: var(--text)">{{a.v}}</span></span>
+<input type="range" min="1" max="10" step="1" value="{{a.v}}" onChange="{{a.set}}" onInput="{{a.set}}" style="width: 100%; accent-color: var(--radar-stroke)"></label>
+</sc-for>
+</div>
+</section>
+
+<section aria-label="Pomodoro timer" style="flex: 1 1 320px; min-width: 0; position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px 16px">
+<div aria-hidden="true" style="{{pomoBg}}"><sc-for list="{{pomoPx}}" as="p" hint-placeholder-count="40"><div style="{{p}}"></div></sc-for></div>
+<div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(10,10,12,0.5), rgba(10,10,12,0.8))"></div>
+<div role="radiogroup" aria-label="Timer mode" style="position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px">
+<sc-for list="{{modes}}" as="m" hint-placeholder-count="3">
+<button type="button" role="radio" aria-checked="{{m.pressed}}" onClick="{{m.pick}}" style="{{m.style}}">{{m.label}}</button>
+</sc-for>
+</div>
+<div style="position: relative; font-size: 72px; font-weight: 600; letter-spacing: -2px; line-height: 1; color: #FFFFFF">{{pomoTime}}</div>
+<div style="position: relative; display: flex; align-items: center; gap: 10px">
+<button type="button" onClick="{{pomoToggle}}" style="min-width: 120px; min-height: 42px; border: 0; border-radius: 21px; background: #FFFFFF; color: #141414; font: inherit; font-weight: 600; cursor: pointer">{{pomoBtn}}</button>
+<button type="button" onClick="{{pomoReset}}" aria-label="Reset timer" style="width: 42px; height: 42px; border-radius: 21px; border: 1px solid rgba(255,255,255,0.45); background: transparent; color: #FFFFFF; display: grid; place-items: center; cursor: pointer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4v6h6"></path><path d="M5.5 15a7 7 0 1 0 1.6-7.3L4 10"></path></svg></button>
+</div>
+<div style="position: relative; font-size: 12px; color: rgba(255,255,255,0.8)">{{sessions}} sessions today</div>
+</section>
+</div>
+
+<!-- mini todos + reminders -->
+<div style="display: flex; flex-wrap: wrap; gap: 16px">
+<section id="todos" style="flex: 1 1 300px; min-width: 0; padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel)">
+<h2 style="margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase">Mini to‑dos <span style="letter-spacing: 0; font-weight: 400; color: var(--muted)">· {{todoLeft}} left</span></h2>
+<div style="display: flex; gap: 6px">
+<label for="todo-new" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">New to-do</label>
+<input id="todo-new" value="{{todoDraft}}" onChange="{{setTodoDraft}}" onKeyDown="{{todoKey}}" placeholder="New to‑do…" style="flex: 1; min-width: 0; min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--input); color: var(--text); font: inherit; font-size: 13px">
+<button type="button" onClick="{{addTodo}}" style="min-height: 34px; padding: 0 12px; border: 0; border-radius: 6px; background: var(--text); color: var(--bg); font: inherit; font-size: 13px; cursor: pointer">Add</button>
+</div>
+<div style="margin-top: 8px; display: flex; flex-direction: column">
+<sc-for list="{{todos}}" as="t" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 6px">
+<button type="button" onClick="{{t.toggle}}" aria-pressed="{{t.pressed}}" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; min-height: 32px; border: 0; background: transparent; text-align: left; font: inherit; font-size: 13px; padding: 0; color: var(--text); cursor: pointer">
+<span style="{{t.box}}"><sc-if value="{{t.done}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke-width="4" aria-hidden="true" style="stroke: var(--accent-ink)"><path d="M5 12l5 5 9-10"></path></svg></sc-if></span>
+<span style="{{t.text}}">{{t.l}}</span>
+</button>
+<button type="button" onClick="{{t.remove}}" aria-label="Delete to-do" style="width: 26px; height: 26px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer">×</button>
+</div>
+</sc-for>
+</div>
+</section>
+<section id="reminders" style="flex: 1 1 300px; min-width: 0; padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel)">
+<h2 style="margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase">Reminders &amp; events</h2>
+<div style="display: flex; gap: 6px">
+<label for="rem-date" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Reminder date</label>
+<input id="rem-date" value="{{remDate}}" onChange="{{setRemDate}}" placeholder="Nov 5" style="width: 72px; min-height: 34px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--input); color: var(--text); font: inherit; font-size: 13px">
+<label for="rem-text" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Reminder</label>
+<input id="rem-text" value="{{remText}}" onChange="{{setRemText}}" onKeyDown="{{remKey}}" placeholder="What’s happening?" style="flex: 1; min-width: 0; min-height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--input); color: var(--text); font: inherit; font-size: 13px">
+<button type="button" onClick="{{addRem}}" style="min-height: 34px; padding: 0 12px; border: 0; border-radius: 6px; background: var(--text); color: var(--bg); font: inherit; font-size: 13px; cursor: pointer">Add</button>
+</div>
+<ul style="margin: 10px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px">
+<sc-for list="{{reminders}}" as="r" hint-placeholder-count="4">
+<li style="display: flex; gap: 10px; align-items: center; min-height: 30px"><span style="font-family: 'Geist Mono', monospace; font-size: 11px; color: var(--accent-text); min-width: 50px">{{r.d}}</span><span style="flex: 1; color: var(--text-2)">{{r.t}}</span><button type="button" onClick="{{r.remove}}" aria-label="Delete reminder" style="width: 26px; height: 26px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer">×</button></li>
+</sc-for>
+</ul>
+</section>
+</div>
+
+<!-- task manager -->
+<section id="tasks" style="padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel)">
+<h2 style="margin: 0 0 10px; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase">Task manager</h2>
+<div role="tablist" aria-label="Task view" style="display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 8px">
+<sc-for list="{{taskTabs}}" as="t" hint-placeholder-count="3"><button type="button" role="tab" aria-selected="{{t.pressed}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}} <span style="opacity: .6">{{t.count}}</span></button></sc-for>
+</div>
+<div style="overflow-x: auto">
+<div style="min-width: 760px">
+<sc-for list="{{tasks}}" as="r" hint-placeholder-count="6">
+<div style="display: grid; grid-template-columns: 30px minmax(0, 2.2fr) 1.3fr 0.8fr 1fr 0.8fr 30px; align-items: center; gap: 10px; min-height: 44px; border-bottom: 1px solid var(--line-3); font-size: 13px">
+<button type="button" onClick="{{r.toggle}}" aria-label="{{r.aria}}" aria-pressed="{{r.pressed}}" style="{{r.check}}"><sc-if value="{{r.done}}" hint-placeholder-val="{{ false }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke-width="4" aria-hidden="true" style="stroke: var(--accent-ink)"><path d="M5 12l5 5 9-10"></path></svg></sc-if></button>
+<span style="{{r.nameStyle}}">{{r.name}}</span>
+<span style="color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.course}}</span>
+<span><button type="button" onClick="{{r.cyclePrio}}" aria-label="Priority {{r.prio}}, click to change" style="{{r.prioStyle}}">{{r.prio}}</button></span>
+<span><button type="button" onClick="{{r.cycleStatus}}" aria-label="Status {{r.status}}, click to change" style="{{r.statusStyle}}">● {{r.status}}</button></span>
+<span style="font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--muted)">{{r.date}}</span>
+<button type="button" onClick="{{r.remove}}" aria-label="Delete task" style="width: 26px; height: 26px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer">×</button>
+</div>
+</sc-for>
+<sc-if value="{{noTasks}}" hint-placeholder-val="{{ false }}"><div style="padding: 16px 4px; color: var(--muted)">No tasks in this view.</div></sc-if>
+</div>
+</div>
+<div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; border-radius: 10px; border: 1px dashed var(--line); background: var(--panel-2)">
+<label for="st-new" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">New task</label>
+<input id="st-new" value="{{taskDraft}}" onChange="{{setTaskDraft}}" onKeyDown="{{taskKey}}" placeholder="New task…" style="flex: 1 1 200px; min-width: 0; min-height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit">
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted)">Course
+<select value="{{taskCourse}}" onChange="{{setTaskCourse}}" style="min-height: 38px; max-width: 170px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit; font-size: 13px">
+<sc-for list="{{courseOpts}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.l}}</option></sc-for>
+</select></label>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted)">Day
+<select value="{{taskDay}}" onChange="{{setTaskDay}}" style="min-height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit; font-size: 13px">
+<sc-for list="{{dayOpts}}" as="o" hint-placeholder-count="8"><option value="{{o.v}}">{{o.l}}</option></sc-for>
+</select></label>
+<label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted)">Priority
+<select value="{{taskPrio}}" onChange="{{setTaskPrio}}" style="min-height: 38px; padding: 0 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit; font-size: 13px">
+<option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option>
+</select></label>
+<button type="button" onClick="{{addTask}}" style="min-height: 38px; padding: 0 16px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink); font: inherit; font-weight: 600; cursor: pointer">+ Add task</button>
+</div>
+</section>
+
+<!-- timetable -->
+<section id="timetable" style="padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel)">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 12px">
+<h2 style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase">Timetable</h2>
+<span style="font-size: 12px; color: var(--muted)">Click a slot to cycle through your courses</span>
+</div>
+<div style="overflow-x: auto">
+<div style="min-width: 760px; display: grid; grid-template-columns: 110px repeat(5, minmax(0, 1fr)); font-size: 13px">
+<sc-for list="{{ttHead}}" as="h" hint-placeholder-count="6"><div style="padding: 8px 10px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px">{{h}}</div></sc-for>
+<sc-for list="{{ttCells}}" as="c" hint-placeholder-count="42">
+<sc-if value="{{c.isTime}}" hint-placeholder-val="{{ false }}"><div style="{{c.style}}">{{c.t}}</div></sc-if>
+<sc-if value="{{c.isSlot}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{c.cycle}}" aria-label="{{c.aria}}" style="{{c.style}}">{{c.t}}</button></sc-if>
+</sc-for>
+</div>
+</div>
+</section>
+
+<!-- academic calendar -->
+<section id="calendar" style="padding: 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel)">
+<h2 style="margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase">Academic calendar</h2>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13px">
+<strong style="font-weight: 600">{{calRange}}</strong>
+<span style="font-size: 12px; color: var(--muted)">Tasks with a day appear here automatically</span>
+</div>
+<div style="overflow-x: auto">
+<div style="min-width: 900px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 8px; overflow: hidden">
+<sc-for list="{{calDays}}" as="d" hint-placeholder-count="7">
+<div style="{{d.col}}">
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); padding-bottom: 4px"><span>{{d.dow}}</span><span style="{{d.numStyle}}">{{d.num}}</span></div>
+<sc-for list="{{d.items}}" as="a" hint-placeholder-count="1">
+<div style="border-radius: 6px; background: var(--card-2); border: 1px solid var(--line); padding: 8px; font-size: 12px">
+<div style="font-weight: 600">{{a.t}}</div>
+<div style="margin-top: 4px; color: var(--text-2)">{{a.c}}</div>
+<div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px"><span style="{{a.prioSt}}">{{a.prio}}</span><span style="{{a.st}}">● {{a.s}}</span></div>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+</div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dark","light"],"default":"dark"},"$preview":{"width":1440,"height":2900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this._sc = {};
+    var C = function (id, name, glyph, pal, done, total, exam) { return { id: id, name: name, glyph: glyph, pal: pal, done: done, total: total, exam: exam }; };
+    var T = function (id, name, course, prio, status, day) { return { id: id, name: name, course: course, prio: prio, status: status, day: day }; };
+    this.state = {
+      theme: null, title: 'Study OS', subtitle: 'Courses, deadlines, focus sessions and goals — one page per semester.',
+      now: Date.now(), mode: 'pomo', left: 1500, running: false, sessions: 3, tab: 'week', nextId: 200,
+      courses: [C('cs', 'Computer Science', '>_', 0, 3, 4, 'Nov 3'), C('oop', 'Object‑Oriented Prog.', '</>', 1, 2, 4, 'Nov 7'), C('alg', 'Algorithms', '∑', 2, 4, 4, 'Nov 12'), C('sw', 'Software Eng.', '{ }', 3, 1, 3, 'Nov 14'), C('ds', 'Data Structures', '⌗', 4, 2, 5, 'Nov 20')],
+      tasks: [
+        T(1, 'Assignment 1 — recursion', 'cs', 'High', 'Not started', 0), T(2, 'Assignment 2 — complexity', 'cs', 'Medium', 'Done', 0),
+        T(3, 'Lab 3 — sorting benchmarks', 'alg', 'Medium', 'Done', 2), T(4, 'Assignment 4 — linked lists', 'ds', 'High', 'In progress', 3),
+        T(5, 'Quiz 2 prep', 'ds', 'Low', 'Done', 3), T(6, 'Get practical review from TA', 'oop', 'High', 'Not started', 4),
+        T(7, 'Graph traversal problem set', 'ds', 'High', 'In progress', 5), T(8, 'Write sprint retro', 'sw', 'Medium', 'Not started', 1),
+        T(9, 'Finish desk setup', null, 'Medium', 'In progress', null), T(10, 'Plan birthday party', null, 'Low', 'Not started', null)
+      ],
+      areas: [['Relationships', 7], ['Health', 6], ['Growth', 8], ['Money', 5], ['Career', 7], ['Fun', 4]],
+      todos: [{ id: 1, l: 'Organize the desk', done: true }, { id: 2, l: 'Order protein supplements', done: false }, { id: 3, l: 'Buy a hyperfocus book', done: false }, { id: 4, l: 'Pick up highlighters', done: true }, { id: 5, l: 'Book a study room for Friday', done: false }],
+      reminders: [{ id: 1, d: 'Oct 24', t: 'Meetup with friends after midterms' }, { id: 2, d: 'Oct 26', t: 'Library book due — Algorithms' }, { id: 3, d: 'Oct 31', t: 'Jay’s birthday' }, { id: 4, d: 'Nov 2', t: 'Scholarship form deadline' }],
+      tt: [['cs', 'cs', 'alg', 'sw', 'cs'], ['alg', 'cs', 'alg', 'sw', 'alg'], ['sw', 'cs', 'alg', 'sw', 'sw'], ['L', 'L', 'L', 'L', 'L'], ['ds', 'oop', 'ds', 'oop', 'ds'], ['ds', 'sw', 'ds', 'ds', 'ds'], ['oop', 'alg', 'ds', 'oop', 'oop']],
+      courseDraft: '', todoDraft: '', remDate: '', remText: '', taskDraft: '', taskCourse: 'cs', taskDay: 'none', taskPrio: 'Medium'
+    };
+  }
+  componentDidMount() {
+    var self = this;
+    this._t = setInterval(function () {
+      var s = self.state, u = { now: Date.now() };
+      if (s.running) {
+        if (s.left > 1) u.left = s.left - 1;
+        else { u.running = false; u.left = 0; if (s.mode === 'pomo') u.sessions = s.sessions + 1; }
+      }
+      self.setState(u);
+    }, 1000);
+  }
+  componentWillUnmount() { clearInterval(this._t); }
+  scene(W, H, kind, palName, seed) {
+    var key = [W, H, kind, palName, seed].join('|');
+    if (this._sc[key]) return this._sc[key];
+    var P = {
+      grove: { sky: ['#0E2A22', '#16402F', '#1F5A3D', '#2E7A4B'], canopy: ['#173F28', '#22573A', '#2F6E44', '#1C4B30'], light: '#9BD27A', ground: '#0C2016' },
+      groveDay: { sky: ['#9FD3E6', '#B9E2D8', '#CFEBC8', '#E4F2C2'], canopy: ['#2F7A45', '#3E9152', '#58A85E', '#357F49'], light: '#C9EA8A', ground: '#24603A' },
+      teal: { sky: ['#0E1A24', '#14283A', '#1E3A4E'], bld: '#0A1218', win: '#F2C46B', lit: 0.4, ground: '#1A2620' },
+      neon: { sky: ['#1E0C12', '#3A141C', '#5A1E26'], bld: '#140A0D', win: '#FF6B5A', lit: 0.45, ground: '#2A1014' },
+      jade: { sky: ['#0C2226', '#163A3A', '#245650'], bld: '#081614', win: '#7FE0C8', lit: 0.35, ground: '#10261F' },
+      dusk: { sky: ['#1A1028', '#2E1E48', '#4E3070'], bld: '#100A1A', win: '#F59BD0', lit: 0.4, ground: '#1C1428' },
+      harbor: { sky: ['#101C30', '#1E3256', '#33507E'], bld: '#0A111E', win: '#FFD27A', lit: 0.4, ground: '#142030' },
+      rain: { sky: ['#141A22', '#222C38', '#33404E'], bld: '#0E1218', win: '#9ECBFF', lit: 0.3, ground: '#1A2028' }
+    };
+    var pal = P[palName], r = seed;
+    var rnd = function () { r = (r * 9301 + 49297) % 233280; return r / 233280; };
+    var out = [], heights = [];
+    for (var c = 0; c < W; c++) heights.push(kind === 'forest' ? Math.floor(H * 0.35 + rnd() * H * 0.5) : Math.floor(H * 0.3 + rnd() * H * 0.6));
+    for (var row = 0; row < H; row++) {
+      for (var col = 0; col < W; col++) {
+        var color = pal.sky[Math.min(pal.sky.length - 1, Math.floor(row / H * pal.sky.length))];
+        var hgt = heights[col], v = rnd();
+        if (kind === 'forest') {
+          if (row >= H - 1) color = pal.ground;
+          else if (row >= H - hgt) color = v < 0.12 ? pal.light : pal.canopy[(col + row) % pal.canopy.length];
+          else if (v < 0.015) color = pal.light;
+        } else {
+          if (row >= H - 1) color = pal.ground;
+          else if (row >= H - hgt) color = (v < pal.lit && col % 2 === 0) ? pal.win : pal.bld;
+          else if (v < 0.02) color = '#FFFFFF66';
+        }
+        out.push('background: ' + color + ';');
+      }
+    }
+    this._sc[key] = out;
+    return out;
+  }
+  renderVals() {
+    var s = this.state, self = this;
+    var set = function (o) { return function () { self.setState(o); }; };
+    var draft = function (k) { return function (e) { var u = {}; u[k] = e.target.value; self.setState(u); }; };
+    var onEnter = function (fn) { return function (e) { if (e && e.key === 'Enter') { e.preventDefault(); fn(); } }; };
+    var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+    var theme = s.theme || this.props.theme || 'dark';
+    var dark = theme === 'dark';
+
+    var TOK = dark ? {
+      bg: '#191919', panel: '#1B1B1B', 'panel-2': '#1D1D1D', card: '#222222', 'card-2': '#262626', input: '#141414',
+      line: '#2E2E2E', 'line-2': '#363636', 'line-3': '#242424', text: '#E9E9E7', 'text-2': '#C2C2BE', muted: '#979792', track: '#333333', chip: '#2A2A2A',
+      accent: '#E0A243', 'accent-text': '#F2C46B', 'accent-ink': '#2A1A02', 'accent-soft': 'rgba(224,162,67,0.14)',
+      'radar-fill': 'rgba(214,90,110,0.45)', 'radar-stroke': '#E07A8C',
+      'red-bg': 'rgba(217,83,79,0.3)', 'red-fg': '#FFB4B0', 'amber-bg': 'rgba(224,162,67,0.24)', 'amber-fg': '#F2C46B', 'blue-bg': 'rgba(78,143,232,0.28)', 'blue-fg': '#BCD5FF',
+      'green-bg': 'rgba(60,180,120,0.22)', 'green-fg': '#9BE3BE', 'gray-bg': '#2E2E2E', 'gray-fg': '#C2C2BE',
+      col: '#1D1D1D', 'col-today': '#242424', weekend: '#1A1A1A'
+    } : {
+      bg: '#FFFFFF', panel: '#FFFFFF', 'panel-2': '#FAFAF8', card: '#FFFFFF', 'card-2': '#F7F7F5', input: '#FFFFFF',
+      line: '#E4E3DF', 'line-2': '#DCDBD6', 'line-3': '#F0EFEC', text: '#1C1B19', 'text-2': '#45443F', muted: '#6E6D68', track: '#E8E7E3', chip: '#F1F0ED',
+      accent: '#E0A243', 'accent-text': '#8A5A0A', 'accent-ink': '#2A1A02', 'accent-soft': '#FBF1DE',
+      'radar-fill': 'rgba(201,64,95,0.22)', 'radar-stroke': '#C9405F',
+      'red-bg': '#FDE4E2', 'red-fg': '#A3302B', 'amber-bg': '#FBEFD6', 'amber-fg': '#86560A', 'blue-bg': '#E2ECFD', 'blue-fg': '#1E4FA0',
+      'green-bg': '#DDF3E6', 'green-fg': '#14663E', 'gray-bg': '#EFEFEC', 'gray-fg': '#55544F',
+      col: '#FFFFFF', 'col-today': '#FCF6EA', weekend: '#FAFAF8'
+    };
+    var rootStyle = Object.keys(TOK).map(function (k) { return '--' + k + ': ' + TOK[k]; }).join('; ') + ';';
+    var themeOpts = [['dark', 'Dark', '☾'], ['light', 'Light', '☀']].map(function (o) {
+      var on = theme === o[0];
+      return { label: o[1], glyph: o[2], pressed: on ? 'true' : 'false', pick: set({ theme: o[0] }),
+        style: 'min-height: 34px; padding: 0 14px; border: 0; border-radius: 7px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; ' + (on ? 'background: #FFFFFF; color: #161616;' : 'background: transparent; color: rgba(255,255,255,0.92);') };
+    });
+
+    var now = new Date(s.now), y = now.getFullYear();
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var DOWS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var WK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    var gridStyle = function (W, H, height, extra) {
+      return 'display: grid; grid-template-columns: repeat(' + W + ', minmax(0, 1fr)); grid-template-rows: repeat(' + H + ', minmax(0, 1fr)); height: ' + height + '; ' + (extra || '');
+    };
+    var PALS = ['teal', 'neon', 'jade', 'dusk', 'harbor', 'rain'];
+
+    // clock & progress
+    var h = now.getHours(), m = now.getMinutes(), sec = now.getSeconds();
+    var startY = new Date(y, 0, 1), endY = new Date(y + 1, 0, 1);
+    var yearPct = Math.floor((now - startY) / (endY - startY) * 100);
+    var dim = new Date(y, now.getMonth() + 1, 0).getDate();
+    var monthPct = Math.floor((now.getDate() - 1 + h / 24) / dim * 100);
+    var todayWk = (now.getDay() + 6) % 7;
+    var weekPct = Math.floor((todayWk + h / 24) / 7 * 100);
+    var progress = [['Year', yearPct], ['Month', monthPct], ['Week', weekPct]].map(function (p) {
+      return { label: p[0], pct: String(p[1]), fill: 'width: ' + p[1] + '%; height: 100%; background: var(--text); border-radius: 1px;' };
+    });
+    var qNow = Math.floor(now.getMonth() / 3);
+    var quarters = [['Q1 · Jan – Mar', 100], ['Q2 · Apr – Jun', 92], ['Q3 · Jul – Sep', 70], ['Q4 · Oct – Dec', 0]].map(function (q, i) {
+      var pct = i < qNow ? q[1] : (i === qNow ? Math.max(5, Math.floor(((now.getMonth() % 3) + now.getDate() / dim) / 3 * 100)) : 0);
+      var cur = i === qNow;
+      return { name: q[0], pct: String(pct), tag: cur ? 'Current' : (i < qNow ? 'Closed' : 'Upcoming'),
+        bar: 'width: ' + pct + '%; height: 100%; border-radius: 2px; background: ' + (cur ? 'var(--accent)' : 'var(--muted)') + ';',
+        box: 'padding: 10px; border-radius: 8px; background: ' + (cur ? 'var(--accent-soft)' : 'var(--card)') + '; border: 1px solid var(--line);' };
+    });
+    var quick = [['+', 'New task', 'tasks'], ['▤', 'New course', 'courses'], ['✓', 'New to‑do', 'todos'], ['⚑', 'New reminder', 'reminders'], ['▦', 'Edit timetable', 'timetable']].map(function (q) { return { g: q[0], l: q[1], a: q[2] }; });
+    var railNav = [
+      { title: 'Academy life', items: [['☰', 'Task manager', 'tasks'], ['▤', 'Courses', 'courses'], ['▦', 'Timetable', 'timetable'], ['◷', 'Academic calendar', 'calendar']] },
+      { title: 'Personal life', items: [['◎', 'Wheel of life', 'wheel'], ['✓', 'Mini to‑dos', 'todos'], ['⚑', 'Reminders', 'reminders']] },
+      { title: 'Future plan', items: [['↗', 'Internships & jobs', 'tasks'], ['◈', 'Portfolio', 'tasks']] }
+    ].map(function (g) { return { title: g.title, items: g.items.map(function (i) { return { g: i[0], l: i[1], a: i[2] }; }) }; });
+
+    // courses
+    var courseById = {}; s.courses.forEach(function (c) { courseById[c.id] = c; });
+    var updCourse = function (id, fn) { self.setState({ courses: self.state.courses.map(function (c) { return c.id === id ? fn(Object.assign({}, c)) : c; }) }); };
+    var courses = s.courses.map(function (c, i) {
+      var pct = c.total ? Math.round(c.done / c.total * 100) : 0;
+      return { name: c.name, glyph: c.glyph, done: String(c.done), total: String(c.total), pct: String(pct), exam: c.exam,
+        taskCount: String(s.tasks.filter(function (t) { return t.course === c.id && t.status !== 'Done'; }).length),
+        bar: 'width: ' + pct + '%; height: 100%; border-radius: 2px; background: var(--accent);',
+        grid: gridStyle(24, 10, '96px'), px: self.scene(24, 10, 'city', PALS[c.pal % PALS.length], 11 + c.pal * 13 + (typeof c.id === 'number' ? c.id : 0)),
+        inc: function () { updCourse(c.id, function (x) { if (x.done < x.total) x.done++; else { x.total++; x.done++; } return x; }); },
+        dec: function () { updCourse(c.id, function (x) { if (x.done > 0) x.done--; return x; }); },
+        remove: function () { self.setState({ courses: self.state.courses.filter(function (x) { return x.id !== c.id; }) }); } };
+    });
+    var addCourse = function () {
+      var st = self.state, v = (st.courseDraft || '').trim(); if (!v) return;
+      self.setState({ courses: st.courses.concat([{ id: st.nextId, name: v, glyph: '◆', pal: st.courses.length, done: 0, total: 3, exam: 'TBD' }]), courseDraft: '', nextId: st.nextId + 1 });
+    };
+    var openTasks = s.tasks.filter(function (t) { return t.status !== 'Done'; }).length;
+    var secDefs = [['Assignments', 'groveDay', 'forest', String(openTasks), 'tasks'], ['Timetable', 'dusk', 'city', String(s.courses.length) + ' courses', 'timetable'], ['To‑dos', 'rain', 'city', String(s.todos.length), 'todos'], ['Calendar', 'neon', 'city', String(s.tasks.filter(function (t) { return t.day !== null; }).length), 'calendar']];
+    var sections = secDefs.map(function (c, i) {
+      return { name: c[0], count: c[3], a: c[4], grid: gridStyle(28, 10, '104px'), px: self.scene(28, 10, c[2], c[1], 101 + i * 29) };
+    });
+
+    // radar
+    var cx = 150, cy = 122, R = 86;
+    var pt = function (i, k) { var a = -Math.PI / 2 + i * Math.PI / 3; return [cx + Math.cos(a) * R * k, cy + Math.sin(a) * R * k]; };
+    var ring = function (k) { return s.areas.map(function (_, i) { var p = pt(i, k); return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' '); };
+    var spokes = s.areas.map(function (_, i) { var p = pt(i, 1); return 'M' + cx + ' ' + cy + ' L' + p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join(' ');
+    var radarPts = s.areas.map(function (a, i) { var p = pt(i, a[1] / 10); return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+    var radarLabels = s.areas.map(function (a, i) {
+      var p = pt(i, 1.14), dx = p[0] - cx;
+      return { t: a[0] + ' · ' + a[1], x: p[0].toFixed(1), y: (p[1] + 4).toFixed(1), anchor: Math.abs(dx) < 5 ? 'middle' : (dx > 0 ? 'start' : 'end') };
+    });
+    var areas = s.areas.map(function (a, i) {
+      return { name: a[0], v: String(a[1]), set: function (e) { var n = self.state.areas.map(function (x) { return x.slice(); }); n[i][1] = parseInt(e.target.value, 10); self.setState({ areas: n }); } };
+    });
+
+    // pomodoro
+    var modeDefs = [['pomo', 'Pomodoro', 1500], ['short', 'Short break', 300], ['long', 'Long break', 900]];
+    var modes = modeDefs.map(function (md) {
+      var on = s.mode === md[0];
+      return { label: md[1], pressed: on ? 'true' : 'false', pick: set({ mode: md[0], left: md[2], running: false }),
+        style: 'min-height: 34px; padding: 0 14px; border-radius: 17px; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; ' + (on ? 'border: 0; background: #FFFFFF; color: #141414;' : 'border: 1px solid rgba(255,255,255,0.5); background: transparent; color: #FFFFFF;') };
+    });
+    var curMode = modeDefs.filter(function (md) { return md[0] === s.mode; })[0];
+
+    // todos + reminders
+    var todos = s.todos.map(function (t) {
+      return { l: t.l, done: t.done, pressed: t.done ? 'true' : 'false',
+        toggle: function () { self.setState({ todos: self.state.todos.map(function (x) { return x.id === t.id ? Object.assign({}, x, { done: !x.done }) : x; }) }); },
+        remove: function () { self.setState({ todos: self.state.todos.filter(function (x) { return x.id !== t.id; }) }); },
+        box: 'flex-shrink: 0; width: 16px; height: 16px; box-sizing: border-box; border-radius: 4px; display: grid; place-items: center; ' + (t.done ? 'background: var(--accent); border: 0;' : 'border: 1.5px solid var(--muted);'),
+        text: t.done ? 'color: var(--muted); text-decoration: line-through;' : 'color: var(--text);' };
+    });
+    var addTodo = function () { var st = self.state, v = (st.todoDraft || '').trim(); if (!v) return; self.setState({ todos: st.todos.concat([{ id: st.nextId, l: v, done: false }]), todoDraft: '', nextId: st.nextId + 1 }); };
+    var reminders = s.reminders.map(function (r) { return { d: r.d, t: r.t, remove: function () { self.setState({ reminders: self.state.reminders.filter(function (x) { return x.id !== r.id; }) }); } }; });
+    var addRem = function () { var st = self.state, v = (st.remText || '').trim(); if (!v) return; self.setState({ reminders: st.reminders.concat([{ id: st.nextId, d: (st.remDate || '').trim() || 'Soon', t: v }]), remText: '', remDate: '', nextId: st.nextId + 1 }); };
+
+    // tasks
+    var mon = new Date(y, now.getMonth(), now.getDate() - todayWk);
+    var dayDate = function (d) { var x = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + d); return MON[x.getMonth()] + ' ' + x.getDate(); };
+    var STATUS = ['Not started', 'In progress', 'Done'], PRIO = ['Low', 'Medium', 'High'];
+    var prTok = { High: 'red', Medium: 'amber', Low: 'blue' }, stTok = { 'Not started': 'gray', 'In progress': 'amber', 'Done': 'green' };
+    var chip = function (tok, r) { return 'display: inline-block; padding: 1px 8px; border: 0; border-radius: ' + (r || 5) + 'px; font: inherit; font-size: 12px; white-space: nowrap; cursor: pointer; background: var(--' + tok + '-bg); color: var(--' + tok + '-fg);'; };
+    var updTask = function (id, fn) { self.setState({ tasks: self.state.tasks.map(function (t) { return t.id === id ? fn(Object.assign({}, t)) : t; }) }); };
+    var tabDefs = [['week', 'This week', function (t) { return t.day !== null; }], ['undated', 'Undated', function (t) { return t.day === null; }], ['priority', 'By priority', function () { return true; }]];
+    var taskTabs = tabDefs.map(function (t) {
+      var on = s.tab === t[0];
+      return { label: t[1], count: String(s.tasks.filter(t[2]).length), pressed: on ? 'true' : 'false', pick: set({ tab: t[0] }),
+        style: 'min-height: 32px; padding: 0 12px; border: 0; border-radius: 6px; font: inherit; font-size: 13px; cursor: pointer; ' + (on ? 'background: var(--chip); color: var(--text); font-weight: 500;' : 'background: transparent; color: var(--muted);') };
+    });
+    var curTab = tabDefs.filter(function (t) { return t[0] === s.tab; })[0];
+    var list = s.tasks.filter(curTab[2]).slice();
+    if (s.tab === 'week') list.sort(function (a, b) { return a.day - b.day; });
+    if (s.tab === 'priority') list.sort(function (a, b) { return PRIO.indexOf(b.prio) - PRIO.indexOf(a.prio); });
+    var courseLabel = function (id) { var c = courseById[id]; return c ? c.glyph + ' ' + c.name : '— Personal'; };
+    var tasks = list.map(function (t) {
+      var done = t.status === 'Done';
+      return { name: t.name, course: courseLabel(t.course), prio: t.prio, status: t.status, done: done, pressed: done ? 'true' : 'false',
+        date: t.day === null ? '—' : WK[t.day] + ' · ' + dayDate(t.day),
+        aria: 'Mark ' + t.name + (done ? ' not done' : ' done'),
+        nameStyle: 'font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; ' + (done ? 'color: var(--muted); text-decoration: line-through;' : ''),
+        toggle: function () { updTask(t.id, function (x) { x.status = x.status === 'Done' ? 'Not started' : 'Done'; return x; }); },
+        cycleStatus: function () { updTask(t.id, function (x) { x.status = STATUS[(STATUS.indexOf(x.status) + 1) % 3]; return x; }); },
+        cyclePrio: function () { updTask(t.id, function (x) { x.prio = PRIO[(PRIO.indexOf(x.prio) + 1) % 3]; return x; }); },
+        remove: function () { self.setState({ tasks: self.state.tasks.filter(function (x) { return x.id !== t.id; }) }); },
+        prioStyle: chip(prTok[t.prio]), statusStyle: chip(stTok[t.status], 10),
+        check: 'width: 22px; height: 22px; padding: 0; border-radius: 5px; display: grid; place-items: center; cursor: pointer; ' + (done ? 'border: 0; background: var(--accent);' : 'border: 1.5px solid var(--muted); background: transparent;') };
+    });
+    var addTask = function () {
+      var st = self.state, v = (st.taskDraft || '').trim(); if (!v) return;
+      self.setState({ tasks: st.tasks.concat([{ id: st.nextId, name: v, course: st.taskCourse === 'none' ? null : (isNaN(+st.taskCourse) ? st.taskCourse : +st.taskCourse), prio: st.taskPrio, status: 'Not started', day: st.taskDay === 'none' ? null : parseInt(st.taskDay, 10) }]), taskDraft: '', nextId: st.nextId + 1 });
+    };
+    var courseOpts = s.courses.map(function (c) { return { v: String(c.id), l: c.name }; }).concat([{ v: 'none', l: 'Personal' }]);
+    var dayOpts = [{ v: 'none', l: 'No date' }].concat(WK.map(function (d, i) { return { v: String(i), l: d + ' ' + dayDate(i) + (i === todayWk ? ' (today)' : '') }; }));
+
+    // timetable
+    var ttHead = ['Time', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    var slots = ['8:00 – 9:00', '9:00 – 10:00', '10:00 – 11:00', '11:00 – 12:00', '12:00 – 1:00', '1:00 – 2:00', '2:00 – 3:00'];
+    var TINT = ['#E0A243', '#E07A8C', '#3FB394', '#A57DE8', '#5B95F0', '#5FA6B8'];
+    var cycleIds = [''].concat(s.courses.map(function (c) { return c.id; }));
+    var ttCells = [];
+    s.tt.forEach(function (row, ri) {
+      ttCells.push({ isTime: true, isSlot: false, t: slots[ri], style: "padding: 8px 10px; border-bottom: 1px solid var(--line-3); font-family: 'Geist Mono', monospace; font-size: 12px; color: var(--text-2); white-space: nowrap;" });
+      row.forEach(function (k, ci) {
+        if (k === 'L') { ttCells.push({ isTime: true, isSlot: false, t: 'Lunch', style: 'padding: 8px 10px; border-bottom: 1px solid var(--line-3); color: var(--muted); font-style: italic;' }); return; }
+        var c = courseById[k];
+        ttCells.push({ isTime: false, isSlot: true, t: c ? c.glyph + ' ' + c.name : '+',
+          aria: (c ? c.name : 'Empty slot') + ', ' + ttHead[ci + 1] + ' ' + slots[ri] + '. Click to change',
+          cycle: function () {
+            var n = self.state.tt.map(function (r) { return r.slice(); });
+            var idx = cycleIds.indexOf(n[ri][ci]); n[ri][ci] = cycleIds[(idx + 1) % cycleIds.length];
+            self.setState({ tt: n });
+          },
+          style: 'min-height: 38px; padding: 6px 10px; border: 0; border-bottom: 1px solid var(--line-3); text-align: left; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: ' + (c ? 'var(--text)' : 'var(--muted)') + '; ' +
+            (c ? 'background: transparent; box-shadow: inset 3px 0 0 ' + TINT[c.pal % TINT.length] + ';' : 'background: transparent;') });
+      });
+    });
+
+    // calendar
+    var sun = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 6);
+    var calDays = WK.map(function (dw, i) {
+      var d = new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i);
+      var isToday = i === todayWk;
+      return { dow: dw, num: String(d.getDate()),
+        numStyle: isToday ? 'min-width: 20px; text-align: center; border-radius: 10px; background: #D9534F; color: #FFFFFF; font-weight: 700;' : 'color: var(--text); font-weight: 600;',
+        col: 'min-height: 210px; padding: 8px; display: flex; flex-direction: column; gap: 8px; ' + (i ? 'border-left: 1px solid var(--line); ' : '') + 'background: var(--' + (isToday ? 'col-today' : (i > 4 ? 'weekend' : 'col')) + ');',
+        items: s.tasks.filter(function (t) { return t.day === i; }).map(function (t) {
+          return { t: t.name, c: courseLabel(t.course), s: t.status, prio: t.prio,
+            prioSt: chip(prTok[t.prio]).replace('font-size: 12px', 'font-size: 11px'),
+            st: chip(stTok[t.status], 10).replace('font-size: 12px', 'font-size: 11px') };
+        }) };
+    });
+
+    return {
+      rootStyle: rootStyle, themeOpts: themeOpts,
+      title: s.title, subtitle: s.subtitle, setTitle: draft('title'), setSubtitle: draft('subtitle'),
+      bannerGrid: 'display: grid; grid-template-columns: repeat(72, minmax(0, 1fr)); grid-template-rows: repeat(14, minmax(0, 1fr)); height: 210px;',
+      banner: self.scene(72, 14, 'forest', dark ? 'grove' : 'groveDay', 7),
+      hourDeg: String((h % 12) * 30 + m * 0.5), minDeg: String(m * 6 + sec * 0.1), secDeg: String(sec * 6),
+      clockDigital: pad(h) + ':' + pad(m) + ':' + pad(sec), clockDate: DOWS[now.getDay()] + ', ' + MON[now.getMonth()] + ' ' + now.getDate(),
+      progress: progress, quarters: quarters, quick: quick, railNav: railNav,
+      courses: courses, courseDraft: s.courseDraft, setCourseDraft: draft('courseDraft'), addCourse: addCourse, courseKey: onEnter(addCourse),
+      sections: sections,
+      ring1: ring(1), ring2: ring(0.75), ring3: ring(0.5), ring4: ring(0.25), spokes: spokes, radarPts: radarPts, radarLabels: radarLabels, areas: areas,
+      pomoBg: gridStyle(32, 14, '100%', 'position: absolute; inset: 0;'), pomoPx: self.scene(32, 14, 'city', 'rain', 333),
+      modes: modes, pomoTime: pad(Math.floor(s.left / 60)) + ':' + pad(s.left % 60),
+      pomoBtn: s.running ? 'Pause' : (s.left === 0 ? 'Done ✓' : 'Start'),
+      pomoToggle: s.left === 0 ? set({ left: curMode[2], running: false }) : set({ running: !s.running }),
+      pomoReset: set({ left: curMode[2], running: false }), sessions: String(s.sessions),
+      todos: todos, todoLeft: String(s.todos.filter(function (t) { return !t.done; }).length), todoDraft: s.todoDraft, setTodoDraft: draft('todoDraft'), addTodo: addTodo, todoKey: onEnter(addTodo),
+      reminders: reminders, remDate: s.remDate, remText: s.remText, setRemDate: draft('remDate'), setRemText: draft('remText'), addRem: addRem, remKey: onEnter(addRem),
+      taskTabs: taskTabs, tasks: tasks, noTasks: tasks.length === 0,
+      taskDraft: s.taskDraft, setTaskDraft: draft('taskDraft'), taskKey: onEnter(addTask), addTask: addTask,
+      taskCourse: s.taskCourse, setTaskCourse: draft('taskCourse'), taskDay: s.taskDay, setTaskDay: draft('taskDay'), taskPrio: s.taskPrio, setTaskPrio: draft('taskPrio'),
+      courseOpts: courseOpts, dayOpts: dayOpts,
+      ttHead: ttHead, ttCells: ttCells,
+      calRange: MON[mon.getMonth()] + ' ' + mon.getDate() + ' – ' + MON[sun.getMonth()] + ' ' + sun.getDate() + ', ' + sun.getFullYear(),
+      calDays: calDays
+    };
+  }
+}
+</script>
+</body>
+</html>
