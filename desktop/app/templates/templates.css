@@ -383,6 +383,12 @@
 /* Custom widgets and dialogs */
 .bw-add-main { min-height: 40px; padding: 0 16px; border: 0; border-radius: 9px; background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 .bw-body .bw-add { display: none; }
+.bw-mode { min-height: 40px; padding: 0 14px; border: 1px solid var(--line); border-radius: 9px; background: transparent; color: var(--text); font-size: 13px; }
+.bw-mode[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); }
+.bw.editing { outline: 1px dashed var(--line); outline-offset: -4px; }
+.bw.editing .bw-head { cursor: grab; }
+.bw.editing.dragging { opacity: .5; }
+.bw-handle { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 30px; color: var(--muted); font-size: 16px; user-select: none; }
 .dlg { max-width: 520px; }
 .dlg-h { margin: 16px 0 8px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .dlg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
