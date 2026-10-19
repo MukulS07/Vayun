@@ -342,3 +342,40 @@
   .st-main { flex: 1 1 auto; width: 100%; }
   .st-row > * { flex-basis: 100%; }
 }
+
+/* Widget board */
+.bw-board { display: flex; flex-direction: column; gap: 16px; }
+.bw-grid-wrap { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.bw { display: flex; flex-direction: column; min-width: 0; border-radius: 14px; border: 1px solid var(--line-2); background: var(--panel); overflow: hidden; }
+.bw.wide { grid-column: span 2; }
+.bw-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line-3); }
+.bw-title { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .02em; }
+.bw-tools { display: flex; gap: 2px; }
+.bw-btn { min-width: 30px; min-height: 30px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); font-size: 14px; }
+.bw-btn:hover:not(:disabled) { border-color: var(--line); color: var(--text); }
+.bw-btn:disabled { opacity: .35; cursor: default; }
+.bw-remove:hover:not(:disabled) { color: #E0707A; }
+.bw-body { padding: 14px; min-width: 0; }
+.bw-body > .lf-card, .bw-body > .st-card, .bw-body > .lf-section, .bw-body > .st-section, .bw-body > .lf-habits, .bw-body > .lf-stats, .bw-body > .st-half, .bw-body > .st-pomo { border: 0; padding: 0; margin: 0; background: transparent; min-height: 0; }
+.bw-body > .lf-habits, .bw-body > .lf-stats, .bw-body > .st-half { flex: none; }
+.bw-body h2, .bw-body .lf-h2, .bw-body .st-h2, .bw-body .st-h2-tight { display: none; }
+.bw-add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 2px; }
+.bw-add-btn { min-height: 34px; padding: 0 12px; border: 1px dashed var(--line); border-radius: 8px; background: transparent; color: var(--text); font-size: 13px; }
+.bw-add-btn:hover { border-color: var(--accent); color: var(--accent-text); }
+.bw-body .lf-week-meta, .bw-body .lf-cal-scroll { min-width: 0; }
+.bw-body .lf-layout { display: block; margin: 0; }
+.bw-body .lf-nav { display: none; }
+.bw-body .lf-main { flex: none; width: 100%; }
+@media (max-width: 860px) {
+  .bw-grid-wrap { grid-template-columns: 1fr; }
+  .bw.wide { grid-column: auto; }
+}
+
+.tpl-notes { width: 100%; min-height: 220px; resize: vertical; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--input); color: var(--text); font: inherit; line-height: 1.6; }
+
+
+/* Life OS: nav is a left column on desktop, the board fills the rest */
+@media (min-width: 861px) {
+  .lf-layout > .lf-nav { flex: 0 0 220px; }
+  .lf-layout > .lf-main { flex: 1 1 0; min-width: 0; }
+}

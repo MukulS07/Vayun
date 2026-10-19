@@ -209,6 +209,43 @@
       createdAt: ts, updatedAt: ts, state,
     };
   }
+  // Widget boards. A layout is an ordered list of { id, wide }. These helpers never mutate their input.
+  const LIFE_WIDGET_IDS = ['today', 'sound', 'progress', 'pomodoro', 'priorities', 'tasks', 'week', 'habits', 'stats', 'notes', 'todos'];
+  const STUDY_WIDGET_IDS = ['courses', 'tiles', 'wheel', 'pomodoro', 'todos', 'reminders', 'tasks', 'timetable', 'calendar', 'notes'];
+  const LIFE_LAYOUT = [
+    { id: 'today', wide: false }, { id: 'sound', wide: false }, { id: 'progress', wide: false }, { id: 'pomodoro', wide: false },
+    { id: 'priorities', wide: true }, { id: 'tasks', wide: true }, { id: 'week', wide: true }, { id: 'habits', wide: true }, { id: 'stats', wide: false },
+  ];
+  const STUDY_LAYOUT = [
+    { id: 'courses', wide: true }, { id: 'tiles', wide: true }, { id: 'wheel', wide: false }, { id: 'pomodoro', wide: false },
+    { id: 'todos', wide: false }, { id: 'reminders', wide: false }, { id: 'tasks', wide: true }, { id: 'timetable', wide: true }, { id: 'calendar', wide: true },
+  ];
+
+  function layoutAdd(layout, id, wide = false) {
+    if (layout.some(w => w.id === id)) return layout;
+    return [...layout, { id, wide: Boolean(wide) }];
+  }
+  function layoutRemove(layout, id) {
+    return layout.filter(w => w.id !== id);
+  }
+  function layoutMove(layout, id, dir) {
+    const i = layout.findIndex(w => w.id === id);
+    const j = i + (dir < 0 ? -1 : 1);
+    if (i < 0 || j < 0 || j >= layout.length) return layout;
+    const next = layout.slice();
+    [next[i], next[j]] = [next[j], next[i]];
+    return next;
+  }
+  function layoutToggleWide(layout, id) {
+    return layout.map(w => (w.id === id ? { ...w, wide: !w.wide } : w));
+  }
+  // Unknown or duplicate ids are dropped; an empty result falls back to the default layout.
+  function sanitizeLayout(layout, known, defaults) {
+    const seen = new Set();
+    const out = (Array.isArray(layout) ? layout : []).filter(w => w && known.includes(w.id) && !seen.has(w.id) && seen.add(w.id))
+      .map(w => ({ id: w.id, wide: Boolean(w.wide) }));
+    return out.length ? out : defaults.map(w => ({ ...w }));
+  }
   // Keeps arrays and enums sane so a damaged file cannot crash a template page.
   function sanitizeLife(s) {
     const e = lifeEmpty();
@@ -230,6 +267,9 @@
         breakMin: clampInt(src.pomodoro && src.pomodoro.breakMin, 1, 30, 5),
       },
       ambientSound: AMBIENT.includes(src.ambientSound) ? src.ambientSound : 'rain',
+      notes: typeof src.notes === 'string' ? src.notes.slice(0, 20000) : '',
+      todos: (Array.isArray(src.todos) ? src.todos : []).filter(t => t && typeof t.id === 'string').map(t => ({ id: t.id, text: String(t.text || ''), done: Boolean(t.done) })),
+      layout: sanitizeLayout(src.layout, LIFE_WIDGET_IDS, LIFE_LAYOUT),
     };
   }
 
@@ -253,6 +293,8 @@
       todos: (Array.isArray(src.todos) ? src.todos : []).filter(t => t && typeof t.id === 'string').map(t => ({ id: t.id, text: String(t.text || ''), done: Boolean(t.done) })),
       reminders: (Array.isArray(src.reminders) ? src.reminders : []).filter(r => r && typeof r.id === 'string').map(r => ({ id: r.id, date: String(r.date || ''), text: String(r.text || '') })),
       sessionsToday: src.sessionsToday && typeof src.sessionsToday.date === 'string' ? { date: src.sessionsToday.date, count: clampInt(src.sessionsToday.count, 0, 999, 0) } : { date: '', count: 0 },
+      notes: typeof src.notes === 'string' ? src.notes.slice(0, 20000) : '',
+      layout: sanitizeLayout(src.layout, STUDY_WIDGET_IDS, STUDY_LAYOUT),
     };
   }
 
@@ -266,5 +308,6 @@
     cycle, lifeDueBucket, studyDayFromJs, habitStreak, habitTotals,
     pomodoroAdvance, pomodoroTick, studyTick, scene,
     lifeSample, studySample, lifeEmpty, studyEmpty, sanitizeLife, sanitizeStudy, makeTemplatePage,
+    LIFE_WIDGET_IDS, STUDY_WIDGET_IDS, LIFE_LAYOUT, STUDY_LAYOUT, layoutAdd, layoutRemove, layoutMove, layoutToggleWide, sanitizeLayout,
   };
 });

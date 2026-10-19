@@ -402,6 +402,27 @@
     }
 
     // ---------- render ----------
+    function notesWidget() {
+      return h('textarea', {
+        class: 'tpl-notes', 'aria-label': 'Notes', placeholder: 'Write anything here…',
+        ref: el => { el.value = S().notes; },
+        oninput: e => { S().notes = e.target.value; change(); },
+      });
+    }
+
+    function todosWidget() {
+      const input = h('input', { class: 'lf-input', placeholder: 'Add a to-do and press Enter…', 'aria-label': 'New to-do', onkeydown: e => { if (e.key === 'Enter') add(); } });
+      const add = () => { const v = input.value.trim(); if (!v) return; S().todos.push({ id: 'd' + uid(), text: v, done: false }); input.value = ''; change(); draw(); };
+      const left = S().todos.filter(t => !t.done).length;
+      return h('div', {},
+        h('div', { class: 'lf-add-row' }, input, h('button', { type: 'button', class: 'btn-solid', onclick: add }, 'Add')),
+        h('div', { class: 'st-list' }, S().todos.map(t => h('div', { class: 'st-todo' },
+          h('button', { type: 'button', class: 'st-todo-toggle', 'aria-pressed': t.done ? 'true' : 'false', onclick: () => { t.done = !t.done; change(); draw(); } },
+            h('span', { class: `st-box${t.done ? ' on' : ''}`, 'aria-hidden': 'true' }, t.done ? '✓' : ''),
+            h('span', { class: t.done ? 'st-done-text' : '' }, t.text)),
+          deleteButton('Delete to-do', () => { S().todos = S().todos.filter(x => x !== t); change(); draw(); })))),
+        h('p', { class: 'tiny lf-muted' }, `${left} left`));
+    }
     function draw() {
       const d = dateInfo();
       refs = { cycleBars: refs.cycleBars, yearRing: refs.yearRing, pomoTime: refs.pomoTime, pomoDot: refs.pomoDot };
@@ -409,17 +430,29 @@
       container.className = 'tpl tpl-life';
       container.dataset.template = 'life';
       container.dataset.theme = theme;
-      const main = h('div', { class: 'lf-main' },
-        h('div', { class: 'lf-widgets' }, todayCard(d), soundCard(), progressCard(d), pomodoroCard()),
-        prioritiesSection(), tasksSection());
+      const registry = {
+        today: { title: 'Today', render: () => todayCard(d) },
+        sound: { title: 'Ambient sound', render: soundCard },
+        progress: { title: 'Time progress', render: () => progressCard(d) },
+        pomodoro: { title: 'Pomodoro', render: pomodoroCard },
+        priorities: { title: 'Problems & priorities', render: prioritiesSection },
+        tasks: { title: 'Task overview', render: tasksSection },
+        week: { title: 'This week', render: weekSection },
+        habits: { title: 'Habits', render: habitsSection },
+        stats: { title: 'Your stats', render: statsSection },
+        notes: { title: 'Notes', render: notesWidget },
+        todos: { title: 'To-dos', render: todosWidget },
+      };
+      const grid = FolioBoard.board({
+        layout: S().layout, registry,
+        onLayout: layout => { S().layout = layout; change(); draw(); },
+      });
       container.append(
         h('div', { class: 'lf-page' },
           cover(d),
           h('div', { class: 'lf-body' },
             header(),
-            h('div', { class: 'lf-layout' }, navGroups(), main),
-            weekSection(),
-            h('div', { class: 'lf-bottom' }, habitsSection(), statsSection()))));
+            h('div', { class: 'lf-layout' }, navGroups(), h('div', { class: 'lf-main' }, grid)))));
       updateLive();
     }
 

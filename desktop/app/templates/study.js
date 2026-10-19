@@ -379,6 +379,13 @@
     // ---------- render ----------
     function pickTheme(v) { theme = v; page.theme = v; change(); draw(); }
 
+    function notesWidget() {
+      return h('textarea', {
+        class: 'tpl-notes', 'aria-label': 'Notes', placeholder: 'Write anything here…',
+        ref: el => { el.value = S().notes; },
+        oninput: e => { S().notes = e.target.value; change(); },
+      });
+    }
     function draw() {
       const d = null;
       refs = {};
@@ -386,20 +393,29 @@
       container.className = 'tpl tpl-study';
       container.dataset.template = 'study';
       container.dataset.theme = theme;
-      const main = h('div', { class: 'st-main' },
-        h('div', { class: 'st-row' }, courses()),
-        sectionTiles(),
-        h('div', { class: 'st-row' }, wheel(), pomodoro()),
-        todosAndReminders(),
-        tasksSection(),
-        timetable(),
-        calendarSection());
+      const pick = id => todosAndReminders().querySelector('#' + id);
+      const registry = {
+        courses: { title: 'Courses', render: courses },
+        tiles: { title: 'Sections', render: sectionTiles },
+        wheel: { title: 'Wheel of life', render: wheel },
+        pomodoro: { title: 'Pomodoro', render: pomodoro },
+        todos: { title: 'Mini to-dos', render: () => pick('todos') },
+        reminders: { title: 'Reminders & events', render: () => pick('reminders') },
+        tasks: { title: 'Task manager', render: tasksSection },
+        timetable: { title: 'Timetable', render: timetable },
+        calendar: { title: 'Academic calendar', render: calendarSection },
+        notes: { title: 'Notes', render: notesWidget },
+      };
+      const grid = FolioBoard.board({
+        layout: S().layout, registry,
+        onLayout: layout => { S().layout = layout; change(); draw(); },
+      });
       container.append(
         h('div', { class: 'st-page' },
           banner(d),
           h('div', { class: 'st-body' },
             header(),
-            h('div', { class: 'st-layout' }, rail(d), main))));
+            h('div', { class: 'st-layout' }, rail(d), h('div', { class: 'st-main' }, grid)))));
       updateLive();
     }
 

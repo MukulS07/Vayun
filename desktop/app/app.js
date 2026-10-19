@@ -168,7 +168,8 @@ function ago(ts) {
 }
 
 function renderMeta() {
-  $('#edited').textContent = current.updatedAt ? `Edited ${ago(current.updatedAt)}` : '';
+  const edited = typeof current.updatedAt === 'number' ? current.updatedAt : Date.parse(current.updatedAt);
+  $('#edited').textContent = Number.isFinite(edited) ? `Edited ${ago(edited)}` : '';
   const star = $('#star-btn');
   star.textContent = current.starred ? '★' : '☆';
   star.classList.toggle('on', !!current.starred);
