@@ -194,6 +194,29 @@ function renderFavs() {
   }
   $('#favs-group').hidden = !nav.children.length;
 }
+// Pages made from templates (Life OS, Study OS) and the ⌘K commands that create them.
+function createTemplatePage({ template, theme, sample }) {
+  const id = uid();
+  data.pages.push(FolioTemplates.makeTemplatePage(id, template, { theme, sample }));
+  openPage(id);
+}
+
+function toggleLightDark() {
+  const dark = (FOLIO_APP_THEMES[data.appearance && data.appearance.theme] || { dark: true }).dark;
+  data.appearance = { ...(data.appearance || {}), theme: dark ? 'paper' : 'midnight' };
+  applyTheme();
+  save();
+}
+
+function commandItems() {
+  const cmd = (title, run) => ({ id: 'cmd:' + title, kind: 'command', title, blocks: [], run });
+  return [
+    cmd('Toggle light / dark', toggleLightDark),
+    cmd('Change theme…', () => $('#theme-btn').click()),
+    cmd('New Life OS page', () => FolioPicker.open(createTemplatePage, { template: 'life' })),
+    cmd('New Study OS page', () => FolioPicker.open(createTemplatePage, { template: 'study' })),
+  ];
+}
 function renderCrumb() {
   const el = $('#crumb');
   el.innerHTML = '';
@@ -215,7 +238,7 @@ function renderSidebar() {
   const walk = (parentId, depth) => data.pages.filter(p => p.parentId === parentId).forEach(p => {
     const a = document.createElement('a');
     a.href = '#';
-    a.textContent = `${isDb(p) ? '▦ ' : ''}${p.title || 'Untitled'}`;
+    a.textContent = (isDb(p) ? '▦ ' : (p.kind === 'template' ? (p.template === 'life' ? '◷ ' : '▤ ') : '')) + (p.title || 'Untitled');
     a.style.paddingLeft = `${12 + depth * 14}px`;
     if (p === current) { a.className = 'active'; a.setAttribute('aria-current', 'page'); }
     a.onclick = e => { e.preventDefault(); openPage(p.id); };
@@ -940,9 +963,9 @@ const backdrop = $('#backdrop');
 const hideSearch = () => backdrop.classList.remove('visible');
 const searchUi = mountSearch({
   input: $('#q'), list: $('#results'), label: $('#label'),
-  getPages: () => data.pages,
+  getPages: () => [...data.pages, ...commandItems()],
   getRecent: () => data.recent.map(byId).filter(Boolean),
-  onOpen: p => { hideSearch(); openPage(p.id); },
+  onOpen: p => { hideSearch(); if (p.kind === 'command') p.run(); else openPage(p.id); },
   onClose: hideSearch,
 });
 function toggleSearch() {
@@ -1007,6 +1030,7 @@ $('#title').addEventListener('keydown', e => {
 });
 $('#new-btn').onclick = () => createPage(null);
 $('#new-db-btn').onclick = createDatabase;
+$('#templates-btn').onclick = () => FolioPicker.open(createTemplatePage);
 $('#theme-btn').onclick = () => FolioAppearance.open(() => data.appearance, a => { data.appearance = a; applyTheme(); save(); });
 
 // Each imported file becomes a top-level page.
