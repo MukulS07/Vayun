@@ -21,6 +21,7 @@
 .lf-mtn-1 { fill: var(--mtn-1); } .lf-mtn-2 { fill: var(--mtn-2); } .lf-ridge { fill: var(--bg); }
 .lf-cover-bar { position: absolute; inset: 0; max-width: 1280px; margin: 0 auto; padding: 18px clamp(16px, 4vw, 40px) 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px; box-sizing: border-box; }
 .lf-year { font-family: 'Geist Mono', monospace; font-weight: 600; font-size: 16px; letter-spacing: 3px; color: rgba(255, 255, 255, .85); padding-top: 6px; }
+.tpl[data-theme="light"] .lf-year { color: rgba(20, 24, 40, .72); }
 
 /* Segmented control (theme switch, density, radius, width) */
 .seg { display: flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--surface, var(--panel)); border: 1px solid var(--line); }
@@ -70,7 +71,7 @@
 .lf-big-stat { font-size: 26px; font-weight: 700; }
 
 /* Chips */
-.chip { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 1px 8px; border: 0; border-radius: 6px; font-size: 12px; background: var(--gray-bg); color: var(--gray-fg); }
+.chip { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; padding: 1px 8px; border: 0; border-radius: 6px; font-size: 12px; background: var(--gray-bg); color: var(--gray-fg); }
 .chip-amber { background: var(--amber-bg); color: var(--amber-fg); }
 .chip-green { background: var(--green-bg); color: var(--green-fg); }
 .chip-red { background: var(--red-bg); color: var(--red-fg); }
