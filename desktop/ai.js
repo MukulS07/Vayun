@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const NVIDIA_ENDPOINT = 'https://integrate.api.nvidia.com/v1/chat/completions';
-const DEFAULT_MODEL = 'meta/llama-3.3-70b-instruct';
+const DEFAULT_MODEL = 'nvidia/nemotron-3.5-lightning-30b-a3b';
 // Tests may point the assistant at a local fake server; only loopback hosts are accepted so a key can't be sent elsewhere.
 function endpoint() {
   const o = process.env.PAGES_AI_ENDPOINT;
@@ -49,18 +49,20 @@ async function chat(messages) {
   if (!c.key) return { error: 'Add your NVIDIA API key first.' };
   let key;
   try { key = safeStorage.decryptString(Buffer.from(c.key, 'base64')); } catch { return { error: 'The saved key could not be read. Add it again.' }; }
+  const model = c.model || DEFAULT_MODEL;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 60000);
   try {
     const r = await fetch(endpoint(), {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ model: c.model || DEFAULT_MODEL, messages: clean, temperature: 0.2, max_tokens: 2000 }),
+      // Nemotron models think before answering by default; off here for fast, plain JSON replies.
+      body: JSON.stringify({ model, messages: clean, temperature: 0.2, max_tokens: 2000, ...(/nemotron/i.test(model) && { chat_template_kwargs: { enable_thinking: false } }) }),
       signal: ctrl.signal,
     });
     const body = await r.json().catch(() => null);
     if (r.status === 401 || r.status === 403) return { error: 'NVIDIA rejected the key. Check it at build.nvidia.com.' };
-    if (r.status === 404) return { error: `Model "${c.model || DEFAULT_MODEL}" was not found. Pick another model in the assistant settings.` };
+    if (r.status === 404) return { error: `Model "${model}" was not found. Pick another model in the assistant settings.` };
     if (!r.ok) return { error: `NVIDIA API error ${r.status}${body?.detail ? ': ' + String(body.detail).slice(0, 200) : ''}` };
     return { content: String(body?.choices?.[0]?.message?.content || '') };
   } catch (e) {

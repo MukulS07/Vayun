@@ -44,7 +44,7 @@ Rules: write real, useful content, not placeholders. If the user only asks a que
 
   // Pulls the JSON object out of the model's text (it may wrap it in code fences or add words around it).
   function parseReply(text) {
-    const s = String(text || '').replace(/```(?:json)?/gi, '');
+    const s = String(text || '').replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```(?:json)?/gi, '');
     const a = s.indexOf('{'), b = s.lastIndexOf('}');
     if (a >= 0 && b > a) {
       try {

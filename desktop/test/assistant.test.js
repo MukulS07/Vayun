@@ -7,6 +7,7 @@ test('assistant: parses JSON wrapped in fences and prose', () => {
   assert.strictEqual(r.reply, 'Done.');
   assert.deepStrictEqual(r.actions, [{ type: 'rename_page', title: 'Trip' }]);
   assert.deepStrictEqual(A.parseReply('Just words'), { reply: 'Just words', actions: [] });
+  assert.strictEqual(A.parseReply('<think>maybe {x}</think>{"reply":"Hi","actions":[]}').reply, 'Hi');
 });
 
 test('assistant: actions are validated; unknown types and empty blocks dropped', () => {
