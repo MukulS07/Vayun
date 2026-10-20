@@ -227,6 +227,7 @@ function toggleLightDark() {
 function commandItems() {
   const cmd = (title, run) => ({ id: 'cmd:' + title, kind: 'command', title, blocks: [], run });
   return [
+    cmd('Ask the assistant', () => FolioAssistantUI.open()),
     cmd('Toggle light / dark', toggleLightDark),
     cmd('Change theme…', () => $('#theme-btn').click()),
     cmd('New Life OS page', () => FolioPicker.open(createTemplatePage, { template: 'life' })),

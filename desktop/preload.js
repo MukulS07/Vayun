@@ -16,6 +16,10 @@ contextBridge.exposeInMainWorld('api', {
   openWorkspace: id => ipcRenderer.invoke('ws:open', id),
   backToStart: () => ipcRenderer.invoke('ws:back'),
   exportFile: (name, ext, content) => ipcRenderer.invoke('export:save', { name, ext, content }),
+  aiStatus: () => ipcRenderer.invoke('ai:status'),
+  aiSetKey: (key, model) => ipcRenderer.invoke('ai:setKey', { key, model }),
+  aiClearKey: () => ipcRenderer.invoke('ai:clearKey'),
+  aiChat: messages => ipcRenderer.invoke('ai:chat', messages),
   on: (channel, fn) => {
     if (EVENTS.includes(channel)) ipcRenderer.on(channel, (_e, ...args) => fn(...args));
   },

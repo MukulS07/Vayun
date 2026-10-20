@@ -132,6 +132,11 @@ function onQuickSearchShortcut() {
 app.whenReady().then(() => {
   data = loadData();
   ipcMain.handle('data:load', () => data);
+  const ai = require('./ai');
+  ipcMain.handle('ai:status', () => ai.status());
+  ipcMain.handle('ai:setKey', (_e, { key, model }) => ai.setKey(key, model));
+  ipcMain.handle('ai:clearKey', () => ai.clearKey());
+  ipcMain.handle('ai:chat', (_e, messages) => ai.chat(messages));
   ipcMain.on('data:save', (e, next) => {
     try { e.returnValue = saveData(next); }
     catch (err) { console.error('Save failed', err); e.returnValue = false; }
