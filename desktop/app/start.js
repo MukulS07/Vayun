@@ -30,13 +30,24 @@ async function render() {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'ws-card' + (w.id === active ? ' current' : '');
-    const name = document.createElement('div');
+    const mark = document.createElement('span');
+    mark.className = 'ws-card-mark';
+    mark.setAttribute('aria-hidden', 'true');
+    mark.textContent = (w.name.trim()[0] || 'W').toUpperCase();
+    const text = document.createElement('span');
+    text.className = 'ws-card-text';
+    const name = document.createElement('span');
     name.className = 'ws-card-name';
     name.textContent = w.name;
-    const meta = document.createElement('div');
+    const meta = document.createElement('span');
     meta.className = 'muted small';
-    meta.textContent = w.id === active ? `${ago(w.opened)} · last used` : ago(w.opened);
-    card.append(name, meta);
+    meta.textContent = w.id === active ? (w.opened ? `Last used · ${ago(w.opened)}` : 'Last used') : ago(w.opened);
+    text.append(name, meta);
+    const go = document.createElement('span');
+    go.className = 'ws-card-go';
+    go.setAttribute('aria-hidden', 'true');
+    go.textContent = 'Open →';
+    card.append(mark, text, go);
     card.onclick = () => openWorkspace(w.id);
     grid.append(card);
   }
