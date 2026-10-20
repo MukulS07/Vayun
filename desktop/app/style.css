@@ -16,6 +16,15 @@ button:focus-visible, [contenteditable]:focus-visible { outline:2px solid var(--
 .ws { display:flex; align-items:center; gap:10px; padding:4px 4px 4px 6px; }
 .ws-mark { width:28px; height:28px; border-radius:7px; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; font-size:13px; font-weight:600; flex-shrink:0; }
 .ws-meta { min-width:0; flex:1; line-height:1.3; }
+/* Vayun logo: shows a square 40% of the art wide, centred at 49.7% x, 40% y (the mark, without the wordmark). */
+.brand-mark { position:relative; flex-shrink:0; width:28px; height:28px; overflow:hidden; border-radius:7px; background:#050606; box-shadow:inset 0 0 0 1px rgba(200,210,197,.14); }
+.brand-mark img { position:absolute; width:250%; left:-74.25%; top:-50%; }
+.brand-mark.lg { width:52px; height:52px; border-radius:12px; }
+.wordmark-h1 { margin:0; line-height:0; color:var(--fg); }
+.wordmark { display:block; height:22px; width:auto; }
+/* The logo's sage gradient fills accent surfaces in the Vayun theme. */
+:root[data-app-theme="vayun"] { --accent-fill: linear-gradient(135deg, #E9EEE6 0%, #B9C6B7 45%, #7F9083 100%); }
+:root[data-app-theme="vayun"] :is(.new-form button.primary, .ai-compose button.primary, .ai-settings button.primary, .ai-msg.user, .ws-card.current .ws-card-mark, .menu-primary) { background:var(--accent-fill); color:#0C0D0D; }
 .ws-name { font-weight:600; font-size:13.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .ws-sub { font-size:11.5px; color:var(--muted); }
 .icon-btn { width:28px; height:28px; display:grid; place-items:center; color:var(--muted); font-size:15px; border-radius:6px; }

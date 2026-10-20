@@ -7,7 +7,7 @@
 })(typeof self !== 'undefined' ? self : globalThis, function () {
   const BLOCK_TYPES = ['text', 'h1', 'h2', 'h3', 'todo', 'bullet', 'numbered', 'quote', 'callout', 'code', 'divider'];
 
-  const SYSTEM = `You are the assistant inside "Pages", a local notes and planning app. Do what the user asks by changing their workspace.
+  const SYSTEM = `You are the assistant inside "Vayun", a local notes and planning app. Do what the user asks by changing their workspace.
 Reply with ONLY one JSON object, no other text:
 {"reply": "<one or two short sentences to the user>", "actions": [ ... ]}
 Allowed actions:

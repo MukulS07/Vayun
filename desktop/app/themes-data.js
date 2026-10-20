@@ -16,6 +16,22 @@ window.FOLIO_APP_THEMES = {
   "accent": "#3D5AFE",
   "cover": "linear-gradient(120deg,#E9ECFF,#FFF4D1)"
  },
+ "vayun": {
+  "name": "Vayun",
+  "mode": "Dark",
+  "dark": true,
+  "bg": "#0C0D0D",
+  "side": "#080909",
+  "surface": "#121413",
+  "card": "#161917",
+  "text": "#ECEFEA",
+  "text2": "#C4CAC3",
+  "muted": "#8B938C",
+  "line": "#242926",
+  "lineSoft": "#1B1F1D",
+  "accent": "#C8D2C5",
+  "cover": "linear-gradient(120deg,#E6EBE3,#7F9083)"
+ },
  "midnight": {
   "name": "Midnight",
   "mode": "Dark",

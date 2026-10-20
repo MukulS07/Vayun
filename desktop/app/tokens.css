@@ -179,6 +179,23 @@
   --sel: rgba(26,26,30,0.06);
 }
 
+:root[data-app-theme="vayun"] {
+  --bg: #0C0D0D;
+  --side: #080909;
+  --surface: #121413;
+  --card: #161917;
+  --fg: #ECEFEA;
+  --fg-2: #C4CAC3;
+  --muted: #8B938C;
+  --line: #242926;
+  --line-soft: #1B1F1D;
+  --hover: rgba(214,226,212,0.06);
+  --accent: #C8D2C5;
+  --accent-ink: #111111;
+  --cover: linear-gradient(120deg,#E6EBE3,#7F9083);
+  --sel: rgba(214,226,212,0.06);
+}
+
 :root[data-app-theme="midnight"] {
   --bg: #17171B;
   --side: #111114;

@@ -4,7 +4,7 @@
   if (typeof module !== 'undefined') module.exports = api;
   else root.FolioTheme = api;
 })(typeof self !== 'undefined' ? self : globalThis, function () {
-  const DEFAULT_APPEARANCE = { theme: 'midnight', accent: null, font: 'sans', density: 'comfy', radius: 'soft', width: 'default' };
+  const DEFAULT_APPEARANCE = { theme: 'vayun', accent: null, font: 'sans', density: 'comfy', radius: 'soft', width: 'default' };
   const OPTIONS = {
     font: ['sans', 'serif', 'mono'],
     density: ['comfy', 'compact'],

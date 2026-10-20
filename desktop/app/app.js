@@ -40,7 +40,9 @@ window.addEventListener('beforeunload', () => { clearTimeout(saveTimer); api.sav
 // Appearance: the shell theme, accent, font, density, corners and width. Mirrors into localStorage so
 // theme-boot.js can paint the right theme before the workspace file loads.
 function applyTheme() {
-  if (!data.appearance) data.appearance = { theme: data.theme === 'light' ? 'paper' : 'midnight' };
+  if (!data.appearance) data.appearance = { theme: data.theme === 'light' ? 'paper' : 'vayun' };
+  // One time: workspaces still on the old default dark theme move to the Vayun brand theme.
+  if (!data.brandTheme) { if (data.appearance.theme === 'midnight') data.appearance.theme = 'vayun'; data.brandTheme = 1; }
   const a = (data.appearance = FolioTheme.sanitizeAppearance(data.appearance));
   const info = FOLIO_APP_THEMES[a.theme] || { dark: true };
   const root = document.documentElement;
@@ -220,7 +222,7 @@ function createTemplatePage({ template, theme, sample }) {
 
 function toggleLightDark() {
   const dark = (FOLIO_APP_THEMES[data.appearance && data.appearance.theme] || { dark: true }).dark;
-  data.appearance = { ...(data.appearance || {}), theme: dark ? 'paper' : 'midnight' };
+  data.appearance = { ...(data.appearance || {}), theme: dark ? 'paper' : 'vayun' };
   applyTheme();
   save();
 }

@@ -4,6 +4,10 @@ const fs = require('node:fs');
 const { pdfToBlocks } = require('./pdf-import');
 const { importNotionZip } = require('./notion-import');
 
+// The app was renamed from Pages to Vayun; keep reading and writing the existing data folder.
+// An explicit --user-data-dir (used by tests and separate profiles) still wins.
+if (!app.commandLine.hasSwitch('user-data-dir')) app.setPath('userData', path.join(app.getPath('appData'), 'Pages'));
+
 // Works from any app, like Notion's quickSearchShortcut preference. Ctrl+K stays the in-window shortcut.
 const QUICK_SEARCH_SHORTCUT = 'CommandOrControl+Alt+K';
 const webPreferences = { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true };
@@ -77,7 +81,7 @@ function sendWhenLoaded(win, channel, ...args) {
 
 function showMain(pageId) {
   if (!mainWin) {
-    mainWin = new BrowserWindow({ width: 1100, height: 750, title: 'Pages', webPreferences });
+    mainWin = new BrowserWindow({ width: 1100, height: 750, title: 'Vayun', icon: path.join(__dirname, 'app', 'brand', 'vayun-icon.png'), webPreferences });
     mainWin.on('closed', () => {
       mainWin = null;
       if (process.platform !== 'darwin') app.quit(); // no tray, so closing the main window quits
