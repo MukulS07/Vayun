@@ -19,6 +19,7 @@ const BLOCK_MENU = [
   ['divider', 'Divider', 'Separate sections', '—'],
 ];
 const CONTINUES = ['bullet', 'todo', 'numbered']; // Enter on these starts another of the same type
+let lastBlockId = null; // block that last had focus, where dictation types
 
 let data, current, mode = 'doc', saveTimer, pendingPageId;
 let openTabs = [];
@@ -307,6 +308,12 @@ function renderToolbar() {
       for (const t of VIEW_TYPES) add(button(t[0].toUpperCase() + t.slice(1), () => { current.view = { ...v, type: t }; render(); save(); }, { active: v.type === t, id: `view-${t}` }));
       add(button('+ Row', addRow, { id: 'add-row' }), button('+ Property', addProperty, { id: 'add-prop' }));
     }
+    if (!isDb(current) && mode === 'doc') {
+      const mic = button('🎙 Dictate', dictate, { id: 'dictate-btn' });
+      mic.title = 'Speak to type into the page (Windows voice typing)';
+      mic.onmousedown = e => e.preventDefault(); // keep the caret in the block being edited
+      add(mic);
+    }
     add(button('Mindmap', () => { mode = mode === 'mindmap' ? 'doc' : 'mindmap'; render(); }, { id: 'mm-btn', active: mode === 'mindmap' }));
     more.push(button('Add subpage', () => createPage(current.id), { id: 'sub-btn' }));
     const exp = isDb(current) ? [['CSV', 'csv']] : [['HTML', 'html'], ['Markdown', 'md']];
@@ -382,6 +389,7 @@ function renderBlocks(focusId, caret = 0) {
   current.blocks.forEach(b => {
     const row = document.createElement('div');
     row.className = `block ${b.type}`;
+    row.dataset.id = b.id;
     n = b.type === 'numbered' ? n + 1 : 0;
     if (n) row.dataset.n = n;
     const plus = document.createElement('button');
@@ -434,6 +442,7 @@ function renderBlocks(focusId, caret = 0) {
     t.dataset.placeholder = b.type === 'text' ? "Type '/' for commands" : label;
     t.oninput = () => onInput(b, t);
     t.onkeydown = e => onKey(e, b, t);
+    t.onfocus = () => { lastBlockId = b.id; };
     t.onblur = () => setTimeout(() => { if (slash && slash.b === b && document.activeElement !== t) closeSlash(); }, 120);
     row.append(t);
     box.append(row);
@@ -445,6 +454,21 @@ function renderBlocks(focusId, caret = 0) {
   more.textContent = '+ Add a block';
   more.onclick = () => insertSlashBlock(current.blocks.length);
   box.append(more);
+}
+
+// Puts the caret in the last edited block (or a new one at the end) and opens Windows voice typing there.
+async function dictate() {
+  let b = current.blocks.find(x => x.id === lastBlockId && x.type !== 'divider');
+  if (!b) {
+    const last = current.blocks.at(-1);
+    b = last && last.type === 'text' && !last.text ? last : { id: uid(), type: 'text', text: '' };
+    if (b !== last) { current.blocks.push(b); save(); }
+    renderBlocks(b.id, Infinity);
+  }
+  const t = document.querySelector(`#blocks [data-id="${b.id}"] .text`);
+  if (t && document.activeElement !== t) setCaret(t, Infinity);
+  const r = await api.startDictation();
+  if (r?.error) $('#dictate-btn').title = r.error;
 }
 
 // Inserts an empty block holding "/" at index, so the command menu opens on it.

@@ -165,7 +165,12 @@
     input.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
     const go = el('button', 'primary', 'Send');
     go.type = 'submit';
-    form.append(input, go);
+    const mic = el('button', 'ai-mic', '🎙');
+    mic.type = 'button';
+    mic.title = 'Speak instead of typing (Windows voice typing). Press Send when done.';
+    mic.setAttribute('aria-label', 'Dictate');
+    mic.onclick = async () => { input.focus(); const r = await api.startDictation(); if (r?.error) mic.title = r.error; };
+    form.append(input, mic, go);
     form.onsubmit = e => { e.preventDefault(); send(); };
     b.append(log, form);
     input.focus();

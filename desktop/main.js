@@ -137,6 +137,19 @@ app.whenReady().then(() => {
   ipcMain.handle('ai:setKey', (_e, { key, model }) => ai.setKey(key, model));
   ipcMain.handle('ai:clearKey', () => ai.clearKey());
   ipcMain.handle('ai:chat', (_e, messages) => ai.chat(messages));
+  // Dictation: opens Windows voice typing (Win+H) in whatever field has focus. Fixed script, no user input.
+  ipcMain.handle('voice:start', () => new Promise(resolve => {
+    if (process.platform !== 'win32') return resolve({ error: 'Voice typing is only wired up on Windows.' });
+    const ps = [
+      "$s = '[DllImport(\"user32.dll\")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);'",
+      '$k = Add-Type -MemberDefinition $s -Name K -Namespace PagesVoice -PassThru',
+      '$k::keybd_event(0x5B, 0, 0, [UIntPtr]::Zero); $k::keybd_event(0x48, 0, 0, [UIntPtr]::Zero)',
+      '$k::keybd_event(0x48, 0, 2, [UIntPtr]::Zero); $k::keybd_event(0x5B, 0, 2, [UIntPtr]::Zero)',
+    ].join('; ');
+    const encoded = Buffer.from(ps, 'utf16le').toString('base64');
+    require('node:child_process').execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], { windowsHide: true },
+      err => resolve(err ? { error: 'Could not start voice typing.' } : { ok: true }));
+  }));
   ipcMain.on('data:save', (e, next) => {
     try { e.returnValue = saveData(next); }
     catch (err) { console.error('Save failed', err); e.returnValue = false; }
