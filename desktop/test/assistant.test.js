@@ -8,6 +8,11 @@ test('assistant: parses JSON wrapped in fences and prose', () => {
   assert.deepStrictEqual(r.actions, [{ type: 'rename_page', title: 'Trip' }]);
   assert.deepStrictEqual(A.parseReply('Just words'), { reply: 'Just words', actions: [] });
   assert.strictEqual(A.parseReply('<think>maybe {x}</think>{"reply":"Hi","actions":[]}').reply, 'Hi');
+  // Real Nemotron reply that dropped the final brace
+  const cut = A.parseReply('{"reply": "Added it.", "actions": [{"type": "add_blocks", "blocks": [{"type": "todo", "text": "Set clear goals {a}"}]}, {"type": "rename_page", "title": "Weekly"}]');
+  assert.strictEqual(cut.reply, 'Added it.');
+  assert.deepStrictEqual(cut.actions.map(x => x.type), ['add_blocks', 'rename_page']);
+  assert.strictEqual(A.parseReply('{"reply": "x", "actions": [{"type"').reply, 'I could not read the AI answer. Please try again.');
 });
 
 test('assistant: actions are validated; unknown types and empty blocks dropped', () => {

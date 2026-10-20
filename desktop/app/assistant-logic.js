@@ -42,16 +42,44 @@ Rules: write real, useful content, not placeholders. If the user only asks a que
     return [{ role: 'system', content: SYSTEM }, ...history.slice(-6).map(m => ({ role: m.role, content: clip(m.content, 4000) })), { role: 'user', content: user }];
   }
 
+  // Returns the first balanced JSON object in s. If the text ends while brackets are still open
+  // (models sometimes drop the final "}"), the missing closers are added.
+  function extractJson(s) {
+    const start = s.indexOf('{');
+    if (start < 0) return null;
+    const stack = [];
+    let inStr = false, esc = false;
+    for (let i = start; i < s.length; i++) {
+      const ch = s[i];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (ch === '\\') esc = true;
+        else if (ch === '"') inStr = false;
+        continue;
+      }
+      if (ch === '"') inStr = true;
+      else if (ch === '{') stack.push('}');
+      else if (ch === '[') stack.push(']');
+      else if (ch === '}' || ch === ']') {
+        if (stack.pop() !== ch) return null;
+        if (!stack.length) return s.slice(start, i + 1);
+      }
+    }
+    return inStr ? null : s.slice(start).trimEnd().replace(/,$/, '') + stack.reverse().join('');
+  }
+
   // Pulls the JSON object out of the model's text (it may wrap it in code fences or add words around it).
   function parseReply(text) {
     const s = String(text || '').replace(/<think>[\s\S]*?<\/think>/gi, '').replace(/```(?:json)?/gi, '');
-    const a = s.indexOf('{'), b = s.lastIndexOf('}');
-    if (a >= 0 && b > a) {
+    const json = extractJson(s);
+    if (json) {
       try {
-        const obj = JSON.parse(s.slice(a, b + 1));
+        const obj = JSON.parse(json);
         return { reply: clip(obj.reply ?? '', 2000).trim(), actions: Array.isArray(obj.actions) ? obj.actions : [] };
       } catch { /* not JSON: fall through */ }
     }
+    // Never show raw JSON to the user; plain-text answers pass through.
+    if (/^\s*\{/.test(s)) return { reply: 'I could not read the AI answer. Please try again.', actions: [] };
     return { reply: s.trim().slice(0, 2000), actions: [] };
   }
 
