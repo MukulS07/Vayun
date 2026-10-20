@@ -98,7 +98,11 @@
     const model = el('input');
     model.value = st.model;
     model.spellcheck = false;
-    modelLabel.append(model);
+    const options = el('datalist');
+    options.id = 'ai-models';
+    for (const id of st.models || []) { const o = el('option'); o.value = id; options.append(o); }
+    model.setAttribute('list', 'ai-models');
+    modelLabel.append(model, options);
     const err = el('p', 'ai-error');
     err.hidden = true;
     const row = el('div', 'ai-row');

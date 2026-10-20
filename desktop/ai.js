@@ -5,7 +5,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const NVIDIA_ENDPOINT = 'https://integrate.api.nvidia.com/v1/chat/completions';
-const DEFAULT_MODEL = 'nvidia/nemotron-3.5-lightning-30b-a3b';
+const DEFAULT_MODEL = 'nvidia/nemotron-3.5-super-vl-120b-a12b';
+// Offered in the settings picker; any other model id from build.nvidia.com can be typed in.
+const MODELS = [DEFAULT_MODEL, 'nvidia/nemotron-3.5-lightning-30b-a3b', 'nvidia/nemotron-3-ultra-550b-a55b'];
 // Tests may point the assistant at a local fake server; only loopback hosts are accepted so a key can't be sent elsewhere.
 function endpoint() {
   const o = process.env.PAGES_AI_ENDPOINT;
@@ -19,7 +21,7 @@ function write(cfg) { fs.writeFileSync(file(), JSON.stringify(cfg)); }
 
 function status() {
   const c = read();
-  return { hasKey: Boolean(c.key), model: c.model || DEFAULT_MODEL };
+  return { hasKey: Boolean(c.key), model: c.model || DEFAULT_MODEL, models: MODELS };
 }
 
 function setKey(key, model) {
@@ -29,7 +31,9 @@ function setKey(key, model) {
   const c = read();
   if (key) c.key = safeStorage.encryptString(key).toString('base64');
   const m = String(model || '').trim();
-  if (m) c.model = m.slice(0, 120);
+  // The default is not stored, so a later change of default reaches people who never picked a model.
+  if (m === DEFAULT_MODEL) delete c.model;
+  else if (m) c.model = m.slice(0, 120);
   write(c);
   return status();
 }
