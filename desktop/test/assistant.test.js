@@ -35,3 +35,10 @@ test('assistant: prompt carries page context as data and the request last', () =
   assert.ok(last.includes('Current page: "Home"') && last.includes('1. [todo x] Clean') && last.includes('"Work"'));
   assert.ok(last.trimEnd().endsWith('User request: Make a checklist'));
 });
+
+test('assistant: create_page keeps a parent; mind map view is described', () => {
+  const acts = A.sanitizeActions([{ type: 'create_page', title: 'Marketing', parent: 'current' }, { type: 'create_page', title: 'Top' }]);
+  assert.deepStrictEqual(acts, [{ type: 'create_page', title: 'Marketing', blocks: [], parent: 'current' }, { type: 'create_page', title: 'Top', blocks: [] }]);
+  const last = A.buildMessages('Add branches', { view: 'mindmap', subpages: ['Ideas'], page: { title: 'Launch', blocks: [] } }).at(-1).content;
+  assert.ok(last.includes('shown as a mind map') && last.includes('mind map nodes): "Ideas"'));
+});

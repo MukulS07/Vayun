@@ -14,8 +14,11 @@
   };
   const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-  function newPage(title, blocks) {
-    const page = { id: uid(), title, parentId: null, blocks: blocks.length ? blocks : [{ id: uid(), type: 'text', text: '' }] };
+  const findByTitle = t => data.pages.find(p => (p.title || '').toLowerCase() === t.toLowerCase())
+    || data.pages.find(p => (p.title || '').toLowerCase().includes(t.toLowerCase()));
+
+  function newPage(title, blocks, parentId = null) {
+    const page = { id: uid(), title, parentId, blocks: blocks.length ? blocks : [{ id: uid(), type: 'text', text: '' }] };
     data.pages.push(page);
     return page;
   }
@@ -35,14 +38,16 @@
         target = page;
         lines.push(`Added ${plural(fresh.length, 'block')} to "${page.title || 'Untitled'}"`);
       } else if (a.type === 'create_page') {
-        target = newPage(a.title, withIds(a.blocks));
-        lines.push(`Created page "${a.title}"`);
+        // A parent makes it a subpage (a mind map node); the view stays where it is.
+        const parent = !a.parent ? null : a.parent.toLowerCase() === 'current' ? current : findByTitle(a.parent) || current;
+        const page = newPage(a.title, withIds(a.blocks), parent ? parent.id : null);
+        if (parent) lines.push(`Added "${a.title}" under "${parent.title || 'Untitled'}"`);
+        else { target = page; lines.push(`Created page "${a.title}"`); }
       } else if (a.type === 'rename_page') {
         const page = target || current;
         if (page) { page.title = a.title; target = page; lines.push(`Renamed the page to "${a.title}"`); }
       } else if (a.type === 'open_page') {
-        const found = data.pages.find(p => (p.title || '').toLowerCase() === a.title.toLowerCase())
-          || data.pages.find(p => (p.title || '').toLowerCase().includes(a.title.toLowerCase()));
+        const found = findByTitle(a.title);
         if (found) { target = found; lines.push(`Opened "${found.title}"`); } else lines.push(`No page named "${a.title}"`);
       } else if (a.type === 'create_template') {
         const id = uid();
@@ -51,7 +56,8 @@
         lines.push(`Created a ${a.template === 'life' ? 'Life OS' : 'Study OS'} page`);
       }
     }
-    if (target) openPage(target.id); else render();
+    const view = mode === 'mindmap' ? 'mindmap' : 'doc';
+    openPage((target || current).id, view);
     save();
     return lines;
   }
@@ -184,7 +190,7 @@
       input.value = '';
       bubble('user', text);
       const wait = bubble('bot thinking', 'Thinking…');
-      const ctx = { page: current && { title: current.title, kind: current.kind, blocks: current.blocks }, pageTitles: data.pages.filter(p => !p.props).map(p => p.title) };
+      const ctx = { view: mode, subpages: data.pages.filter(p => p.parentId === current?.id).map(p => p.title), page: current && { title: current.title, kind: current.kind, blocks: current.blocks }, pageTitles: data.pages.filter(p => !p.props).map(p => p.title) };
       const r = await api.aiChat(A.buildMessages(text, ctx, history));
       wait.remove();
       busy = false;
@@ -207,7 +213,7 @@
         undo.type = 'button';
         undo.onclick = () => {
           data.pages = snapshot;
-          openPage(byId(before) ? before : data.pages[0].id);
+          openPage(byId(before) ? before : data.pages[0].id, mode === 'mindmap' ? 'mindmap' : 'doc');
           save();
           undo.disabled = true;
           undo.textContent = 'Undone';
