@@ -10,14 +10,22 @@
   function toMarkdown(page) {
     const lines = [`# ${page.title || 'Untitled'}`, ''];
     let prevList = false;
+    let n = 0;
     for (const b of page.blocks || []) {
       const t = b.text || '';
-      const isList = b.type === 'bullet' || b.type === 'todo';
+      const isList = b.type === 'bullet' || b.type === 'todo' || b.type === 'numbered';
+      n = b.type === 'numbered' ? n + 1 : 0;
       let line = t;
       if (b.type === 'h1') line = `## ${t}`;
       else if (b.type === 'h2') line = `### ${t}`;
+      else if (b.type === 'h3') line = `#### ${t}`;
       else if (b.type === 'bullet') line = `- ${t}`;
+      else if (b.type === 'numbered') line = `${n}. ${t}`;
       else if (b.type === 'todo') line = `- [${b.checked ? 'x' : ' '}] ${t}`;
+      else if (b.type === 'quote') line = t.split('\n').map(l => `> ${l}`).join('\n');
+      else if (b.type === 'callout') line = `> 💡 ${t}`;
+      else if (b.type === 'code') line = '```\n' + t + '\n```';
+      else if (b.type === 'divider') line = '---';
       if (prevList && !isList) lines.push(''); // a blank line only where a list ends
       lines.push(line);
       if (!isList) lines.push('');
@@ -28,11 +36,14 @@
 
   function toHtml(page) {
     const out = [];
-    let list = null; // 'ul' while inside a run of bullet or to-do items
+    let list = null; // 'ul' or 'ol' while inside a run of list items
     const close = () => { if (list) { out.push(`</${list}>`); list = null; } };
     for (const b of page.blocks || []) {
       const t = esc(b.text || '');
-      if (b.type === 'bullet' || b.type === 'todo') {
+      if (b.type === 'numbered') {
+        if (list !== 'ol') { close(); out.push('<ol>'); list = 'ol'; }
+        out.push(`<li>${t}</li>`);
+      } else if (b.type === 'bullet' || b.type === 'todo') {
         if (list !== 'ul') { close(); out.push('<ul>'); list = 'ul'; }
         out.push(b.type === 'todo'
           ? `<li><input type="checkbox" disabled${b.checked ? ' checked' : ''}> ${t}</li>`
@@ -41,6 +52,11 @@
         close();
         if (b.type === 'h1') out.push(`<h2>${t}</h2>`);
         else if (b.type === 'h2') out.push(`<h3>${t}</h3>`);
+        else if (b.type === 'h3') out.push(`<h4>${t}</h4>`);
+        else if (b.type === 'quote') out.push(`<blockquote>${t}</blockquote>`);
+        else if (b.type === 'callout') out.push(`<blockquote>💡 ${t}</blockquote>`);
+        else if (b.type === 'code') out.push(`<pre><code>${t}</code></pre>`);
+        else if (b.type === 'divider') out.push('<hr>');
         else out.push(`<p>${t}</p>`);
       }
     }

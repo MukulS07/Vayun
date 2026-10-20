@@ -3,7 +3,22 @@ const uid = () => crypto.randomUUID().slice(0, 8);
 const byId = id => data.pages.find(p => p.id === id);
 const isDb = p => p?.kind === 'database';
 // Typing "# " etc. at the start of a plain block converts it.
-const SHORTCUTS = [['# ', 'h1'], ['## ', 'h2'], ['- ', 'bullet'], ['[] ', 'todo']];
+const SHORTCUTS = [['# ', 'h1'], ['## ', 'h2'], ['### ', 'h3'], ['- ', 'bullet'], ['[] ', 'todo'], ['1. ', 'numbered'], ['> ', 'quote'], ['``` ', 'code']];
+// Block types offered by the "/" menu and the + buttons: [type, label, hint, icon].
+const BLOCK_MENU = [
+  ['text', 'Text', 'Plain paragraph', 'T'],
+  ['h1', 'Heading 1', 'Big section heading', 'H1'],
+  ['h2', 'Heading 2', 'Medium section heading', 'H2'],
+  ['h3', 'Heading 3', 'Small section heading', 'H3'],
+  ['todo', 'To-do list', 'Track tasks with a checkbox', '☐'],
+  ['bullet', 'Bulleted list', 'A simple list', '•'],
+  ['numbered', 'Numbered list', 'A list with numbers', '1.'],
+  ['quote', 'Quote', 'Capture a quote', '❝'],
+  ['callout', 'Callout', 'Make a note stand out', '💡'],
+  ['code', 'Code', 'Monospace code', '</>'],
+  ['divider', 'Divider', 'Separate sections', '—'],
+];
+const CONTINUES = ['bullet', 'todo', 'numbered']; // Enter on these starts another of the same type
 
 let data, current, mode = 'doc', saveTimer, pendingPageId;
 let openTabs = [];
@@ -359,11 +374,48 @@ function setCaret(el, pos) {
 }
 
 function renderBlocks(focusId, caret = 0) {
+  closeSlash();
   const box = $('#blocks');
   box.innerHTML = '';
+  let n = 0;
   current.blocks.forEach(b => {
     const row = document.createElement('div');
     row.className = `block ${b.type}`;
+    n = b.type === 'numbered' ? n + 1 : 0;
+    if (n) row.dataset.n = n;
+    const plus = document.createElement('button');
+    plus.type = 'button';
+    plus.className = 'block-add';
+    plus.textContent = '+';
+    plus.title = 'Add a block below';
+    plus.setAttribute('aria-label', 'Add a block below');
+    plus.onclick = () => insertSlashBlock(current.blocks.indexOf(b) + 1);
+    row.append(plus);
+    if (b.type === 'divider') {
+      row.tabIndex = 0;
+      row.setAttribute('role', 'separator');
+      row.setAttribute('aria-label', 'Divider. Press Delete to remove.');
+      row.append(document.createElement('hr'));
+      row.onkeydown = e => {
+        if (e.key !== 'Backspace' && e.key !== 'Delete') return;
+        e.preventDefault();
+        const i = current.blocks.indexOf(b);
+        current.blocks.splice(i, 1);
+        if (!current.blocks.length) current.blocks.push({ id: uid(), type: 'text', text: '' });
+        renderBlocks(current.blocks[Math.min(i, current.blocks.length - 1)].id);
+        save();
+      };
+      box.append(row);
+      if (b.id === focusId) row.focus();
+      return;
+    }
+    if (b.type === 'callout') {
+      const ico = document.createElement('span');
+      ico.className = 'callout-icon';
+      ico.setAttribute('aria-hidden', 'true');
+      ico.textContent = '💡';
+      row.append(ico);
+    }
     if (b.type === 'todo') {
       const cb = document.createElement('input');
       cb.type = 'checkbox';
@@ -377,42 +429,189 @@ function renderBlocks(focusId, caret = 0) {
     t.className = 'text';
     t.contentEditable = 'plaintext-only';
     t.textContent = b.text;
-    if (current.blocks.length === 1) t.dataset.placeholder = "Type '# ' for a heading, '- ' for a list, '[] ' for a to-do";
+    const label = (BLOCK_MENU.find(m => m[0] === b.type) || BLOCK_MENU[0])[1];
+    t.dataset.placeholder = b.type === 'text' ? "Type '/' for commands" : label;
     t.oninput = () => onInput(b, t);
     t.onkeydown = e => onKey(e, b, t);
+    t.onblur = () => setTimeout(() => { if (slash && slash.b === b && document.activeElement !== t) closeSlash(); }, 120);
     row.append(t);
     box.append(row);
     if (b.id === focusId) setCaret(t, caret);
   });
+  const more = document.createElement('button');
+  more.type = 'button';
+  more.className = 'add-block';
+  more.textContent = '+ Add a block';
+  more.onclick = () => insertSlashBlock(current.blocks.length);
+  box.append(more);
+}
+
+// Inserts an empty block holding "/" at index, so the command menu opens on it.
+function insertSlashBlock(index) {
+  const b = { id: uid(), type: 'text', text: '/' };
+  current.blocks.splice(index, 0, b);
+  renderBlocks(b.id, 1);
+  const t = [...$('#blocks').children].find(r => r.contains(document.activeElement))?.querySelector('.text');
+  if (t) openSlash(b, t, 0, '');
 }
 
 function onInput(b, t) {
   b.text = t.textContent;
+  if (b.type === 'text' && b.text === '---') {
+    b.type = 'divider';
+    b.text = '';
+    const next = { id: uid(), type: 'text', text: '' };
+    current.blocks.splice(current.blocks.indexOf(b) + 1, 0, next);
+    renderBlocks(next.id);
+    return save();
+  }
   const match = b.type === 'text' && SHORTCUTS.find(([prefix]) => b.text.startsWith(prefix));
   if (match) {
     const caret = caretOffset(t) - match[0].length;
     b.type = match[1];
     b.text = b.text.slice(match[0].length);
     renderBlocks(b.id, Math.max(0, caret));
+    return save();
   }
+  // "/" at the start or after a space opens the command menu; the text after it filters the list.
+  const before = b.text.slice(0, caretOffset(t));
+  const m = b.type !== 'code' && /(^|\s)\/([^\s/]*)$/.exec(before);
+  if (m) openSlash(b, t, before.length - m[2].length - 1, m[2]);
+  else closeSlash();
   save();
 }
 
+/* "/" command menu */
+
+let slash = null; // { b, t, start, query, items, active, el }
+
+function openSlash(b, t, start, query) {
+  const q = query.toLowerCase();
+  const items = BLOCK_MENU.filter(([type, label]) => !q || label.toLowerCase().includes(q) || type.includes(q));
+  if (!slash) {
+    const el = document.createElement('div');
+    el.className = 'slash-menu';
+    el.setAttribute('role', 'listbox');
+    el.setAttribute('aria-label', 'Block types');
+    document.body.append(el);
+    slash = { el };
+  }
+  Object.assign(slash, { b, t, start, query, items, active: Math.min(slash.b === b ? slash.active || 0 : 0, Math.max(0, items.length - 1)) });
+  drawSlash();
+  const range = getSelection().rangeCount ? getSelection().getRangeAt(0).getBoundingClientRect() : null;
+  const r = range && range.height ? range : t.getBoundingClientRect();
+  const below = r.bottom + 6 + slash.el.offsetHeight < innerHeight;
+  slash.el.style.left = `${Math.min(r.left, innerWidth - slash.el.offsetWidth - 12)}px`;
+  slash.el.style.top = `${below ? r.bottom + 6 : Math.max(8, r.top - slash.el.offsetHeight - 6)}px`;
+}
+
+function drawSlash() {
+  const { el, items, active } = slash;
+  el.innerHTML = '';
+  const head = document.createElement('div');
+  head.className = 'slash-head';
+  head.textContent = 'Basic blocks';
+  el.append(head);
+  if (!items.length) {
+    const none = document.createElement('div');
+    none.className = 'slash-empty';
+    none.textContent = 'No matching blocks';
+    return el.append(none);
+  }
+  items.forEach(([type, label, hint, ico], i) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'slash-item' + (i === active ? ' on' : '');
+    item.setAttribute('role', 'option');
+    item.setAttribute('aria-selected', String(i === active));
+    item.dataset.type = type;
+    const icon = document.createElement('span');
+    icon.className = 'slash-ico';
+    icon.textContent = ico;
+    const text = document.createElement('span');
+    const l = document.createElement('div');
+    l.className = 'slash-label';
+    l.textContent = label;
+    const hnt = document.createElement('div');
+    hnt.className = 'slash-hint';
+    hnt.textContent = hint;
+    text.append(l, hnt);
+    item.append(icon, text);
+    item.onmousedown = e => { e.preventDefault(); pickSlash(type); };
+    el.append(item);
+    if (i === active) item.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+function closeSlash() {
+  if (!slash) return;
+  slash.el.remove();
+  slash = null;
+}
+
+// Applies the picked type: an empty block changes type, otherwise a new block goes below it.
+function pickSlash(type) {
+  const { b, start, query } = slash;
+  closeSlash();
+  b.text = (b.text.slice(0, start) + b.text.slice(start + 1 + query.length)).trimEnd();
+  const i = current.blocks.indexOf(b);
+  let target = b;
+  if (b.text.trim()) {
+    target = { id: uid(), type, text: '' };
+    current.blocks.splice(i + 1, 0, target);
+  } else {
+    b.type = type;
+    b.text = '';
+  }
+  if (type === 'todo') target.checked = false;
+  if (type === 'divider') {
+    const next = { id: uid(), type: 'text', text: '' };
+    current.blocks.splice(current.blocks.indexOf(target) + 1, 0, next);
+    target = next;
+  }
+  renderBlocks(target.id, Infinity);
+  save();
+}
+
+// Nearest block in direction dir (+1 / -1) that has editable text.
+function textNeighbour(i, dir) {
+  for (let j = i + dir; j >= 0 && j < current.blocks.length; j += dir) if (current.blocks[j].type !== 'divider') return current.blocks[j];
+  return null;
+}
+
 function onKey(e, b, t) {
+  if (slash && slash.b === b) {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const len = slash.items.length || 1;
+      slash.active = (slash.active + (e.key === 'ArrowDown' ? 1 : len - 1)) % len;
+      return drawSlash();
+    }
+    if ((e.key === 'Enter' || e.key === 'Tab') && slash.items.length) { e.preventDefault(); return pickSlash(slash.items[slash.active][0]); }
+    if (e.key === 'Escape') { e.preventDefault(); return closeSlash(); }
+  }
   const i = current.blocks.indexOf(b);
   const atStart = getSelection().isCollapsed && caretOffset(t) === 0;
-  if (e.key === 'Enter' && !e.shiftKey) {
+  if (e.key === 'Enter' && b.type === 'code' && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault(); // Enter adds a line inside code; Ctrl+Enter leaves the block
+    document.execCommand('insertText', false, '\n');
+  } else if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
     if (!b.text && b.type !== 'text') { b.type = 'text'; renderBlocks(b.id); return save(); } // Enter on an empty list item ends the list
-    const pos = caretOffset(t);
-    const next = { id: uid(), type: b.type === 'bullet' || b.type === 'todo' ? b.type : 'text', text: b.text.slice(pos) };
+    const pos = b.type === 'code' ? b.text.length : caretOffset(t);
+    const next = { id: uid(), type: CONTINUES.includes(b.type) ? b.type : 'text', text: b.text.slice(pos) };
     b.text = b.text.slice(0, pos);
     current.blocks.splice(i + 1, 0, next);
     renderBlocks(next.id);
     save();
   } else if (e.key === 'Backspace' && atStart) {
     if (b.type !== 'text') { e.preventDefault(); b.type = 'text'; renderBlocks(b.id); save(); }
-    else if (i > 0) {
+    else if (i > 0 && current.blocks[i - 1].type === 'divider') {
+      e.preventDefault();
+      current.blocks.splice(i - 1, 1);
+      renderBlocks(b.id);
+      save();
+    } else if (i > 0) {
       e.preventDefault();
       const prev = current.blocks[i - 1], at = prev.text.length;
       prev.text += b.text;
@@ -420,12 +619,12 @@ function onKey(e, b, t) {
       renderBlocks(prev.id, at);
       save();
     }
-  } else if (e.key === 'ArrowUp' && atStart && i > 0) {
+  } else if (e.key === 'ArrowUp' && atStart && textNeighbour(i, -1)) {
     e.preventDefault();
-    renderBlocks(current.blocks[i - 1].id, Infinity);
-  } else if (e.key === 'ArrowDown' && caretOffset(t) === b.text.length && i < current.blocks.length - 1) {
+    renderBlocks(textNeighbour(i, -1).id, Infinity);
+  } else if (e.key === 'ArrowDown' && caretOffset(t) === b.text.length && textNeighbour(i, 1)) {
     e.preventDefault();
-    renderBlocks(current.blocks[i + 1].id, 0);
+    renderBlocks(textNeighbour(i, 1).id, 0);
   }
 }
 

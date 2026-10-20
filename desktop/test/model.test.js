@@ -85,3 +85,14 @@ test('csv export quotes commas, quotes and newlines', () => {
   assert.ok(csv.includes('"Hi, ""there"""'));
   assert.ok(csv.includes('"a\nb"'));
 });
+
+test('export: numbered, quote, callout, code, divider and h3 blocks', () => {
+  const page = { title: 'Notes', blocks: [
+    { type: 'h3', text: 'Small' }, { type: 'numbered', text: 'One' }, { type: 'numbered', text: 'Two' },
+    { type: 'quote', text: 'Said' }, { type: 'callout', text: 'Tip' }, { type: 'code', text: 'x = 1' }, { type: 'divider', text: '' },
+  ] };
+  assert.strictEqual(toMarkdown(page), '# Notes\n\n#### Small\n\n1. One\n2. Two\n\n> Said\n\n> 💡 Tip\n\n```\nx = 1\n```\n\n---\n');
+  const html = toHtml(page);
+  assert.ok(html.includes('<h4>Small</h4><ol><li>One</li><li>Two</li></ol><blockquote>Said</blockquote>') || /<h4>Small<\/h4>\s*<ol>\s*<li>One<\/li>\s*<li>Two<\/li>\s*<\/ol>\s*<blockquote>Said<\/blockquote>/.test(html), html);
+  assert.ok(/<pre><code>x = 1<\/code><\/pre>\s*<hr>/.test(html), html);
+});
