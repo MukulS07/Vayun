@@ -63,3 +63,5 @@ $('#new-form').addEventListener('submit', async e => {
 });
 
 render();
+// Window buttons match the start page background.
+{ const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim(); api.setTitleBar?.(css('--bg'), css('--muted')); }

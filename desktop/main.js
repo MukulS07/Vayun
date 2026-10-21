@@ -10,6 +10,7 @@ if (!app.commandLine.hasSwitch('user-data-dir')) app.setPath('userData', path.jo
 
 // Works from any app, like Notion's quickSearchShortcut preference. Ctrl+K stays the in-window shortcut.
 const QUICK_SEARCH_SHORTCUT = 'CommandOrControl+Alt+K';
+const TITLEBAR_H = 40; // matches the tab bar height in style.css
 const webPreferences = { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true };
 let data, mainWin, quickWin;
 
@@ -81,7 +82,13 @@ function sendWhenLoaded(win, channel, ...args) {
 
 function showMain(pageId) {
   if (!mainWin) {
-    mainWin = new BrowserWindow({ width: 1100, height: 750, title: 'Vayun', icon: path.join(__dirname, 'app', 'brand', 'vayun-icon.png'), webPreferences });
+    // No native title bar or menu bar: the app's own top strip is the title bar, and the window
+    // buttons are drawn over it in the theme's colours (pages send them via win:titlebar).
+    mainWin = new BrowserWindow({
+      width: 1100, height: 750, title: 'Vayun', icon: path.join(__dirname, 'app', 'brand', 'vayun-icon.png'),
+      titleBarStyle: 'hidden', titleBarOverlay: { color: '#080909', symbolColor: '#C8D2C5', height: TITLEBAR_H },
+      backgroundColor: '#0C0D0D', webPreferences,
+    });
     mainWin.on('closed', () => {
       mainWin = null;
       if (process.platform !== 'darwin') app.quit(); // no tray, so closing the main window quits
@@ -136,6 +143,11 @@ function onQuickSearchShortcut() {
 app.whenReady().then(() => {
   data = loadData();
   ipcMain.handle('data:load', () => data);
+  ipcMain.on('win:titlebar', (e, { color, symbolColor } = {}) => {
+    const hex = v => typeof v === 'string' && /^#[0-9a-f]{3,8}$/i.test(v.trim()) ? v.trim() : null;
+    const win = BrowserWindow.fromWebContents(e.sender);
+    if (win === mainWin && hex(color) && hex(symbolColor)) win.setTitleBarOverlay({ color: hex(color), symbolColor: hex(symbolColor), height: TITLEBAR_H });
+  });
   const ai = require('./ai');
   ipcMain.handle('ai:status', () => ai.status());
   ipcMain.handle('ai:setKey', (_e, { key, model }) => ai.setKey(key, model));

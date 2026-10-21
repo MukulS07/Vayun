@@ -50,6 +50,8 @@ function applyTheme() {
   root.dataset.theme = info.dark ? 'dark' : 'light';
   for (const [k, v] of Object.entries(FolioTheme.appearanceVars(a, info))) root.style.setProperty(k, v);
   try { localStorage.setItem('folio-appearance', JSON.stringify(a)); } catch { /* private window: skip the cache */ }
+  const css = v => getComputedStyle(root).getPropertyValue(v).trim();
+  api.setTitleBar?.(css('--side'), css('--muted')); // window buttons match the tab bar
 }
 /* Pages */
 

@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('api', {
   aiClearKey: () => ipcRenderer.invoke('ai:clearKey'),
   aiChat: messages => ipcRenderer.invoke('ai:chat', messages),
   startDictation: () => ipcRenderer.invoke('voice:start'),
+  setTitleBar: (color, symbolColor) => ipcRenderer.send('win:titlebar', { color, symbolColor }),
   on: (channel, fn) => {
     if (EVENTS.includes(channel)) ipcRenderer.on(channel, (_e, ...args) => fn(...args));
   },

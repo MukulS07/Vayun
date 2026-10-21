@@ -363,3 +363,12 @@ body.ai-open .main { margin-right:380px; }
 
 .ai-mic { width:38px; height:38px; flex-shrink:0; display:grid; place-items:center; font-size:16px; border:1px solid var(--line); border-radius:8px; }
 .ai-mic:hover { background:var(--hover); }
+
+/* Custom title bar: the tab bar (and the start page's top strip) drag the window; Windows draws
+   minimize / maximize / close over the right ~140px in the theme's colours. */
+.tabs { -webkit-app-region:drag; min-height:40px; padding-right:150px; }
+.tabs > * { -webkit-app-region:no-drag; }
+.ws { -webkit-app-region:drag; }
+.ws button { -webkit-app-region:no-drag; }
+body:not(.quick):not(:has(> .app))::before { content:''; position:fixed; top:0; left:0; right:0; height:40px; z-index:100; -webkit-app-region:drag; }
+.ai-panel { top:40px; }
