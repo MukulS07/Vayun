@@ -1,15 +1,49 @@
 {
   "name": "pages-desktop",
   "productName": "Vayun",
-  "version": "0.1.0",
+  "version": "1.0.0",
+  "description": "Vayun - local notes, planners and an AI assistant",
+  "author": "Mukul Sharma",
   "private": true,
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test \"test/*.test.js\""
+    "test": "node --test \"test/*.test.js\"",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.vayun.desktop",
+    "productName": "Vayun",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "ai.js",
+      "pdf-import.js",
+      "notion-import.js",
+      "app/**/*",
+      "package.json",
+      "!**/*.test.js"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "app/brand/vayun-icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Vayun",
+      "artifactName": "Vayun-Setup-${version}.exe"
+    }
   },
   "devDependencies": {
-    "electron": "44.9.0"
+    "electron": "44.9.0",
+    "electron-builder": "26.0.12"
   },
   "dependencies": {
     "adm-zip": "0.5.16",

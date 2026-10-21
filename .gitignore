@@ -2,3 +2,4 @@
 *.log
 desktop/samples/*.png
 desktop/node_modules/
+desktop/dist/
