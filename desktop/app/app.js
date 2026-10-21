@@ -1345,6 +1345,16 @@ $('#notion-btn').onclick = async () => {
 $('#star-btn').onclick = toggleStar;
 api.on('search:open', toggleSearch);
 api.on('page:open', id => (data ? openPage(id) : (pendingPageId = id)));
+api.on('page:new', () => createPage(null));
+
+if (api.isMac) {
+  document.documentElement.classList.add('mac');
+  const sub = document.querySelector('.ws-sub');
+  if (sub && sub.textContent.includes('PC')) sub.textContent = 'Stored on this Mac';
+  document.querySelectorAll('kbd').forEach(k => {
+    k.textContent = k.textContent.replace(/Ctrl/g, '⌘');
+  });
+}
 
 (async () => {
   data = await api.load();

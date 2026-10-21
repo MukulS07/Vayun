@@ -1,5 +1,73 @@
-﻿node_modules/
-*.log
-desktop/samples/*.png
+# Dependencies
+node_modules/
 desktop/node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs and distributables
 desktop/dist/
+desktop/dist-mac/
+dist/
+dist-mac/
+
+# Archives and binaries
+*.zip
+*.tar.gz
+*.exe
+*.dmg
+*.pkg
+
+# Graphify & tool outputs
+graphify-out/
+
+# Sample screenshots
+desktop/samples/*.png
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Agent metadata and workspace caches (excluding .github)
+.agents/
+.aider*
+.augment*
+.autohand*
+.bob*
+.claude*
+.codeartsdoer*
+.codebuddy*
+.codemaker*
+.codestudio*
+.commandcode*
+.continue*
+.cortex*
+.crush*
+.devin*
+.forge*
+.goose*
+.grok*
+.hermes*
+.iflow*
+.inferencesh*
+.jazz*
+.junie*
+.kimchi*
+.kiro*
+.kode*
+.lingma*
+.mcpjam*
+.minimax*
+.moxby*
+.mux*
+.ona*
+.openhands*
+.posit*
+.qoder*
+.qwen*
+.reasonix*
+.rovodev*
+.vibe*

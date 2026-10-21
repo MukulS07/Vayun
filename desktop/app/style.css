@@ -372,3 +372,8 @@ body.ai-open .main { margin-right:380px; }
 .ws button { -webkit-app-region:no-drag; }
 body:not(.quick):not(:has(> .app))::before { content:''; position:fixed; top:0; left:0; right:0; height:40px; z-index:100; -webkit-app-region:drag; }
 .ai-panel { top:40px; }
+
+/* macOS title bar & traffic lights clearance */
+.mac .tabs { padding-right: 16px; }
+.mac .side { padding-top: 38px; }
+.mac body:not(.quick):not(:has(> .app))::before { height: 38px; }

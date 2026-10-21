@@ -1,4 +1,84 @@
-const { app, BrowserWindow, dialog, globalShortcut, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu } = require('electron');
+
+function setupApplicationMenu() {
+  if (process.platform !== 'darwin') {
+    Menu.setApplicationMenu(null);
+    return;
+  }
+  const template = [
+    {
+      label: app.name || 'Vayun',
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        {
+          label: 'Quick Search',
+          accelerator: 'Cmd+Alt+K',
+          click: () => toggleQuickSearch(),
+        },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    },
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'New Page',
+          accelerator: 'Cmd+N',
+          click: () => mainWin?.webContents.send('page:new'),
+        },
+        {
+          label: 'Close Window',
+          accelerator: 'Cmd+W',
+          role: 'close',
+        },
+      ],
+    },
+    {
+      label: 'Edit',
+      submenu: [
+        { role: 'undo' },
+        { role: 'redo' },
+        { type: 'separator' },
+        { role: 'cut' },
+        { role: 'copy' },
+        { role: 'paste' },
+        { role: 'selectAll' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+      ],
+    },
+    {
+      label: 'Window',
+      submenu: [
+        { role: 'minimize' },
+        { role: 'zoom' },
+        { type: 'separator' },
+        { role: 'front' },
+      ],
+    },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
 const path = require('node:path');
 const fs = require('node:fs');
 const { pdfToBlocks } = require('./pdf-import');
@@ -82,16 +162,18 @@ function sendWhenLoaded(win, channel, ...args) {
 
 function showMain(pageId) {
   if (!mainWin) {
-    // No native title bar or menu bar: the app's own top strip is the title bar, and the window
-    // buttons are drawn over it in the theme's colours (pages send them via win:titlebar).
+    const isMac = process.platform === 'darwin';
     mainWin = new BrowserWindow({
       width: 1100, height: 750, title: 'Vayun', icon: path.join(__dirname, 'app', 'brand', 'vayun-icon.png'),
-      titleBarStyle: 'hidden', titleBarOverlay: { color: '#080909', symbolColor: '#C8D2C5', height: TITLEBAR_H },
+      titleBarStyle: 'hidden',
+      ...(isMac
+        ? { trafficLightPosition: { x: 16, y: 12 } }
+        : { titleBarOverlay: { color: '#080909', symbolColor: '#C8D2C5', height: TITLEBAR_H } }),
       backgroundColor: '#0C0D0D', webPreferences,
     });
     mainWin.on('closed', () => {
       mainWin = null;
-      if (process.platform !== 'darwin') app.quit(); // no tray, so closing the main window quits
+      if (process.platform !== 'darwin') app.quit(); // on macOS keep running in dock
     });
     mainWin.loadFile(path.join(__dirname, 'app', 'start.html')); // the start page lists and creates workspaces
   }
@@ -141,30 +223,41 @@ function onQuickSearchShortcut() {
 }
 
 app.whenReady().then(() => {
+  setupApplicationMenu();
   data = loadData();
   ipcMain.handle('data:load', () => data);
   ipcMain.on('win:titlebar', (e, { color, symbolColor } = {}) => {
     const hex = v => typeof v === 'string' && /^#[0-9a-f]{3,8}$/i.test(v.trim()) ? v.trim() : null;
     const win = BrowserWindow.fromWebContents(e.sender);
-    if (win === mainWin && hex(color) && hex(symbolColor)) win.setTitleBarOverlay({ color: hex(color), symbolColor: hex(symbolColor), height: TITLEBAR_H });
+    if (win === mainWin && hex(color) && hex(symbolColor)) {
+      if (typeof win.setTitleBarOverlay === 'function') {
+        win.setTitleBarOverlay({ color: hex(color), symbolColor: hex(symbolColor), height: TITLEBAR_H });
+      }
+    }
   });
   const ai = require('./ai');
   ipcMain.handle('ai:status', () => ai.status());
   ipcMain.handle('ai:setKey', (_e, { key, model }) => ai.setKey(key, model));
   ipcMain.handle('ai:clearKey', () => ai.clearKey());
   ipcMain.handle('ai:chat', (_e, messages) => ai.chat(messages));
-  // Dictation: opens Windows voice typing (Win+H) in whatever field has focus. Fixed script, no user input.
+  // Dictation: opens native voice typing (Win+H on Windows; Edit > Start Dictation on macOS).
   ipcMain.handle('voice:start', () => new Promise(resolve => {
-    if (process.platform !== 'win32') return resolve({ error: 'Voice typing is only wired up on Windows.' });
-    const ps = [
-      "$s = '[DllImport(\"user32.dll\")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);'",
-      '$k = Add-Type -MemberDefinition $s -Name K -Namespace PagesVoice -PassThru',
-      '$k::keybd_event(0x5B, 0, 0, [UIntPtr]::Zero); $k::keybd_event(0x48, 0, 0, [UIntPtr]::Zero)',
-      '$k::keybd_event(0x48, 0, 2, [UIntPtr]::Zero); $k::keybd_event(0x5B, 0, 2, [UIntPtr]::Zero)',
-    ].join('; ');
-    const encoded = Buffer.from(ps, 'utf16le').toString('base64');
-    require('node:child_process').execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], { windowsHide: true },
-      err => resolve(err ? { error: 'Could not start voice typing.' } : { ok: true }));
+    if (process.platform === 'win32') {
+      const ps = [
+        "$s = '[DllImport(\"user32.dll\")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);'",
+        '$k = Add-Type -MemberDefinition $s -Name K -Namespace PagesVoice -PassThru',
+        '$k::keybd_event(0x5B, 0, 0, [UIntPtr]::Zero); $k::keybd_event(0x48, 0, 0, [UIntPtr]::Zero)',
+        '$k::keybd_event(0x48, 0, 2, [UIntPtr]::Zero); $k::keybd_event(0x5B, 0, 2, [UIntPtr]::Zero)',
+      ].join('; ');
+      const encoded = Buffer.from(ps, 'utf16le').toString('base64');
+      require('node:child_process').execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', encoded], { windowsHide: true },
+        err => resolve(err ? { error: 'Could not start voice typing.' } : { ok: true }));
+    } else if (process.platform === 'darwin') {
+      require('node:child_process').execFile('osascript', ['-e', 'tell application "System Events" to tell (first process whose frontmost is true) to click menu item "Start Dictation…" of menu "Edit" of menu bar 1'],
+        err => resolve(err ? { error: 'Could not trigger macOS dictation. Press Fn twice or enable Dictation in System Settings.' } : { ok: true }));
+    } else {
+      resolve({ error: 'Voice typing is not supported on this platform.' });
+    }
   }));
   ipcMain.on('data:save', (e, next) => {
     try { e.returnValue = saveData(next); }

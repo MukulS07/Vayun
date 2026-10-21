@@ -63,5 +63,10 @@ $('#new-form').addEventListener('submit', async e => {
 });
 
 render();
+if (window.api?.isMac) {
+  document.documentElement.classList.add('mac');
+  const muted = document.querySelector('.start-head .muted');
+  if (muted && muted.textContent.includes('PC')) muted.textContent = muted.textContent.replace('PC', 'Mac');
+}
 // Window buttons match the start page background.
 { const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim(); api.setTitleBar?.(css('--bg'), css('--muted')); }

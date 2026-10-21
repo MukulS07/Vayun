@@ -14,4 +14,6 @@
     root.dataset.theme = info.dark ? 'dark' : 'light';
     for (const [k, v] of Object.entries(FolioTheme.appearanceVars(a, info))) root.style.setProperty(k, v);
   }
+  const isMac = (typeof window !== 'undefined' && (window.api?.isMac || /Mac|iPod|iPhone|iPad/.test(navigator.platform || navigator.userAgent)));
+  if (isMac) document.documentElement.classList.add('mac');
 })();

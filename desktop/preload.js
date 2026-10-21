@@ -1,8 +1,10 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = ['search:open', 'page:open', 'quick:shown'];
+const EVENTS = ['search:open', 'page:open', 'page:new', 'quick:shown'];
 
 contextBridge.exposeInMainWorld('api', {
+  platform: process.platform,
+  isMac: process.platform === 'darwin',
   load: () => ipcRenderer.invoke('data:load'),
   // Sync so a save issued from beforeunload still lands before the window closes.
   save: data => ipcRenderer.sendSync('data:save', data),

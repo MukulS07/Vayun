@@ -9,7 +9,13 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test \"test/*.test.js\"",
-    "dist": "electron-builder --win nsis"
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win nsis",
+    "dist:mac": "electron-builder --mac --arm64",
+    "dist:mac:arm64": "electron-builder --mac --arm64",
+    "dist:mac:universal": "electron-builder --mac --universal",
+    "dist:mac:all": "electron-builder --mac --arm64 --universal --x64",
+    "dist:all": "electron-builder -mw"
   },
   "build": {
     "appId": "com.vayun.desktop",
@@ -27,6 +33,52 @@
       "package.json",
       "!**/*.test.js"
     ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "app/brand/vayun-icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist",
+      "darkModeSupport": true,
+      "minimumSystemVersion": "11.0.0"
+    },
+    "dmg": {
+      "title": "Vayun",
+      "artifactName": "Vayun-${version}-${arch}.dmg",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
     "win": {
       "target": "nsis",
       "icon": "app/brand/vayun-icon.png"

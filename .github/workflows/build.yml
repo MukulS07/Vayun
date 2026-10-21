@@ -1,0 +1,73 @@
+name: Build Desktop Apps (macOS & Windows)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    name: Build macOS DMG & ZIP
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Run tests
+        working-directory: desktop
+        run: npm test
+
+      - name: Build macOS Distributables (Apple Silicon arm64, Universal & Intel)
+        working-directory: desktop
+        run: npm run dist:mac:all
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vayun-macOS
+          path: |
+            desktop/dist/*.dmg
+            desktop/dist/*.zip
+
+  build-windows:
+    name: Build Windows Setup EXE
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - name: Run tests
+        working-directory: desktop
+        run: npm test
+
+      - name: Build Windows Installer
+        working-directory: desktop
+        run: npm run dist:win
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Vayun-Windows
+          path: desktop/dist/*.exe
