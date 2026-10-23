@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:;">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vayun</title>
 <link rel="stylesheet" href="fonts.css">
@@ -20,7 +20,7 @@
       <div class="brand-mark" aria-hidden="true"><img src="brand/vayun.webp" alt=""></div>
       <div class="ws-meta">
         <div class="ws-name">My workspace</div>
-        <div class="ws-sub">Stored on this PC</div>
+        <div class="ws-sub">by Maytrix</div>
       </div>
       <button class="icon-btn" id="theme-btn" type="button" title="Theme" aria-label="Change theme"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 3v18"/></svg></button>
     </div>
@@ -52,6 +52,11 @@
       <div class="side-head">Import</div>
       <button class="side-item" id="import-btn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4 M7 9l5-5 5 5 M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg><span>HTML or PDF</span></button>
       <button class="side-item" id="notion-btn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v12H4z M3 4h18v4H3z M10 12h4"/></svg><span>Notion export (.zip)</span></button>
+    </div>
+
+    <div class="side-bottom">
+      <div id="side-auth-mount"></div>
+      <div class="ws-storage-note">Stored on this PC</div>
     </div>
   </aside>
 
@@ -104,5 +109,6 @@
 <script src="app.js"></script>
 <script src="assistant-logic.js"></script>
 <script src="assistant.js"></script>
+<script src="auth-ui.js"></script>
 </body>
 </html>

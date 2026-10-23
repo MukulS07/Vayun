@@ -27,6 +27,8 @@
       "main.js",
       "preload.js",
       "ai.js",
+      "auth.js",
+      "auth-logic.js",
       "pdf-import.js",
       "notion-import.js",
       "app/**/*",
@@ -99,6 +101,7 @@
   },
   "dependencies": {
     "adm-zip": "0.5.16",
+    "firebase": "^13.1.0",
     "pdfjs-dist": "6.4.299"
   }
 }

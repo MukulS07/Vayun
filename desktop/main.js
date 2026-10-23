@@ -240,6 +240,13 @@ app.whenReady().then(() => {
   ipcMain.handle('ai:setKey', (_e, { key, model }) => ai.setKey(key, model));
   ipcMain.handle('ai:clearKey', () => ai.clearKey());
   ipcMain.handle('ai:chat', (_e, messages) => ai.chat(messages));
+
+  const auth = require('./auth');
+  ipcMain.handle('auth:status', () => auth.status());
+  ipcMain.handle('auth:signIn', () => auth.signIn());
+  ipcMain.handle('auth:signOut', () => auth.signOut());
+  ipcMain.handle('auth:setConfig', (_e, cfg) => auth.setConfig(cfg));
+  ipcMain.handle('auth:clearConfig', () => auth.clearConfig());
   // Dictation: opens native voice typing (Win+H on Windows; Edit > Start Dictation on macOS).
   ipcMain.handle('voice:start', () => new Promise(resolve => {
     if (process.platform === 'win32') {

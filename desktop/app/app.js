@@ -1349,8 +1349,8 @@ api.on('page:new', () => createPage(null));
 
 if (api.isMac) {
   document.documentElement.classList.add('mac');
-  const sub = document.querySelector('.ws-sub');
-  if (sub && sub.textContent.includes('PC')) sub.textContent = 'Stored on this Mac';
+  const sub = document.querySelector('.ws-storage-note') || document.querySelector('.ws-sub');
+  if (sub && sub.textContent.includes('PC')) sub.textContent = sub.textContent.replace('PC', 'Mac');
   document.querySelectorAll('kbd').forEach(k => {
     k.textContent = k.textContent.replace(/Ctrl/g, '⌘');
   });

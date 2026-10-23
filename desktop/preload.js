@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = ['search:open', 'page:open', 'page:new', 'quick:shown'];
+const EVENTS = ['search:open', 'page:open', 'page:new', 'quick:shown', 'auth:changed'];
 
 contextBridge.exposeInMainWorld('api', {
   platform: process.platform,
@@ -22,6 +22,11 @@ contextBridge.exposeInMainWorld('api', {
   aiSetKey: (key, model) => ipcRenderer.invoke('ai:setKey', { key, model }),
   aiClearKey: () => ipcRenderer.invoke('ai:clearKey'),
   aiChat: messages => ipcRenderer.invoke('ai:chat', messages),
+  authStatus: () => ipcRenderer.invoke('auth:status'),
+  authSignIn: () => ipcRenderer.invoke('auth:signIn'),
+  authSignOut: () => ipcRenderer.invoke('auth:signOut'),
+  authSetConfig: config => ipcRenderer.invoke('auth:setConfig', config),
+  authClearConfig: () => ipcRenderer.invoke('auth:clearConfig'),
   startDictation: () => ipcRenderer.invoke('voice:start'),
   setTitleBar: (color, symbolColor) => ipcRenderer.send('win:titlebar', { color, symbolColor }),
   on: (channel, fn) => {

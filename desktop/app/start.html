@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data:;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Vayun</title>
   <link rel="stylesheet" href="fonts.css">
@@ -19,9 +19,13 @@
     <header class="start-head">
       <div class="brand-mark lg" aria-hidden="true"><img src="brand/vayun.webp" alt=""></div>
       <div>
-        <h1 class="wordmark-h1"><svg class="wordmark" viewBox="0 0 350 50" role="img" aria-label="Vayun"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1 L21 49 L41 1"/><path d="M78 49 L98 1 L118 49"/><path d="M155 1 L175 25 L195 1 M175 25 V49"/><path d="M232 1 V31 A20 18 0 0 0 272 31 V1"/><path d="M309 49 V1 L349 49 V1"/></g></svg></h1>
+        <div class="brand-title-wrap">
+          <h1 class="wordmark-h1"><svg class="wordmark" viewBox="0 0 350 50" role="img" aria-label="Vayun"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1 L21 49 L41 1"/><path d="M78 49 L98 1 L118 49"/><path d="M155 1 L175 25 L195 1 M175 25 V49"/><path d="M232 1 V31 A20 18 0 0 0 272 31 V1"/><path d="M309 49 V1 L349 49 V1"/></g></svg></h1>
+          <span class="brand-credit">by Maytrix</span>
+        </div>
         <p class="muted">Pick a workspace or create a new one. Everything stays on this PC.</p>
       </div>
+      <div id="start-auth-mount" class="start-auth-mount"></div>
     </header>
 
     <section class="start-block" aria-labelledby="ws-heading">
@@ -49,6 +53,7 @@
   </main>
   <script src="model.js"></script>
   <script src="start.js"></script>
+  <script src="auth-ui.js"></script>
 </body>
 
 </html>
