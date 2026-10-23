@@ -20,21 +20,30 @@ function parseEnv(content) {
   return res;
 }
 
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyDXnN2LQiZO9fEpYqKIRa_TH_AeYhZtyqE',
+  authDomain: 'vayun-12d1b.firebaseapp.com',
+  projectId: 'vayun-12d1b',
+  storageBucket: 'vayun-12d1b.firebasestorage.app',
+  messagingSenderId: '578293090527',
+  appId: '1:578293090527:web:cce43dac8af2c70a94816a',
+};
+
 function normalizeConfig(raw = {}) {
-  const get = (...keys) => {
+  const get = (fallback, ...keys) => {
     for (const k of keys) {
-      if (raw[k] && typeof raw[k] === 'string') return raw[k].trim();
+      if (raw[k] && typeof raw[k] === 'string' && raw[k].trim()) return raw[k].trim();
     }
-    return '';
+    return fallback || '';
   };
 
   return {
-    apiKey: get('NEXT_PUBLIC_FIREBASE_API_KEY', 'FIREBASE_API_KEY', 'apiKey'),
-    authDomain: get('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 'FIREBASE_AUTH_DOMAIN', 'authDomain'),
-    projectId: get('NEXT_PUBLIC_FIREBASE_PROJECT_ID', 'FIREBASE_PROJECT_ID', 'projectId'),
-    storageBucket: get('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', 'FIREBASE_STORAGE_BUCKET', 'storageBucket'),
-    messagingSenderId: get('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', 'FIREBASE_MESSAGING_SENDER_ID', 'messagingSenderId'),
-    appId: get('NEXT_PUBLIC_FIREBASE_APP_ID', 'FIREBASE_APP_ID', 'appId'),
+    apiKey: get(DEFAULT_FIREBASE_CONFIG.apiKey, 'NEXT_PUBLIC_FIREBASE_API_KEY', 'FIREBASE_API_KEY', 'apiKey'),
+    authDomain: get(DEFAULT_FIREBASE_CONFIG.authDomain, 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN', 'FIREBASE_AUTH_DOMAIN', 'authDomain'),
+    projectId: get(DEFAULT_FIREBASE_CONFIG.projectId, 'NEXT_PUBLIC_FIREBASE_PROJECT_ID', 'FIREBASE_PROJECT_ID', 'projectId'),
+    storageBucket: get(DEFAULT_FIREBASE_CONFIG.storageBucket, 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET', 'FIREBASE_STORAGE_BUCKET', 'storageBucket'),
+    messagingSenderId: get(DEFAULT_FIREBASE_CONFIG.messagingSenderId, 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', 'FIREBASE_MESSAGING_SENDER_ID', 'messagingSenderId'),
+    appId: get(DEFAULT_FIREBASE_CONFIG.appId, 'NEXT_PUBLIC_FIREBASE_APP_ID', 'FIREBASE_APP_ID', 'appId'),
   };
 }
 
