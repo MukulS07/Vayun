@@ -29,6 +29,8 @@
       "ai.js",
       "auth.js",
       "auth-logic.js",
+      "gcal.js",
+      "gcal-logic.js",
       "pdf-import.js",
       "notion-import.js",
       "app/**/*",

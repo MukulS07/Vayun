@@ -72,6 +72,16 @@ function createPage(parentId) {
   $('#title').focus();
 }
 
+// The workspace calendar is one page; the sidebar button opens it, creating it the first time.
+function openCalendar() {
+  let cal = data.pages.find(p => p.kind === 'calendar');
+  if (!cal) {
+    cal = { id: uid(), title: 'Calendar', parentId: null, kind: 'calendar', events: [], blocks: [] };
+    data.pages.push(cal);
+  }
+  openPage(cal.id);
+}
+
 function createDatabase() {
   const db = makeDatabase(uid(), '', TASK_SCHEMA);
   db.blocks = [];
@@ -113,6 +123,8 @@ function renderTemplate() {
   } else if (current.template === 'study') {
     current.state = FolioTemplates.sanitizeStudy(current.state);
     activeTemplate = FolioStudy.mount(host, current, { resolvedTheme: resolved, onChange: () => save() });
+  } else if (current.kind === 'calendar') {
+    activeTemplate = FolioCalendar.mount(host, current, { getPages: () => data.pages, dateProp, openRow: id => openPage(id), onChange: () => save() });
   }
 }
 function render() {
@@ -122,7 +134,7 @@ function render() {
   renderMeta();
   renderFavs();
   renderToolbar();
-  if (current.kind === 'template') { renderTemplate(); return; }
+  if (current.kind === 'template' || current.kind === 'calendar') { renderTemplate(); return; }
   unmountTemplate();
   $('#tpl').hidden = true;
   $('#title').hidden = false;
@@ -233,6 +245,7 @@ function commandItems() {
   const cmd = (title, run) => ({ id: 'cmd:' + title, kind: 'command', title, blocks: [], run });
   return [
     cmd('Ask the assistant', () => FolioAssistantUI.open()),
+    cmd('Open calendar', openCalendar),
     cmd('Toggle light / dark', toggleLightDark),
     cmd('Change theme…', () => $('#theme-btn').click()),
     cmd('New Life OS page', () => FolioPicker.open(createTemplatePage, { template: 'life' })),
@@ -263,7 +276,7 @@ function renderSidebar() {
     const label = document.createElement('span');
     label.className = 'tree-label';
     label.textContent = p.title || 'Untitled';
-    a.append(icon(isDb(p) ? 'table' : p.kind === 'template' ? p.template : 'page'), label);
+    a.append(icon(isDb(p) ? 'table' : p.kind === 'template' ? p.template : p.kind === 'calendar' ? 'calendar' : 'page'), label);
     a.style.paddingLeft = `${12 + depth * 14}px`;
     if (p === current) { a.className = 'active'; a.setAttribute('aria-current', 'page'); }
     a.onclick = e => { e.preventDefault(); openPage(p.id); };
@@ -279,6 +292,7 @@ const ICONS = {
   table: 'M4 5h16v14H4z M4 10h16 M10 5v14',
   life: 'M3 19l6-9 4 6 3-4 5 7z',
   study: 'M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2z M5 19V5',
+  calendar: 'M4 6h16v14H4z M4 10h16 M8 3v5 M16 3v5',
 };
 function icon(name) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -306,7 +320,7 @@ function renderToolbar() {
   bar.innerHTML = '';
   const add = (...els) => els.forEach(el => bar.append(el));
   const more = [];
-  if (current.kind !== 'template') {
+  if (current.kind !== 'template' && current.kind !== 'calendar') {
     if (isDb(current)) {
       const v = viewOf(current);
       for (const t of VIEW_TYPES) add(button(t[0].toUpperCase() + t.slice(1), () => { current.view = { ...v, type: t }; render(); save(); }, { active: v.type === t, id: `view-${t}` }));
@@ -831,18 +845,38 @@ function cards(rows, asList) {
   return wrap;
 }
 
+// Month grid of the rows by their date property. Clicking a day adds a row on that date.
+let dbCalAnchor = null;
 function calendar(rows) {
+  const db = current, dp = dateProp(db);
+  if (!dp) return msg('Add a date property (for example Due) to use the calendar.');
+  const anchor = dbCalAnchor || FolioCalLogic.dayKey(new Date());
+  const events = rows.map(r => {
+    const d = textOf(r.props?.[dp.id]).slice(0, 10);
+    return { id: r.id, rowId: r.id, source: 'row', title: r.title || 'Untitled', startDate: d, endDate: d, allDay: true, notes: db.title || '' };
+  }).filter(e => FolioCalLogic.isDate(e.startDate));
   const wrap = document.createElement('div');
-  wrap.className = 'listview';
-  const groups = calendarGroups(current, rows);
-  if (!groups.length) return msg('Add a date property (for example Due) to use the calendar.');
-  for (const [day, rs] of groups) {
-    const h = document.createElement('h3');
-    h.textContent = day;
-    wrap.append(h);
-    const dp = dateProp(current);
-    rs.forEach(r => { const c = document.createElement('div'); c.className = 'card'; c.append(titleLink(r), cellEditor(r, dp, () => { save(); renderDatabase(); })); wrap.append(c); });
-  }
+  wrap.className = 'calpage dbcal';
+  const go = n => { dbCalAnchor = n ? FolioCalLogic.shiftMonth(anchor, n) : null; renderDatabase(); };
+  const bar = document.createElement('div');
+  bar.className = 'cal-bar';
+  const nav = document.createElement('div');
+  nav.className = 'cal-nav';
+  const title = document.createElement('h2');
+  title.className = 'cal-title';
+  title.textContent = FolioCalendar.monthLabel(anchor);
+  nav.append(button('‹', () => go(-1)), button('Today', () => go(0)), button('›', () => go(1)), title);
+  const undated = rows.length - events.length;
+  const note = document.createElement('span');
+  note.className = 'cal-note';
+  if (undated) note.textContent = `${undated} row(s) without a ${dp.name} date`;
+  bar.append(nav, note);
+  wrap.append(bar, FolioCalendar.grid({
+    view: 'month', anchor, events,
+    onEvent: e => openRow(byId(e.rowId)),
+    onMore: null,
+    onDay: d => { const row = makeRow(uid(), db, '', { [dp.id]: d }); data.pages.push(row); save(); renderDatabase(); },
+  }));
   return wrap;
 }
 
@@ -1311,6 +1345,7 @@ $('#title').addEventListener('keydown', e => {
 });
 $('#new-btn').onclick = () => createPage(null);
 $('#new-db-btn').onclick = createDatabase;
+$('#cal-btn').onclick = openCalendar;
 $('#templates-btn').onclick = () => FolioPicker.open(createTemplatePage);
 $('#theme-btn').onclick = () => FolioAppearance.open(() => data.appearance, a => { data.appearance = a; applyTheme(); save(); });
 

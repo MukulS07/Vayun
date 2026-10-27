@@ -247,6 +247,15 @@ app.whenReady().then(() => {
   ipcMain.handle('auth:signOut', () => auth.signOut());
   ipcMain.handle('auth:setConfig', (_e, cfg) => auth.setConfig(cfg));
   ipcMain.handle('auth:clearConfig', () => auth.clearConfig());
+  const gcal = require('./gcal');
+  ipcMain.handle('gcal:status', () => gcal.status());
+  ipcMain.handle('gcal:connect', () => gcal.connect());
+  ipcMain.handle('gcal:disconnect', () => gcal.disconnect());
+  ipcMain.handle('gcal:list', (_e, range) => gcal.list(range));
+  ipcMain.handle('gcal:create', (_e, event) => gcal.create(event));
+  ipcMain.handle('gcal:update', (_e, { googleId, event } = {}) => gcal.update(googleId, event));
+  ipcMain.handle('gcal:delete', (_e, googleId) => gcal.remove(googleId));
+  ipcMain.on('gcal:open', (_e, link) => gcal.openLink(link));
   // Dictation: opens native voice typing (Win+H on Windows; Edit > Start Dictation on macOS).
   ipcMain.handle('voice:start', () => new Promise(resolve => {
     if (process.platform === 'win32') {

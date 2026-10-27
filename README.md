@@ -15,6 +15,7 @@
 - 🔒 **Local-First & Offline** — No cloud lock-in or forced subscriptions. All data is saved on your device as human-readable JSON.
 - ✍️ **Block-Based Editor** — Clean writing canvas supporting Markdown, headers, checklists, code blocks, quotes, and dividers.
 - 🗂️ **Workspaces & Databases** — Create multiple isolated workspaces with customizable database views (Tables, Boards, Calendars).
+- 📅 **Calendar with Google Calendar sync** — Month and week views of your workspace events and dated database rows; link Google Calendar to see, create, edit and delete your Google events from Vayun.
 - 🤖 **Native AI Assistant** (<kbd>⌘J</kbd> / <kbd>Ctrl+J</kbd>) — Draft, summarize, ideate, and structure content without leaving your workflow.
 - ⚡ **Global Quick Search** (<kbd>⌥⌘K</kbd> / <kbd>Ctrl+Alt+K</kbd>) — Find any note instantly from anywhere in your operating system.
 - ⏱️ **Built-in Productivity Tools** — Study timers, Pomodoro counters, habit trackers, and interactive mind maps.
@@ -37,6 +38,20 @@ Pre-built binaries are automatically compiled via GitHub Actions:
 ### 🪟 Windows (x64)
 1. Download **`Vayun-Setup-1.0.0.exe`** from [**Releases / Actions**](https://github.com/MukulS07/Vayun/actions).
 2. Run the installer to add Vayun to your Start Menu and Desktop.
+
+---
+
+## 📅 Google Calendar
+
+Open **Calendar** in the sidebar and click **Sign in with Google**. Approve access in your browser and your Google events appear next to your workspace events — create, edit and delete them right from Vayun. **Sign out** on the Calendar page disconnects it.
+
+Vayun syncs your primary calendar. The sign-in token is encrypted with the OS keychain (Electron `safeStorage`) and stays on your computer.
+
+<details>
+<summary>For maintainers: the bundled Google OAuth client</summary>
+
+Calendar sign-in uses Vayun's own OAuth client, set once in `desktop/gcal-logic.js` (`DEFAULT_GCAL_CLIENT`). To create it, in the Google Cloud project behind Vayun (`vayun-12d1b`): enable the **Google Calendar API**, set up the OAuth consent screen with the `calendar.events` scope, then **Credentials → Create credentials → OAuth client ID → Desktop app**, and paste the client ID and secret into `DEFAULT_GCAL_CLIENT`. A desktop client secret is not confidential, so shipping it in the app is expected. Until the consent screen is verified by Google, only listed test users can sign in. For local testing you can override it with `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `desktop/.env.local`.
+</details>
 
 ---
 
