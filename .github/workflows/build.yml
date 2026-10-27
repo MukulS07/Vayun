@@ -1,8 +1,11 @@
 name: Build Desktop Apps (macOS & Windows)
 
+# Every push to master builds the apps (downloadable from the run's Artifacts).
+# Pushing a version tag (for example v1.1.0) also publishes them as a GitHub Release.
 on:
   push:
     branches: [ main, master ]
+    tags: [ 'v*' ]
   workflow_dispatch:
 
 jobs:
@@ -30,15 +33,17 @@ jobs:
 
       - name: Build macOS Distributables (Apple Silicon arm64, Universal & Intel)
         working-directory: desktop
-        run: npm run dist:mac:all
+        run: npm run dist:mac:all -- --publish never
 
       - name: Upload macOS Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Vayun-macOS
           path: |
-            desktop/dist/*.dmg
-            desktop/dist/*.zip
+            desktop/release/*/*.dmg
+            desktop/release/*/*.zip
+            desktop/release/*/*.blockmap
+            desktop/release/*/latest-mac.yml
 
   build-windows:
     name: Build Windows Setup EXE
@@ -64,10 +69,39 @@ jobs:
 
       - name: Build Windows Installer
         working-directory: desktop
-        run: npm run dist:win
+        run: npm run dist:win -- --publish never
 
       - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Vayun-Windows
-          path: desktop/dist/*.exe
+          path: |
+            desktop/release/*/*.exe
+            desktop/release/*/*.blockmap
+            desktop/release/*/latest.yml
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [ build-mac, build-windows ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create release with the installers
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Vayun ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/**/*.exe
+            dist/**/*.dmg
+            dist/**/*.zip
+            dist/**/*.blockmap
+            dist/**/latest*.yml

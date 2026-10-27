@@ -19,6 +19,7 @@ yarn-error.log*
 
 # Build outputs and distributables
 desktop/dist/
+desktop/release/
 desktop/dist-mac/
 dist/
 dist-mac/

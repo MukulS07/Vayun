@@ -29,14 +29,14 @@
 Pre-built binaries are automatically compiled via GitHub Actions:
 
 ### 🍎 macOS (Apple Silicon & Intel)
-1. Download the latest **`Vayun-1.0.0-arm64.dmg`** from [**Releases / Actions**](https://github.com/MukulS07/Vayun/actions).
+1. Download the latest **`Vayun-<version>-arm64.dmg`** (Apple Silicon) or **`Vayun-<version>-universal.dmg`** (Intel & Apple Silicon) from [**Releases**](https://github.com/MukulS07/Vayun/releases/latest).
 2. Open the `.dmg` file and drag **Vayun** into your **Applications** folder.
 3. Launch **Vayun** from Spotlight or Launchpad.
 
 > *Note for macOS:* Because Vayun is independently developed without an expensive Apple Developer ID, if Gatekeeper shows *"Vayun can't be opened"*, simply right-click `Vayun.app` → click **Open**, or go to **System Settings → Privacy & Security** and click **Open Anyway**.
 
 ### 🪟 Windows (x64)
-1. Download **`Vayun-Setup-1.0.0.exe`** from [**Releases / Actions**](https://github.com/MukulS07/Vayun/actions).
+1. Download **`Vayun-Setup-<version>.exe`** from [**Releases**](https://github.com/MukulS07/Vayun/releases/latest).
 2. Run the installer to add Vayun to your Start Menu and Desktop.
 
 ---
@@ -102,6 +102,18 @@ npm run dist:mac:universal
 # Build for Windows (NSIS Setup .exe)
 npm run dist:win
 ```
+
+Builds land in a folder per version: `desktop/release/<version>/` (for example `desktop/release/1.0.2/Vayun-Setup-1.0.2.exe`), so older builds are kept side by side.
+
+### Releasing an update to every platform
+
+1. Bump the version in `desktop/package.json` (for example `npm version 1.2.0 --no-git-tag-version` inside `desktop/`) and commit.
+2. Tag and push:
+   ```bash
+   git tag v1.2.0
+   git push origin master --tags
+   ```
+3. GitHub Actions builds the Windows `.exe` and the macOS `.dmg`/`.zip` (Apple Silicon, Intel and Universal) and publishes them together as the **v1.2.0** release.
 
 ---
 
