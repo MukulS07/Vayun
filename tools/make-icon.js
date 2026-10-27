@@ -12,9 +12,9 @@ app.whenReady().then(async () => {
   const png = await win.webContents.executeJavaScript(`new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      const S = 256, c = document.createElement('canvas'); c.width = c.height = S;
+      const S = 1024, c = document.createElement('canvas'); c.width = c.height = S; // macOS needs >= 512
       const g = c.getContext('2d');
-      g.fillStyle = '#050606'; g.beginPath(); g.roundRect(0, 0, S, S, 56); g.fill(); g.clip();
+      g.fillStyle = '#050606'; g.beginPath(); g.roundRect(0, 0, S, S, S * 0.22); g.fill(); g.clip();
       const side = img.width * 0.40, cx = img.width * 0.497, cy = img.height * 0.40;
       g.drawImage(img, cx - side / 2, cy - side / 2, side, side, 0, 0, S, S);
       resolve(c.toDataURL('image/png'));
