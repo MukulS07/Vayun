@@ -9,6 +9,7 @@ desktop/node_modules/
 desktop/.env*
 !desktop/.env*.example
 desktop/firebase-config.json
+desktop/gcal-client.json
 web/
 
 # Logs

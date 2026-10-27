@@ -31,6 +31,19 @@ jobs:
         working-directory: desktop
         run: npm test
 
+      - name: Add Google Calendar OAuth client
+        working-directory: desktop
+        shell: bash
+        env:
+          GCAL_CLIENT_ID: ${{ secrets.GCAL_CLIENT_ID }}
+          GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET }}
+        run: |
+          if [ -z "$GCAL_CLIENT_ID" ] || [ -z "$GCAL_CLIENT_SECRET" ]; then
+            echo "::warning::GCAL_CLIENT_ID / GCAL_CLIENT_SECRET secrets are not set; Google Calendar sign-in will be disabled in this build."
+          else
+            node -e "require('fs').writeFileSync('gcal-client.json', JSON.stringify({ clientId: process.env.GCAL_CLIENT_ID, clientSecret: process.env.GCAL_CLIENT_SECRET }))"
+          fi
+
       - name: Build macOS Distributables (Apple Silicon arm64, Universal & Intel)
         working-directory: desktop
         run: npm run dist:mac:all -- --publish never
@@ -66,6 +79,19 @@ jobs:
       - name: Run tests
         working-directory: desktop
         run: npm test
+
+      - name: Add Google Calendar OAuth client
+        working-directory: desktop
+        shell: bash
+        env:
+          GCAL_CLIENT_ID: ${{ secrets.GCAL_CLIENT_ID }}
+          GCAL_CLIENT_SECRET: ${{ secrets.GCAL_CLIENT_SECRET }}
+        run: |
+          if [ -z "$GCAL_CLIENT_ID" ] || [ -z "$GCAL_CLIENT_SECRET" ]; then
+            echo "::warning::GCAL_CLIENT_ID / GCAL_CLIENT_SECRET secrets are not set; Google Calendar sign-in will be disabled in this build."
+          else
+            node -e "require('fs').writeFileSync('gcal-client.json', JSON.stringify({ clientId: process.env.GCAL_CLIENT_ID, clientSecret: process.env.GCAL_CLIENT_SECRET }))"
+          fi
 
       - name: Build Windows Installer
         working-directory: desktop

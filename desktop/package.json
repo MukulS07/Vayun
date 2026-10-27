@@ -31,6 +31,7 @@
       "auth-logic.js",
       "gcal.js",
       "gcal-logic.js",
+      "gcal-client.json",
       "pdf-import.js",
       "notion-import.js",
       "app/**/*",

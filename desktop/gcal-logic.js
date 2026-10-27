@@ -10,14 +10,16 @@ const API_BASE = 'https://www.googleapis.com/calendar/v3';
 // calendar.events: read and write events on the user's calendars. openid+email: show which account is linked.
 const SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'openid', 'email'];
 
-// Vayun's own Google OAuth client (type "Desktop app"), shipped in the app so people only click
-// "Sign in with Google". Google treats a desktop client secret as public, so bundling it is expected:
-// https://developers.google.com/identity/protocols/oauth2/native-app
+// Vayun's own Google OAuth client (type "Desktop app"), shipped inside the app so people only click
+// "Sign in with Google". It lives in gcal-client.json, which is kept out of git: create it locally as
+// { "clientId": "…", "clientSecret": "…" }; CI writes it from the GCAL_CLIENT_ID / GCAL_CLIENT_SECRET secrets.
 // GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET in desktop/.env.local override it for development.
-const DEFAULT_GCAL_CLIENT = {
-  clientId: '',
-  clientSecret: '',
-};
+const DEFAULT_GCAL_CLIENT = (() => {
+  try {
+    const c = require('./gcal-client.json');
+    return { clientId: String(c.clientId || ''), clientSecret: String(c.clientSecret || '') };
+  } catch { return { clientId: '', clientSecret: '' }; }
+})();
 
 const isPlaceholder = v => !v || /^(your_.*|YOUR_.*|<.*>)$/.test(v.trim());
 
