@@ -130,6 +130,18 @@ module.exports = function runContract(name, makeServer) {
     assert.ok(joined.memberIds.includes('eve'));
   });
 
+  test(`${name}: after someone is removed, the head can still tidy up their tasks`, async () => {
+    const { s, team } = await setup();
+    const a = await s.head.createTask(team.id, { title: 'Raj’s task', assigneeUid: 'raj' });
+    const b = await s.head.createTask(team.id, { title: 'Another', assigneeUid: 'raj' });
+    await s.head.removeMember(team.id, 'raj');
+    assert.strictEqual((await s.head.updateTask(team.id, a.id, { priority: 'high' })).priority, 'high');
+    assert.strictEqual((await s.head.updateTask(team.id, a.id, { deleted: true })).deleted, true);
+    await rejectsWith(s.head.updateTask(team.id, b.id, { assigneeUid: 'eve' }), 'invalid');
+    assert.strictEqual((await s.head.updateTask(team.id, b.id, { assigneeUid: 'ana' })).assigneeUid, 'ana');
+    await rejectsWith(s.head.createTask(team.id, { title: 'New', assigneeUid: 'raj' }), 'invalid');
+  });
+
   test(`${name}: members can leave, the head can remove people, the head cannot leave`, async () => {
     const { s, team } = await setup();
     await s.ana.leaveTeam(team.id);

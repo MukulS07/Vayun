@@ -46,6 +46,16 @@ test('checkTaskPatch: head edits anything, assignee only the status, others noth
   assert.ok(T.checkTaskPatch(team, 'head', t, {}).error);
 });
 
+test('a task whose person left the team can still be edited or deleted, but not handed to a stranger', () => {
+  const orphan = task('9', { assigneeUid: 'gone' });
+  assert.deepStrictEqual(T.checkTaskPatch(team, 'head', orphan, { priority: 'high' }), { patch: { priority: 'high' } });
+  assert.deepStrictEqual(T.checkTaskPatch(team, 'head', orphan, { deleted: true }), { patch: { deleted: true } });
+  assert.deepStrictEqual(T.checkTaskPatch(team, 'head', orphan, { assigneeUid: 'raj' }), { patch: { assigneeUid: 'raj' } });
+  assert.ok(T.checkTaskPatch(team, 'head', orphan, { assigneeUid: 'stranger' }).error);
+  assert.ok(T.normalizeTaskInput({ title: 'x', assigneeUid: 'gone' }, team).error, 'a new task still needs a current member');
+  assert.strictEqual(T.nameOf(team, 'gone'), 'Former member');
+});
+
 test('only the head may add team events', () => {
   assert.ok(T.normalizeTeamEventInput({ title: 'Standup', startDate: '2026-11-02', allDay: true }, team, 'ana').error);
   assert.strictEqual(T.normalizeTeamEventInput({ title: 'Standup', startDate: '2026-11-02', allDay: true }, team, 'head').title, 'Standup');

@@ -129,7 +129,7 @@ function createMemoryServer() {
         const task = bucket(tasks, teamId).get(taskId);
         if (!task) throw new TeamError('Task not found.', 'not-found');
         const r = T.checkTaskPatch(t, me().uid, task, patch);
-        if (r.error) throw new TeamError(r.error, 'forbidden');
+        if (r.error) throw new TeamError(r.error, T.isHead(t, me().uid) ? 'invalid' : 'forbidden');
         Object.assign(task, r.patch, { updatedAt: now() });
         return copy(task);
       },

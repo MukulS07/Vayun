@@ -20,7 +20,7 @@
 
   const isMember = (team, uid) => Boolean(team && uid && Array.isArray(team.memberIds) && team.memberIds.includes(uid));
   const isHead = (team, uid) => Boolean(team && uid && team.members && team.members[uid] && team.members[uid].role === 'head');
-  const nameOf = (team, uid) => team?.members?.[uid]?.name || team?.members?.[uid]?.email || 'Someone';
+  const nameOf = (team, uid) => team?.members?.[uid]?.name || team?.members?.[uid]?.email || 'Former member';
 
   function normalizeTeamName(name) {
     const n = String(name ?? '').trim().replace(/\s+/g, ' ').slice(0, 60);
@@ -28,11 +28,13 @@
   }
 
   // Checks what the task form produced. Returns { error } or a clean task (without id/author/times).
-  function normalizeTaskInput(input = {}, team) {
+  // keepAssignee: the person a task already has. They may stay on it even after leaving the team, so the head
+  // can still edit or delete it; giving it to anyone new still needs a current member.
+  function normalizeTaskInput(input = {}, team, { keepAssignee = '' } = {}) {
     const title = String(input.title ?? '').trim().slice(0, 200);
     if (!title) return { error: 'Give the task a title.' };
     const assigneeUid = String(input.assigneeUid || '');
-    if (!isMember(team, assigneeUid)) return { error: 'Pick a team member to give the task to.' };
+    if (!isMember(team, assigneeUid) && !(keepAssignee && assigneeUid === keepAssignee)) return { error: 'Pick a team member to give the task to.' };
     const status = STATUSES.includes(input.status) ? input.status : 'todo';
     const priority = PRIORITIES.includes(input.priority) ? input.priority : 'medium';
     const dueDate = input.dueDate ? String(input.dueDate) : '';
@@ -50,7 +52,7 @@
     if (isHead(team, uid)) {
       const bad = keys.filter(k => !HEAD_FIELDS.includes(k));
       if (bad.length) return { error: `Cannot change ${bad.join(', ')}.` };
-      const merged = normalizeTaskInput({ ...task, ...patch }, team);
+      const merged = normalizeTaskInput({ ...task, ...patch }, team, { keepAssignee: task && task.assigneeUid });
       if (merged.error) return merged;
       const clean = {};
       for (const k of keys) clean[k] = k === 'deleted' ? Boolean(patch[k]) : merged[k];

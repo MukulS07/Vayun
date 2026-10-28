@@ -157,7 +157,10 @@
       const r = await dialog(isNew ? 'New task' : 'Edit task', (form, done) => {
         const title = h('input', { type: 'text', value: t ? t.title : '', maxlength: '200', 'aria-label': 'Title' });
         const notes = h('textarea', { rows: '3' }); notes.value = t ? t.notes : '';
-        const who = h('select', { 'aria-label': 'Give to' }, S.team.memberIds.map(uid => h('option', { value: uid, selected: uid === (t ? t.assigneeUid : '') }, memberName(uid) + (uid === S.uid ? ' (you)' : ''))));
+        const former = t && !T.isMember(S.team, t.assigneeUid); // the person left the team: keep the task theirs until it is given to someone
+        const who = h('select', { 'aria-label': 'Give to' },
+          former ? h('option', { value: t.assigneeUid, selected: true }, 'Former member (give to someone else)') : '',
+          S.team.memberIds.map(uid => h('option', { value: uid, selected: uid === (t ? t.assigneeUid : '') }, memberName(uid) + (uid === S.uid ? ' (you)' : ''))));
         const prio = h('select', {}, T.PRIORITIES.map(p => h('option', { value: p, selected: p === (t ? t.priority : 'medium') }, PRIORITY_LABEL[p])));
         const due = h('input', { type: 'date', value: t ? t.dueDate : '' });
         const status = h('select', {}, T.STATUSES.map(s => h('option', { value: s, selected: s === (t ? t.status : 'todo') }, T.STATUS_LABEL[s])));

@@ -116,6 +116,19 @@ test('tasks: the head edits and reassigns but cannot rewrite history', async () 
   denied(await patchTask(w, 'head', { surprise: 1 }), 'adding an unknown field');
 });
 
+test('tasks of someone who left: the head can tidy them up but not hand them to a stranger', async () => {
+  const w = await world();
+  const t2 = await store('head').createTask(w.team.id, { title: 'Another', assigneeUid: 'raj' });
+  await store('head').createTask(w.team.id, { title: 'And one more', assigneeUid: 'raj' });
+  ok(await raw('head').commit([R.patchWrite(PROJECT, w.T, { remove: [['members', 'raj']], serverTime: ['updatedAt'], arrayRemove: [['memberIds', ['raj']]] })]), 'the head removing Raj');
+  ok(await patch(w, 'head', `${w.tasks}/${t2.id}`, { priority: 'high' }), 'the head editing a task whose person left');
+  ok(await patch(w, 'head', `${w.tasks}/${t2.id}`, { deleted: true }), 'the head deleting a task whose person left');
+  denied(await patch(w, 'head', `${w.tasks}/${t2.id}`, { assigneeUid: 'eve' }), 'giving it to someone outside the team');
+  ok(await patch(w, 'head', `${w.tasks}/${t2.id}`, { assigneeUid: 'ana' }), 'giving it to a current member');
+  denied(await createTask(w, 'head', taskData({ assigneeUid: 'raj' })), 'a brand-new task for someone who left');
+  denied(await patchTask(w, 'raj', { status: 'done' }), 'the person who left changing a status');
+});
+
 test('nothing is ever really deleted', async () => {
   const w = await world();
   for (const uid of ['head', 'ana', 'eve']) {

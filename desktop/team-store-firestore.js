@@ -156,7 +156,7 @@ class FirestoreTeamStore {
     const task = ctx.task || await this._get(`teams/${teamId}/tasks/${taskId}`);
     if (!task) throw new TeamError('Task not found.', 'not-found');
     const r = T.checkTaskPatch(t, this._me().uid, task, patch);
-    if (r.error) throw new TeamError(r.error, 'forbidden');
+    if (r.error) throw new TeamError(r.error, T.isHead(t, this._me().uid) ? 'invalid' : 'forbidden');
     await this._commit([R.patchWrite(this.project, `teams/${teamId}/tasks/${taskId}`, { set: Object.entries(r.patch).map(([k, v]) => [[k], v]), serverTime: ['updatedAt'] })]);
     return { ...(await this._get(`teams/${teamId}/tasks/${taskId}`)), teamId };
   }
