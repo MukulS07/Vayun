@@ -16,7 +16,7 @@
 - ✍️ **Block-Based Editor** — Clean writing canvas supporting Markdown, headers, checklists, code blocks, quotes, and dividers.
 - 🗂️ **Workspaces & Databases** — Create multiple isolated workspaces with customizable database views (Tables, Boards, Calendars).
 - 📅 **Calendar with Google Calendar sync** — Month and week views of your workspace events and dated database rows; link Google Calendar to see, create, edit and delete your Google events from Vayun.
-- 🏠 **Home landing screen** — Vayun opens on what needs you today: must-do tasks, overdue work, what is due today and tomorrow, important work, today's calendar, your own reminders and pinned pages. Switch sections on or off.
+- 🏠 **Home landing screen** — Vayun opens on what needs you today: a *Start here* card for the one thing to do first, counts of overdue and due-soon work, and lists for must-do tasks, important work, today's calendar, your own reminders and pinned pages. A small reminder popup (Open task, Snooze 1 hour) shows when a must-do or overdue task is waiting. Switch sections on or off; it follows your theme.
 - 👥 **Team tasks & shared calendar, with roles** — admins, leads and members. Admins and leads give tasks (and can flag a task *Must do*); everyone sees theirs, sorted and grouped however they like; team events show on everyone's Calendar. Free, on Firebase's free plan (one-time [setup](docs/team-setup.md)).
 - 🤖 **Native AI Assistant** (<kbd>⌘J</kbd> / <kbd>Ctrl+J</kbd>) — Draft, summarize, ideate, and structure content without leaving your workflow.
 - ⚡ **Global Quick Search** (<kbd>⌥⌘K</kbd> / <kbd>Ctrl+Alt+K</kbd>) — Find any note instantly from anywhere in your operating system.
@@ -40,6 +40,23 @@ Pre-built binaries are automatically compiled via GitHub Actions:
 ### 🪟 Windows (x64)
 1. Download **`Vayun-Setup-<version>.exe`** from [**Releases**](https://github.com/MukulS07/Vayun/releases/latest).
 2. Run the installer to add Vayun to your Start Menu and Desktop.
+
+---
+
+## 🗒️ Release history
+
+Every release is a git tag on the exact commit it was built from, with its installers attached to the matching [GitHub Release](https://github.com/MukulS07/Vayun/releases). The full details of each one are in [CHANGELOG.md](CHANGELOG.md).
+
+| Version | Date | What it brought |
+| :--- | :--- | :--- |
+| [**v1.0.7**](https://github.com/MukulS07/Vayun/releases/tag/v1.0.7) | 2026-10-28 | **Home screen, team roles and reminders.** Vayun opens on a Home screen with a *Start here* card and a reminder popup. Teams get admin, lead and member roles, *Must do* tasks and shared team events, on Cloud Firestore's free plan. |
+| [v1.0.6](https://github.com/MukulS07/Vayun/releases/tag/v1.0.6) | 2026-10-28 | **Every Google calendar, and no keys in the code.** View, create, edit and delete events across all your Google calendars. API keys moved out of the source into repository secrets, with a leak guard in tests and CI. |
+| [v1.0.5](https://github.com/MukulS07/Vayun/releases/tag/v1.0.5) | 2026-10-28 | **Google Calendar sign-in works in the installers.** Each person's calendar stays their own: signing out or switching accounts unlinks it. |
+| [v1.0.4](https://github.com/MukulS07/Vayun/releases/tag/v1.0.4) | 2026-10-28 | **Google Calendar sign-in** added to the app (disabled in the GitHub-built installers; fixed in v1.0.5). macOS builds retry when DMG creation fails at random. |
+| v1.0.3 | not released | Tag only. Its build failed and no release was made; use v1.0.4. |
+| [v1.0.2](https://github.com/MukulS07/Vayun/releases/tag/v1.0.2) | 2026-10-27 | **The Calendar page and one-command releases.** Month and week views, a month-grid database Calendar view, a folder per version, and a tag-triggered build of every installer. |
+| [v1.0.1](https://github.com/MukulS07/Vayun/releases/tag/v1.0.1) | 2026-10-23 | **Sign-in works out of the box** in the standalone installer. |
+| [v1.0.0](https://github.com/MukulS07/Vayun/releases/tag/v1.0.0) | 2026-10-23 | **The first release.** Local-first notes and planners, AI assistant, templates, imports and exports, Windows installer and macOS builds, Sign in with Google. |
 
 ---
 
@@ -113,13 +130,14 @@ Builds land in a folder per version: `desktop/release/<version>/` (for example `
 
 ### Releasing an update to every platform
 
-1. Bump the version in `desktop/package.json` (for example `npm version 1.0.8 --no-git-tag-version` inside `desktop/`) and commit.
-2. Tag and push:
+1. Bump the version in `desktop/package.json` (for example `npm version 1.0.8 --no-git-tag-version` inside `desktop/`).
+2. Add a `## v1.0.8 — <date>` section to [CHANGELOG.md](CHANGELOG.md) with a one-line `> tagline` under the heading and a bullet list of what changed, add the version to the table above, and commit. The release title and description are generated from that section, and a tag with no changelog entry stops the release job before anything is published.
+3. Tag and push:
    ```bash
    git tag v1.0.8
    git push origin master --tags
    ```
-3. GitHub Actions builds the Windows `.exe` and the macOS `.dmg`/`.zip` (Apple Silicon, Intel and Universal) and publishes them together as the **v1.0.8** release.
+4. GitHub Actions builds the Windows `.exe` and the macOS `.dmg`/`.zip` (Apple Silicon, Intel and Universal) and publishes them together as the **Vayun v1.0.8 — <your tagline>** release, with the changelog text as its description and a table saying which file to download.
 
 ---
 

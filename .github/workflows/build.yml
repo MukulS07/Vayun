@@ -154,6 +154,18 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # The release title and description come from this version's section of CHANGELOG.md (tools/release-notes.js),
+      # so the tag fails here, before anything is published, if the changelog has no entry for it.
+      - name: Write the release title and description
+        id: notes
+        shell: bash
+        run: |
+          node tools/release-notes.js "$GITHUB_REF_NAME" > release-notes.md
+          echo "title=$(node tools/release-notes.js "$GITHUB_REF_NAME" --title)" >> "$GITHUB_OUTPUT"
+
       - name: Download all build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -163,8 +175,8 @@ jobs:
       - name: Create release with the installers
         uses: softprops/action-gh-release@v2
         with:
-          name: Vayun ${{ github.ref_name }}
-          generate_release_notes: true
+          name: ${{ steps.notes.outputs.title }}
+          body_path: release-notes.md
           files: |
             dist/**/*.exe
             dist/**/*.dmg
