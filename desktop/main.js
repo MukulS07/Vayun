@@ -256,7 +256,7 @@ app.whenReady().then(() => {
     makeStore: async me => {
       if (demo) {
         const mem = require('./team-store-memory');
-        if (!demoServer) { demoServer = mem.createMemoryServer(); await mem.seedDemo(demoServer, me, process.env.VAYUN_TEAM_DEMO === 'member' ? 'member' : 'head'); }
+        if (!demoServer) { demoServer = mem.createMemoryServer(); await mem.seedDemo(demoServer, me, ['admin', 'lead', 'member'].includes(process.env.VAYUN_TEAM_DEMO) ? process.env.VAYUN_TEAM_DEMO : 'admin'); }
         return demoServer.storeFor(me);
       }
       const { FirestoreTeamStore } = require('./team-store-firestore');
@@ -276,6 +276,7 @@ app.whenReady().then(() => {
   ipcMain.handle('team:leaveTeam', () => team.leaveTeam());
   ipcMain.handle('team:rotateInvite', () => team.rotateInvite());
   ipcMain.handle('team:removeMember', (_e, uid) => team.removeMember(String(uid ?? '')));
+  ipcMain.handle('team:setRole', (_e, uid, role) => team.setRole(String(uid ?? ''), String(role ?? '')));
   ipcMain.handle('team:createTask', (_e, input) => team.createTask(obj(input)));
   ipcMain.handle('team:updateTask', (_e, id, patch) => team.updateTask(String(id ?? ''), obj(patch)));
   ipcMain.handle('team:createEvent', (_e, input) => team.createEvent(obj(input)));

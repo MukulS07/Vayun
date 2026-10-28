@@ -38,6 +38,7 @@ class FirestoreTeamStore {
     return R.parseQueryResponse(await this._call('POST', this._url((parent ? '/' + parent : '') + ':runQuery'), { structuredQuery: R.structuredQuery(q) }));
   }
   _profile(role, extra = {}) { const u = this._me(); return { name: u.name || u.email || 'Someone', email: u.email || '', photoURL: u.photoURL || '', role, ...extra }; }
+  _refuse(r) { if (r.error) throw new TeamError(r.error, r.code || 'invalid'); }
 
   async _team(teamId) {
     const t = await this._get(`teams/${teamId}`);
@@ -45,9 +46,14 @@ class FirestoreTeamStore {
     return this._shapeTeam(t);
   }
   _shapeTeam(t) { return { ...t, memberIds: t.memberIds || [], members: t.members || {} }; }
-  async _headTeam(teamId, what) {
+  async _adminTeam(teamId, what) {
     const t = await this._team(teamId);
-    if (!T.isHead(t, this._me().uid)) throw new TeamError(`Only the team head can ${what}.`, 'forbidden');
+    if (!T.isAdmin(t, this._me().uid)) throw new TeamError(`Only admins can ${what}.`, 'forbidden');
+    return t;
+  }
+  async _leadTeam(teamId, what) {
+    const t = await this._team(teamId);
+    if (!T.canLead(t, this._me().uid)) throw new TeamError(`Only admins and leads can ${what}.`, 'forbidden');
     return t;
   }
 
@@ -64,8 +70,8 @@ class FirestoreTeamStore {
     const id = this._id();
     const code = T.inviteCodeFrom(crypto.randomBytes(8));
     await this._commit([
-      R.createWrite(this.project, `teams/${id}`, { name: n.name, headUid: me.uid, memberIds: [me.uid], members: { [me.uid]: this._profile('head') }, inviteCode: code }, { serverTime: ['createdAt', 'updatedAt'] }),
-      R.createWrite(this.project, `invites/${code}`, { teamId: id, headUid: me.uid }, { serverTime: ['createdAt'] }),
+      R.createWrite(this.project, `teams/${id}`, { name: n.name, ownerUid: me.uid, memberIds: [me.uid], members: { [me.uid]: this._profile('admin') }, inviteCode: code }, { serverTime: ['createdAt', 'updatedAt'] }),
+      R.createWrite(this.project, `invites/${code}`, { teamId: id, createdBy: me.uid }, { serverTime: ['createdAt'] }),
     ]);
     return this._team(id);
   }
@@ -90,14 +96,13 @@ class FirestoreTeamStore {
   async leaveTeam(teamId) {
     const t = await this._team(teamId);
     const uid = this._me().uid;
-    if (T.isHead(t, uid)) throw new TeamError('The head cannot leave the team.', 'forbidden');
+    if (T.isOwner(t, uid)) throw new TeamError('The person who created the team cannot leave it.', 'forbidden');
     await this._removeFromTeam(teamId, uid);
   }
 
   async removeMember(teamId, uid) {
-    const t = await this._headTeam(teamId, 'remove people');
-    if (uid === t.headUid) throw new TeamError('The head cannot be removed.', 'forbidden');
-    if (!T.isMember(t, uid)) throw new TeamError('That person is not in the team.', 'not-found');
+    const t = await this._team(teamId);
+    this._refuse(T.checkRemoveMember(t, this._me().uid, uid));
     await this._removeFromTeam(teamId, uid);
     return this._team(teamId);
   }
@@ -106,11 +111,18 @@ class FirestoreTeamStore {
     return this._commit([R.patchWrite(this.project, `teams/${teamId}`, { remove: [['members', uid]], serverTime: ['updatedAt'], arrayRemove: [['memberIds', [uid]]] })]);
   }
 
+  async setRole(teamId, uid, role) {
+    const t = await this._team(teamId);
+    this._refuse(T.checkRoleChange(t, this._me().uid, uid, role));
+    await this._commit([R.patchWrite(this.project, `teams/${teamId}`, { set: [[['members', uid, 'role'], role]], serverTime: ['updatedAt'] })]);
+    return this._team(teamId);
+  }
+
   async rotateInvite(teamId) {
-    const t = await this._headTeam(teamId, 'make a new invite code');
+    const t = await this._adminTeam(teamId, 'make a new invite code');
     const code = T.inviteCodeFrom(crypto.randomBytes(8));
     await this._commit([
-      R.createWrite(this.project, `invites/${code}`, { teamId, headUid: t.headUid }, { serverTime: ['createdAt'] }),
+      R.createWrite(this.project, `invites/${code}`, { teamId, createdBy: this._me().uid }, { serverTime: ['createdAt'] }),
       R.deleteWrite(this.project, `invites/${t.inviteCode}`),
       R.patchWrite(this.project, `teams/${teamId}`, { set: [[['inviteCode'], code]], serverTime: ['updatedAt'] }),
     ]);
@@ -142,7 +154,7 @@ class FirestoreTeamStore {
 
   // ---- tasks ----
   async createTask(teamId, input) {
-    const t = await this._headTeam(teamId, 'add tasks');
+    const t = await this._leadTeam(teamId, 'give out tasks');
     const v = T.normalizeTaskInput(input, t);
     if (v.error) throw new TeamError(v.error);
     const id = this._id();
@@ -155,32 +167,41 @@ class FirestoreTeamStore {
     const t = ctx.team || await this._team(teamId);
     const task = ctx.task || await this._get(`teams/${teamId}/tasks/${taskId}`);
     if (!task) throw new TeamError('Task not found.', 'not-found');
-    const r = T.checkTaskPatch(t, this._me().uid, task, patch);
-    if (r.error) throw new TeamError(r.error, T.isHead(t, this._me().uid) ? 'invalid' : 'forbidden');
+    const uid = this._me().uid;
+    const r = T.checkTaskPatch(t, uid, task, patch);
+    if (r.error) throw new TeamError(r.error, T.canManageTask(t, uid, task) ? 'invalid' : 'forbidden');
     await this._commit([R.patchWrite(this.project, `teams/${teamId}/tasks/${taskId}`, { set: Object.entries(r.patch).map(([k, v]) => [[k], v]), serverTime: ['updatedAt'] })]);
     return { ...(await this._get(`teams/${teamId}/tasks/${taskId}`)), teamId };
   }
 
-  // ---- team calendar events (made by the head) ----
+  // ---- team calendar events (admins and leads) ----
   async createEvent(teamId, input) {
     const t = await this._team(teamId);
-    const v = T.normalizeTeamEventInput(input, t, this._me().uid);
-    if (v.error) throw new TeamError(v.error, T.isHead(t, this._me().uid) ? 'invalid' : 'forbidden');
+    const uid = this._me().uid;
+    const v = T.normalizeTeamEventInput(input, t, uid);
+    if (v.error) throw new TeamError(v.error, T.canLead(t, uid) ? 'invalid' : 'forbidden');
     const id = this._id();
-    await this._commit([R.createWrite(this.project, `teams/${teamId}/events/${id}`, { ...v, createdBy: this._me().uid, deleted: false }, { serverTime: ['createdAt', 'updatedAt'] })]);
+    await this._commit([R.createWrite(this.project, `teams/${teamId}/events/${id}`, { ...v, createdBy: uid, deleted: false }, { serverTime: ['createdAt', 'updatedAt'] })]);
     return { ...(await this._get(`teams/${teamId}/events/${id}`)), teamId };
   }
 
-  async updateEvent(teamId, eventId, input) {
-    const t = await this._team(teamId);
-    const v = T.normalizeTeamEventInput(input, t, this._me().uid);
-    if (v.error) throw new TeamError(v.error, T.isHead(t, this._me().uid) ? 'invalid' : 'forbidden');
+  // ctx: { team, event } the caller already has, to save two reads.
+  async updateEvent(teamId, eventId, input, ctx = {}) {
+    const t = ctx.team || await this._team(teamId);
+    const ev = ctx.event || await this._get(`teams/${teamId}/events/${eventId}`);
+    if (!ev) throw new TeamError('Event not found.', 'not-found');
+    const uid = this._me().uid;
+    const v = T.normalizeTeamEventInput(input, t, uid, ev);
+    if (v.error) throw new TeamError(v.error, T.canEditEvent(t, uid, ev) ? 'invalid' : 'forbidden');
     await this._commit([R.patchWrite(this.project, `teams/${teamId}/events/${eventId}`, { set: Object.entries(v).map(([k, val]) => [[k], val]), serverTime: ['updatedAt'] })]);
     return { ...(await this._get(`teams/${teamId}/events/${eventId}`)), teamId };
   }
 
-  async deleteEvent(teamId, eventId) {
-    await this._headTeam(teamId, 'remove team events');
+  async deleteEvent(teamId, eventId, ctx = {}) {
+    const t = ctx.team || await this._team(teamId);
+    const ev = ctx.event || await this._get(`teams/${teamId}/events/${eventId}`);
+    if (!ev) throw new TeamError('Event not found.', 'not-found');
+    if (!T.canEditEvent(t, this._me().uid, ev)) throw new TeamError('Only admins, or the lead who made it, can remove a team event.', 'forbidden');
     await this._commit([R.patchWrite(this.project, `teams/${teamId}/events/${eventId}`, { set: [[['deleted'], true]], serverTime: ['updatedAt'] })]);
     return { ...(await this._get(`teams/${teamId}/events/${eventId}`)), teamId };
   }

@@ -40,9 +40,9 @@ async function twoPeople() {
   return { server, head, ana, made };
 }
 
-test('a head creates a team and a member joins; each sees their own role', async () => {
+test('the creator of a team is its admin and a member who joins sees their own role', async () => {
   const { head, ana } = await twoPeople();
-  assert.strictEqual(head.svc.state().role, 'head');
+  assert.strictEqual(head.svc.state().role, 'admin');
   assert.strictEqual(ana.svc.state().role, 'member');
   assert.strictEqual(ana.svc.state().team.name, 'Design');
   assert.deepStrictEqual(head.svc.state().teams.map(t => t.name), ['Design']);
@@ -66,7 +66,7 @@ test('actions that are not allowed come back as an error and change nothing', as
   const { head, ana } = await twoPeople();
   const denied = await ana.svc.createTask({ title: 'Sneaky', assigneeUid: 'ana' });
   assert.strictEqual(denied.code, 'forbidden');
-  assert.match(denied.error, /head/i);
+  assert.match(denied.error, /admins and leads/i);
   assert.deepStrictEqual(ana.svc.state().tasks, []);
   assert.strictEqual(ana.svc.state().error.code, 'forbidden');
   const bad = await head.svc.createTask({ title: '', assigneeUid: 'ana' });
@@ -181,4 +181,32 @@ test('the window is told after every change', async () => {
   await head.svc.createTask({ title: 'Ping', assigneeUid: 'head' });
   assert.ok(head.notes.length > before);
   assert.strictEqual(head.notes[head.notes.length - 1].tasks[0].title, 'Ping');
+});
+
+test('an admin changes a role: the person sees it on their next full check and gets the matching powers', async () => {
+  const { head, ana } = await twoPeople();
+  assert.strictEqual((await ana.svc.createTask({ title: 'x', assigneeUid: 'ana' })).code, 'forbidden');
+  const r = await head.svc.setRole('ana', 'lead');
+  assert.ok(r.ok, r.error);
+  assert.strictEqual(head.svc.state().team.members.ana.role, 'lead');
+  assert.strictEqual(ana.svc.state().role, 'member', 'not yet: Ana has not checked');
+  await ana.svc.refresh({ full: true });
+  assert.strictEqual(ana.svc.state().role, 'lead');
+  assert.ok((await ana.svc.createTask({ title: 'Now allowed', assigneeUid: 'head' })).ok);
+  assert.strictEqual((await ana.svc.setRole('head', 'member')).code, 'forbidden', 'a lead cannot change roles');
+  assert.strictEqual((await head.svc.setRole('ana', 'boss')).code, 'invalid');
+});
+
+test('a lead can change only the team events they made', async () => {
+  const { head, ana } = await twoPeople();
+  await head.svc.setRole('ana', 'lead');
+  await ana.svc.refresh({ full: true });
+  await head.svc.createEvent({ title: 'Admin event', startDate: '2026-11-02', allDay: true });
+  assert.ok((await ana.svc.createEvent({ title: 'Lead event', startDate: '2026-11-03', allDay: true })).ok);
+  await ana.svc.refresh({ full: true });
+  const byTitle = t => ana.svc.state().events.find(e => e.title === t);
+  assert.ok((await ana.svc.updateEvent(byTitle('Lead event').id, { title: 'Lead event', startDate: '2026-11-04', allDay: true })).ok);
+  assert.strictEqual((await ana.svc.updateEvent(byTitle('Admin event').id, { title: 'Hijacked', startDate: '2026-11-02', allDay: true })).code, 'forbidden');
+  assert.strictEqual((await ana.svc.deleteEvent(byTitle('Admin event').id)).code, 'forbidden');
+  assert.ok((await ana.svc.deleteEvent(byTitle('Lead event').id)).ok);
 });

@@ -70,7 +70,7 @@ function createTeamService({ dir, getUser, canSync = () => true, makeStore, noti
       teams: model.teams.map(t => ({ id: t.id, name: t.name })),
       activeTeamId: model.activeTeamId,
       team: d ? d.team : null,
-      role: d && d.team ? (T.isHead(d.team, model.uid) ? 'head' : 'member') : null,
+      role: d && d.team ? (T.roleOf(d.team, model.uid) || 'member') : null,
       tasks: live(d && d.tasks),
       events: live(d && d.events),
       syncedAt: model.syncedAt,
@@ -164,6 +164,7 @@ function createTeamService({ dir, getUser, canSync = () => true, makeStore, noti
     leaveTeam: () => action(() => withActive(async (s, id) => { await s.leaveTeam(id); dropTeam(id); })),
     rotateInvite: () => action(() => withActive(async (s, id, d) => { d.team = await s.rotateInvite(id); })),
     removeMember: uid => action(() => withActive(async (s, id, d) => { d.team = await s.removeMember(id, uid); })),
+    setRole: (uid, role) => action(() => withActive(async (s, id, d) => { d.team = await s.setRole(id, uid, role); })),
 
     createTask: input => action(() => withActive(async (s, id, d) => { const t = await s.createTask(id, input); d.tasks[t.id] = t; })),
     updateTask: (taskId, patch) => action(() => withActive(async (s, id, d) => {
@@ -171,8 +172,8 @@ function createTeamService({ dir, getUser, canSync = () => true, makeStore, noti
       d.tasks[t.id] = t;
     })),
     createEvent: input => action(() => withActive(async (s, id, d) => { const e = await s.createEvent(id, input); d.events[e.id] = e; })),
-    updateEvent: (eventId, input) => action(() => withActive(async (s, id, d) => { const e = await s.updateEvent(id, eventId, input); d.events[e.id] = e; })),
-    deleteEvent: eventId => action(() => withActive(async (s, id, d) => { const e = await s.deleteEvent(id, eventId); d.events[e.id] = e; })),
+    updateEvent: (eventId, input) => action(() => withActive(async (s, id, d) => { const e = await s.updateEvent(id, eventId, input, { team: d.team, event: d.events[eventId] }); d.events[e.id] = e; })),
+    deleteEvent: eventId => action(() => withActive(async (s, id, d) => { const e = await s.deleteEvent(id, eventId, { team: d.team, event: d.events[eventId] }); d.events[e.id] = e; })),
 
     // Someone signed out (or was replaced): forget their local copy so the next person on this PC never sees it.
     forget(uid) {

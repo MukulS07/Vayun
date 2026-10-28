@@ -191,8 +191,9 @@
 
     // Team events: the head edits them; everyone else can only look.
     async function editTeamEvent(e) {
-      const head = team && team.role === 'head';
-      const r = await eventDialog({ ...e, id: e.teamEventId }, { canDelete: head, readOnly: !head, title: 'Team event' });
+      // admins change any team event; a lead only the ones they made; everyone else can only look
+      const canEdit = Boolean(team && team.team && TL.canEditEvent(team.team, team.uid, { createdBy: e.createdBy }));
+      const r = await eventDialog({ ...e, id: e.teamEventId }, { canDelete: canEdit, readOnly: !canEdit, title: 'Team event' });
       if (!r) return;
       if (r.action === 'delete' && !confirm(`Delete "${e.title}" for the whole team?`)) return;
       const res = r.action === 'delete' ? await api.teamDeleteEvent(e.teamEventId) : await api.teamUpdateEvent(e.teamEventId, r.value);
@@ -202,7 +203,7 @@
     async function editEvent(e) {
       const isNew = !e.id;
       let targets = null;
-      const teamTarget = team && team.team && team.role === 'head' ? [['team', `Team: ${team.team.name} (everyone sees it)`]] : [];
+      const teamTarget = team && team.team && TL.canLead(team.team, team.uid) ? [['team', `Team: ${team.team.name} (everyone sees it)`]] : [];
       if (isNew && (gstat.connected || teamTarget.length)) {
         const writable = gCalendars.filter(c => c.accessRole !== 'reader' && c.accessRole !== 'freeBusyReader');
         const cals = writable.length ? writable : gCalendars;

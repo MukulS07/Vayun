@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('api', {
   teamLeave: () => ipcRenderer.invoke('team:leaveTeam'),
   teamRotateInvite: () => ipcRenderer.invoke('team:rotateInvite'),
   teamRemoveMember: uid => ipcRenderer.invoke('team:removeMember', uid),
+  teamSetRole: (uid, role) => ipcRenderer.invoke('team:setRole', uid, role),
   teamCreateTask: input => ipcRenderer.invoke('team:createTask', input),
   teamUpdateTask: (id, patch) => ipcRenderer.invoke('team:updateTask', id, patch),
   teamCreateEvent: input => ipcRenderer.invoke('team:createEvent', input),

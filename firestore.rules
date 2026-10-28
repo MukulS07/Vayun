@@ -1,57 +1,61 @@
 rules_version = '2';
 
 // Vayun team data. Who may do what:
-//   - Anyone signed in can create a team (and becomes its head) and look up one invite code they know.
+//   - Anyone signed in can create a team (and becomes its owner and first admin) and look up one invite
+//     code they know.
 //   - Only members can read a team, its tasks and its events.
-//   - Only the head adds, edits and removes tasks and team events. The person a task is given to can
-//     change only its status.
-//   - Someone with the invite code can add themselves to a team; members can remove themselves; the
-//     head can remove anyone else and make a new invite code.
-//   - Nothing is ever really deleted from tasks or events (they are marked deleted), so everyone's
-//     app can notice the change.
-// app/team-logic.js has the same rules in code (checkTaskPatch); change both together.
+//   - Roles: admin (everything), lead (gives tasks and team events, edits the ones they made), member
+//     (changes only the status of the tasks given to them).
+//   - Only admins change roles, remove people, rename the team or make a new invite code. The owner (the
+//     person who created the team) is always an admin and can never be removed.
+//   - Someone with the invite code can add themselves to a team as a member; anyone but the owner can leave.
+//   - Nothing is ever really deleted from tasks or events (they are marked deleted), so everyone's app can
+//     notice the change.
+// app/team-logic.js has the same rules in code (checkTaskPatch and friends); change both together.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
 
-    // A person's entry in a team: only these fields, only strings, and not absurdly long.
+    // A person's entry in a team: only strings, and not absurdly long.
     function sane(person) {
       return person.name is string && person.name.size() <= 100
         && person.email is string && person.email.size() <= 200
         && person.photoURL is string && person.photoURL.size() <= 1000;
     }
 
-    // An invite code points at a team. You can look up a code you know, but nobody can list them.
+    // An invite code points at a team. You can look up a code you know, but nobody can list them. Only an
+    // admin of the team makes or removes its codes.
     match /invites/{code} {
       allow get: if signedIn();
       allow list: if false;
       allow create: if signedIn()
-        && request.resource.data.keys().hasOnly(['teamId', 'headUid', 'createdAt'])
-        && request.resource.data.headUid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['teamId', 'createdBy', 'createdAt'])
+        && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time
-        && getAfter(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.headUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.members[request.auth.uid].role == 'admin'
         && getAfter(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.inviteCode == code;
       allow update: if false;
-      allow delete: if signedIn() && resource.data.headUid == request.auth.uid;
+      allow delete: if signedIn()
+        && get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.members[request.auth.uid].role == 'admin';
     }
 
     match /teams/{teamId} {
       function before() { return resource.data; }
       function after() { return request.resource.data; }
       function isMemberOf(team) { return signedIn() && request.auth.uid in team.memberIds; }
-      function isHeadOf(team) { return isMemberOf(team) && team.members[request.auth.uid].role == 'head'; }
+      function isAdminOf(team) { return isMemberOf(team) && team.members[request.auth.uid].role == 'admin'; }
       function changedKeys() { return after().diff(before()).affectedKeys(); }
 
       allow read: if isMemberOf(resource.data);
 
       allow create: if signedIn()
-        && after().keys().hasOnly(['name', 'headUid', 'memberIds', 'members', 'inviteCode', 'createdAt', 'updatedAt'])
+        && after().keys().hasOnly(['name', 'ownerUid', 'memberIds', 'members', 'inviteCode', 'createdAt', 'updatedAt'])
         && after().name is string && after().name.size() > 0 && after().name.size() <= 60
-        && after().headUid == request.auth.uid
+        && after().ownerUid == request.auth.uid
         && after().memberIds == [request.auth.uid]
         && after().members.keys().hasOnly([request.auth.uid])
-        && after().members[request.auth.uid].role == 'head'
+        && after().members[request.auth.uid].role == 'admin'
         && after().members[request.auth.uid].keys().hasOnly(['name', 'email', 'photoURL', 'role'])
         && sane(after().members[request.auth.uid])
         && after().inviteCode is string && after().inviteCode.size() == 8
@@ -60,23 +64,25 @@ service cloud.firestore {
 
       allow update: if signedIn()
         && after().updatedAt == request.time
-        && (headEdit() || selfLeave() || selfJoin());
+        && (adminEdit() || selfLeave() || selfJoin());
 
-      // The head renames the team, makes a new invite code or removes people, and stays head and member.
-      function headEdit() {
-        return isHeadOf(before())
-          && after().headUid == before().headUid
+      // An admin renames the team, makes a new invite code, changes roles or removes people. The owner stays an
+      // admin and a member, and the person acting stays a member.
+      function adminEdit() {
+        return isAdminOf(before())
+          && after().ownerUid == before().ownerUid
           && changedKeys().hasOnly(['name', 'inviteCode', 'memberIds', 'members', 'updatedAt'])
           && after().name is string && after().name.size() > 0 && after().name.size() <= 60
           && after().inviteCode is string && after().inviteCode.size() == 8
+          && after().ownerUid in after().memberIds
+          && after().members[after().ownerUid].role == 'admin'
           && request.auth.uid in after().memberIds
-          && after().members[request.auth.uid].role == 'head'
           && after().memberIds.toSet() == after().members.keys().toSet();
       }
 
-      // A member removes only themselves.
+      // Anyone but the owner removes only themselves.
       function selfLeave() {
-        return isMemberOf(before()) && !isHeadOf(before())
+        return isMemberOf(before()) && request.auth.uid != before().ownerUid
           && changedKeys().hasOnly(['memberIds', 'members', 'updatedAt'])
           && after().memberIds.toSet() == before().memberIds.toSet().difference([request.auth.uid].toSet())
           && after().members.diff(before().members).affectedKeys().hasOnly([request.auth.uid])
@@ -100,9 +106,10 @@ service cloud.firestore {
       match /tasks/{taskId} {
         function team() { return get(/databases/$(database)/documents/teams/$(teamId)).data; }
         function inTeam() { return signedIn() && request.auth.uid in team().memberIds; }
-        function asHead() { return inTeam() && team().members[request.auth.uid].role == 'head'; }
+        function asAdmin() { return inTeam() && team().members[request.auth.uid].role == 'admin'; }
+        function asLead() { return inTeam() && team().members[request.auth.uid].role in ['admin', 'lead']; }
         // assigneeOk: who the task is given to must be a current member (for an edit, the person it already
-        // had may stay even after leaving the team, so the head can still tidy it up).
+        // had may stay even after leaving the team, so it can still be tidied up).
         function validTask(t, assigneeOk) {
           return t.title is string && t.title.size() > 0 && t.title.size() <= 200
             && t.notes is string && t.notes.size() <= 4000
@@ -110,25 +117,28 @@ service cloud.firestore {
             && t.status in ['todo', 'doing', 'done']
             && t.priority in ['low', 'medium', 'high']
             && t.dueDate is string && (t.dueDate == '' || t.dueDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+            && t.mustDo is bool
             && t.deleted is bool
             && t.createdBy is string;
         }
 
         allow read: if inTeam();
 
-        allow create: if asHead()
-          && request.resource.data.keys().hasOnly(['title', 'notes', 'assigneeUid', 'createdBy', 'status', 'priority', 'dueDate', 'deleted', 'createdAt', 'updatedAt'])
+        // Admins and leads give tasks.
+        allow create: if asLead()
+          && request.resource.data.keys().hasOnly(['title', 'notes', 'assigneeUid', 'createdBy', 'status', 'priority', 'dueDate', 'mustDo', 'deleted', 'createdAt', 'updatedAt'])
           && validTask(request.resource.data, request.resource.data.assigneeUid in team().memberIds)
           && request.resource.data.createdBy == request.auth.uid
           && request.resource.data.deleted == false
           && request.resource.data.createdAt == request.time
           && request.resource.data.updatedAt == request.time;
 
+        // An admin edits any task, a lead the tasks they created, and the person a task is given to only its status.
         allow update: if inTeam()
           && request.resource.data.updatedAt == request.time
           && (
-            (asHead()
-              && request.resource.data.keys().hasOnly(['title', 'notes', 'assigneeUid', 'createdBy', 'status', 'priority', 'dueDate', 'deleted', 'createdAt', 'updatedAt'])
+            ((asAdmin() || (asLead() && resource.data.createdBy == request.auth.uid))
+              && request.resource.data.keys().hasOnly(['title', 'notes', 'assigneeUid', 'createdBy', 'status', 'priority', 'dueDate', 'mustDo', 'deleted', 'createdAt', 'updatedAt'])
               && validTask(request.resource.data, request.resource.data.assigneeUid in team().memberIds || request.resource.data.assigneeUid == resource.data.assigneeUid)
               && request.resource.data.createdBy == resource.data.createdBy
               && request.resource.data.createdAt == resource.data.createdAt)
@@ -144,7 +154,8 @@ service cloud.firestore {
       match /events/{eventId} {
         function team() { return get(/databases/$(database)/documents/teams/$(teamId)).data; }
         function inTeam() { return signedIn() && request.auth.uid in team().memberIds; }
-        function asHead() { return inTeam() && team().members[request.auth.uid].role == 'head'; }
+        function asAdmin() { return inTeam() && team().members[request.auth.uid].role == 'admin'; }
+        function asLead() { return inTeam() && team().members[request.auth.uid].role in ['admin', 'lead']; }
         function validEvent(e) {
           return e.title is string && e.title.size() > 0 && e.title.size() <= 300
             && e.startDate is string && e.startDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
@@ -159,7 +170,8 @@ service cloud.firestore {
 
         allow read: if inTeam();
 
-        allow create: if asHead()
+        // Admins and leads add team events; an admin changes any, a lead the ones they made.
+        allow create: if asLead()
           && request.resource.data.keys().hasOnly(['title', 'startDate', 'endDate', 'allDay', 'startTime', 'endTime', 'notes', 'createdBy', 'deleted', 'createdAt', 'updatedAt'])
           && validEvent(request.resource.data)
           && request.resource.data.createdBy == request.auth.uid
@@ -167,7 +179,7 @@ service cloud.firestore {
           && request.resource.data.createdAt == request.time
           && request.resource.data.updatedAt == request.time;
 
-        allow update: if asHead()
+        allow update: if (asAdmin() || (asLead() && resource.data.createdBy == request.auth.uid))
           && request.resource.data.keys().hasOnly(['title', 'startDate', 'endDate', 'allDay', 'startTime', 'endTime', 'notes', 'createdBy', 'deleted', 'createdAt', 'updatedAt'])
           && validEvent(request.resource.data)
           && request.resource.data.createdBy == resource.data.createdBy
