@@ -20,10 +20,14 @@
 
   function chip(e, onEvent) {
     const time = e.allDay ? '' : e.startTime + ' ';
-    return h('button', {
-      type: 'button', class: `cal-chip cal-${e.source}`, title: `${time}${e.title}${e.source === 'google' ? ' · Google Calendar' : e.source === 'row' ? ` · ${e.notes}` : ''}`,
+    const gName = e.calendarTitle ? ` (${e.calendarTitle})` : '';
+    const titleAttr = `${time}${e.title}${e.source === 'google' ? ` · Google Calendar${gName}` : e.source === 'row' ? ` · ${e.notes}` : ''}`;
+    const btn = h('button', {
+      type: 'button', class: `cal-chip cal-${e.source}`, title: titleAttr,
       onclick: ev => { ev.stopPropagation(); onEvent(e); },
     }, time && h('span', { class: 'cal-time' }, e.startTime), h('span', { class: 'cal-chip-title' }, e.title));
+    if (e.color) btn.style.setProperty('--chip', e.color);
+    return btn;
   }
 
   // Grid of day cells. opts: { view, anchor, events, onDay(date), onEvent(e), onMore(date) }
@@ -135,7 +139,7 @@
     let view = page.calView === 'week' ? 'week' : 'month';
     let anchor = today();
     let gstat = { connected: false, isConfigured: false };
-    let gEvents = [], gKey = '', gLoading = false, gError = '';
+    let gEvents = [], gCalendars = [], gKey = '', gLoading = false, gError = '', gNote = '';
     let alive = true;
     if (!Array.isArray(page.events)) page.events = [];
     host.innerHTML = '';
@@ -143,15 +147,19 @@
 
     const range = () => { const d = daysFor(view, anchor); return { from: d[0], to: d[d.length - 1] }; };
     async function loadGoogle(force) {
-      if (!gstat.connected) { gEvents = []; gKey = ''; return; }
+      if (!gstat.connected) { gEvents = []; gCalendars = []; gKey = ''; gNote = ''; return; }
       const r = range(), key = `${r.from}|${r.to}`;
       if (!force && key === gKey) return;
-      gKey = key; gLoading = true; gError = ''; draw();
+      gKey = key; gLoading = true; gError = ''; gNote = ''; draw();
       const res = await api.gcalList(r);
       if (!alive || key !== gKey) return; // a newer range was asked for meanwhile
       gLoading = false;
       if (res.error) { gError = res.error; gEvents = []; if (res.disconnected) gstat = await api.gcalStatus(); }
-      else gEvents = res.events;
+      else {
+        gEvents = res.events || [];
+        gCalendars = res.calendars || [];
+        gNote = res.note || '';
+      }
       draw();
     }
     async function refreshStatus() {
@@ -176,8 +184,17 @@
 
     async function editEvent(e) {
       const isNew = !e.id;
-      const targets = isNew && gstat.connected ? [['google', `Google Calendar${gstat.email ? ` (${gstat.email})` : ''}`], ['local', 'This workspace only']] : null;
-      const r = await eventDialog(e, { canDelete: !isNew, targets });
+      let targets = null;
+      if (isNew && gstat.connected) {
+        const writable = gCalendars.filter(c => c.accessRole !== 'reader' && c.accessRole !== 'freeBusyReader');
+        const cals = writable.length ? writable : gCalendars;
+        targets = [
+          ...(cals.length ? cals.map(c => [`google:${c.id}`, `Google: ${c.summary || c.id}`]) : [['google:primary', `Google Calendar${gstat.email ? ` (${gstat.email})` : ''}`]]),
+          ['local', 'This workspace only'],
+        ];
+      }
+      const canDelete = !isNew && (e.source !== 'google' || (e.calendarAccessRole !== 'reader' && e.calendarAccessRole !== 'freeBusyReader'));
+      const r = await eventDialog(e, { canDelete, targets });
       if (!r) return;
       const where = isNew ? (r.target || 'local') : e.source;
       if (where === 'local') {
@@ -189,8 +206,9 @@
       }
       if (r.action === 'delete' && !confirm(`Delete "${e.title}" from Google Calendar?`)) return;
       gLoading = true; draw();
-      const res = r.action === 'delete' ? await api.gcalDelete(e.googleId)
-        : isNew ? await api.gcalCreate(r.value) : await api.gcalUpdate(e.googleId, r.value);
+      const targetCalId = isNew && where.startsWith('google:') ? where.slice(7) : (e.calendarId || 'primary');
+      const res = r.action === 'delete' ? await api.gcalDelete(e.googleId, targetCalId)
+        : isNew ? await api.gcalCreate(r.value, targetCalId) : await api.gcalUpdate(e.googleId, r.value, targetCalId);
       gLoading = false;
       if (res.error) { alert(`Google Calendar: ${res.error}`); if (res.disconnected) return refreshStatus(); return draw(); }
       await loadGoogle(true);
@@ -233,6 +251,7 @@
             h('button', { type: 'button', class: 'cal-new', onclick: () => onDay(r.from <= today() && today() <= r.to ? today() : view === 'week' ? r.from : anchor.slice(0, 8) + '01') }, '+ Event'),
             googleBar())),
         gError ? h('p', { class: 'cal-note' }, gError) : '',
+        gNote ? h('p', { class: 'cal-note', style: 'color:#e5a548;' }, gNote) : '',
         grid({ view, anchor, events, onDay, onEvent, onMore }),
         h('div', { class: 'cal-legend' },
           h('span', { class: 'cal-key cal-local' }, 'Workspace'),

@@ -95,9 +95,22 @@
 
   // Google Calendar event resource -> calendar event. Timed events are shown in local time.
   // Google's all-day end date is exclusive, ours is inclusive.
-  function fromGoogleEvent(g) {
+  function fromGoogleEvent(g, calInfo) {
     if (!g || typeof g !== 'object' || g.status === 'cancelled' || !g.id || !g.start) return null;
-    const base = { id: 'g:' + g.id, googleId: String(g.id), source: 'google', title: String(g.summary || '(No title)'), notes: String(g.description || ''), link: typeof g.htmlLink === 'string' ? g.htmlLink : '' };
+    const calId = calInfo?.id || 'primary';
+    const calTitle = calInfo?.summary || '';
+    const base = {
+      id: calId === 'primary' ? 'g:' + g.id : 'g:' + encodeURIComponent(calId) + ':' + g.id,
+      googleId: String(g.id),
+      calendarId: calId,
+      calendarTitle: calTitle,
+      color: calInfo?.color || '',
+      calendarAccessRole: calInfo?.accessRole || '',
+      source: 'google',
+      title: String(g.summary || '(No title)'),
+      notes: String(g.description || ''),
+      link: typeof g.htmlLink === 'string' ? g.htmlLink : '',
+    };
     if (g.start.date) {
       const startDate = g.start.date;
       const endDate = g.end?.date ? addDays(g.end.date, -1) : startDate;

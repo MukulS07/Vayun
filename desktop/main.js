@@ -263,9 +263,18 @@ app.whenReady().then(() => {
   ipcMain.handle('gcal:connect', () => gcal.connect());
   ipcMain.handle('gcal:disconnect', () => gcal.disconnect());
   ipcMain.handle('gcal:list', (_e, range) => gcal.list(range));
-  ipcMain.handle('gcal:create', (_e, event) => gcal.create(event));
-  ipcMain.handle('gcal:update', (_e, { googleId, event } = {}) => gcal.update(googleId, event));
-  ipcMain.handle('gcal:delete', (_e, googleId) => gcal.remove(googleId));
+  ipcMain.handle('gcal:create', (_e, arg, calId) => {
+    if (arg && typeof arg === 'object' && arg.event) return gcal.create(arg.event, arg.calendarId || calId);
+    return gcal.create(arg, calId);
+  });
+  ipcMain.handle('gcal:update', (_e, arg, evt, calId) => {
+    if (arg && typeof arg === 'object' && arg.googleId) return gcal.update(arg.googleId, arg.event, arg.calendarId || calId);
+    return gcal.update(arg, evt, calId);
+  });
+  ipcMain.handle('gcal:delete', (_e, arg, calId) => {
+    if (arg && typeof arg === 'object' && arg.googleId) return gcal.remove(arg.googleId, arg.calendarId || calId);
+    return gcal.remove(arg, calId);
+  });
   ipcMain.on('gcal:open', (_e, link) => gcal.openLink(link));
   // Dictation: opens native voice typing (Win+H on Windows; Edit > Start Dictation on macOS).
   ipcMain.handle('voice:start', () => new Promise(resolve => {

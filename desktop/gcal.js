@@ -175,44 +175,90 @@ const wrap = fn => async (...args) => {
 const localZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
 // range: { from, to } inclusive dates. Recurring events are expanded into single instances.
+// Reads events across all accessible Google calendars (primary, Family, Holidays, etc.).
 const list = wrap(async range => {
   if (!isDate(range?.from) || !isDate(range?.to) || range.to < range.from) return { error: 'Bad range.' };
-  const events = [];
-  let pageToken;
-  for (let i = 0; i < 5; i++) {
-    const query = {
-      timeMin: new Date(range.from + 'T00:00:00').toISOString(),
-      timeMax: new Date(addDays(range.to, 1) + 'T00:00:00').toISOString(),
-      singleEvents: 'true', orderBy: 'startTime', maxResults: '250',
-      ...(pageToken && { pageToken }),
-    };
-    const r = await api('GET', '/calendars/primary/events', { query });
-    for (const g of r.items || []) { const e = fromGoogleEvent(g); if (e) events.push(e); }
-    pageToken = r.nextPageToken;
-    if (!pageToken) break;
+
+  let calendars = [{ id: 'primary', summary: 'Primary', primary: true }];
+  let scopeNotice = '';
+
+  try {
+    const cl = await api('GET', '/users/me/calendarList');
+    if (Array.isArray(cl.items) && cl.items.length > 0) {
+      calendars = cl.items
+        .filter(c => c && c.id && c.selected !== false)
+        .map(c => ({
+          id: c.id,
+          summary: c.summary || c.id,
+          primary: Boolean(c.primary),
+          color: c.backgroundColor || '',
+          accessRole: c.accessRole || 'reader',
+        }));
+    }
+  } catch (err) {
+    if (err.message && (err.message.includes('403') || err.message.toLowerCase().includes('permission') || err.message.toLowerCase().includes('scope'))) {
+      scopeNotice = 'To sync secondary calendars (like Family), sign out and sign in with Google once to grant calendar permissions.';
+    }
   }
-  return { events };
+
+  const events = [];
+  const seenEventIds = new Set();
+
+  const fetchCalendar = async cal => {
+    let pageToken;
+    for (let i = 0; i < 5; i++) {
+      const query = {
+        timeMin: new Date(range.from + 'T00:00:00').toISOString(),
+        timeMax: new Date(addDays(range.to, 1) + 'T00:00:00').toISOString(),
+        singleEvents: 'true', orderBy: 'startTime', maxResults: '250',
+        ...(pageToken && { pageToken }),
+      };
+      const r = await api('GET', `/calendars/${encodeURIComponent(cal.id)}/events`, { query });
+      for (const g of r.items || []) {
+        const e = fromGoogleEvent(g, cal);
+        if (e && !seenEventIds.has(e.id)) {
+          seenEventIds.add(e.id);
+          events.push(e);
+        }
+      }
+      pageToken = r.nextPageToken;
+      if (!pageToken) break;
+    }
+  };
+
+  const results = await Promise.allSettled(calendars.map(c => fetchCalendar(c)));
+  for (let i = 0; i < results.length; i++) {
+    const res = results[i];
+    if (res.status === 'rejected' && calendars[i]?.primary && res.reason?.disconnected) {
+      throw res.reason;
+    }
+  }
+
+  return { events, calendars, ...(scopeNotice && { note: scopeNotice }) };
 });
 
-const create = wrap(async input => {
+const create = wrap(async (input, calendarId = 'primary') => {
+  const calId = L.isCalendarId(calendarId) ? calendarId : 'primary';
   const e = normalizeEventInput(input);
   if (e.error) return e;
-  return { event: fromGoogleEvent(await api('POST', '/calendars/primary/events', { body: toGoogleEvent(e, localZone()) })) };
+  return { event: fromGoogleEvent(await api('POST', `/calendars/${encodeURIComponent(calId)}/events`, { body: toGoogleEvent(e, localZone()) }), { id: calId }) };
 });
 
-const update = wrap(async (googleId, input) => {
+const update = wrap(async (googleId, input, calendarId = 'primary') => {
   if (!L.isGoogleId(googleId)) return { error: 'Bad event id.' };
+  const calId = L.isCalendarId(calendarId) ? calendarId : 'primary';
   const e = normalizeEventInput(input);
   if (e.error) return e;
   // PATCH with both start and end replaces them; switching all-day <-> timed needs the other key nulled.
   const body = toGoogleEvent(e, localZone());
   if (e.allDay) { body.start.dateTime = null; body.end.dateTime = null; } else { body.start.date = null; body.end.date = null; }
-  return { event: fromGoogleEvent(await api('PATCH', `/calendars/primary/events/${encodeURIComponent(googleId)}`, { body })) };
+  return { event: fromGoogleEvent(await api('PATCH', `/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(googleId)}`, { body }), { id: calId }) };
 });
 
-const remove = wrap(async googleId => {
+const remove = wrap(async (googleId, calendarId = 'primary') => {
   if (!L.isGoogleId(googleId)) return { error: 'Bad event id.' };
-  await api('DELETE', `/calendars/primary/events/${encodeURIComponent(googleId)}`);
+  const calId = L.isCalendarId(calendarId) ? calendarId : 'primary';
+  await api('DELETE', `/calendars/${encodeURIComponent(calId)}/events/${encodeURIComponent(googleId)}`);
   return { ok: true };
 });
 

@@ -132,5 +132,6 @@ Vayun operates entirely on a local-first paradigm:
 
 ## 👤 Author
 
+**Maytrix**  
 Developed by **Mukul Sharma** ([@MukulS07](https://github.com/MukulS07))  
 GitHub: [https://github.com/MukulS07/Vayun](https://github.com/MukulS07/Vayun)

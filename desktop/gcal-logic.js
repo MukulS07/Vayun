@@ -7,8 +7,15 @@ const AUTH_ENDPOINT = 'https://accounts.google.com/o/oauth2/v2/auth';
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const REVOKE_ENDPOINT = 'https://oauth2.googleapis.com/revoke';
 const API_BASE = 'https://www.googleapis.com/calendar/v3';
-// calendar.events: read and write events on the user's calendars. openid+email: show which account is linked.
-const SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'openid', 'email'];
+// calendar.events: read and write events on the user's calendars.
+// calendar.calendarlist.readonly: discover secondary calendars (Family, Holidays, custom calendars, etc.).
+// openid+email: show which account is linked.
+const SCOPES = [
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/calendar.calendarlist.readonly',
+  'openid',
+  'email',
+];
 
 // Vayun's own Google OAuth client (type "Desktop app"), shipped inside the app so people only click
 // "Sign in with Google". It lives in gcal-client.json, which is kept out of git: create it locally as
@@ -74,5 +81,7 @@ function emailFromIdToken(idToken) {
 
 // The event id Google returns is base32hex; anything else from the renderer is refused.
 const isGoogleId = id => typeof id === 'string' && /^[a-zA-Z0-9_-]{1,1024}$/.test(id);
+// Validates Google calendar ids (e.g. 'primary', email addresses, or group calendar ids).
+const isCalendarId = id => typeof id === 'string' && /^[a-zA-Z0-9_.#@%+-]{1,1024}$/.test(id);
 
-module.exports = { DEFAULT_GCAL_CLIENT, AUTH_ENDPOINT, TOKEN_ENDPOINT, REVOKE_ENDPOINT, API_BASE, SCOPES, normalizeGcalConfig, validateGcalConfig, makePkce, buildAuthUrl, emailFromIdToken, isGoogleId };
+module.exports = { DEFAULT_GCAL_CLIENT, AUTH_ENDPOINT, TOKEN_ENDPOINT, REVOKE_ENDPOINT, API_BASE, SCOPES, normalizeGcalConfig, validateGcalConfig, makePkce, buildAuthUrl, emailFromIdToken, isGoogleId, isCalendarId };

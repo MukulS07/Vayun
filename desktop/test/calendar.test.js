@@ -66,6 +66,12 @@ test('Google mapping: all-day end is exclusive; timed shows local time; round tr
   assert.deepStrictEqual(body.start, { dateTime: '2026-10-27T09:00:00', timeZone: 'Asia/Kolkata' });
 
   assert.strictEqual(C.fromGoogleEvent({ id: 'x', status: 'cancelled', start: { date: '2026-01-01' } }), null);
+
+  const familyEv = C.fromGoogleEvent({ id: 'fam1', summary: 'Dinner', start: { date: '2026-10-28' }, end: { date: '2026-10-28' } }, { id: 'family123@group.calendar.google.com', summary: 'Family', color: '#ff8800' });
+  assert.strictEqual(familyEv.calendarId, 'family123@group.calendar.google.com');
+  assert.strictEqual(familyEv.calendarTitle, 'Family');
+  assert.strictEqual(familyEv.color, '#ff8800');
+  assert.strictEqual(familyEv.id, 'g:' + encodeURIComponent('family123@group.calendar.google.com') + ':fam1');
 });
 
 test('gcal-logic: config validation, PKCE and auth URL', () => {
@@ -86,6 +92,7 @@ test('gcal-logic: config validation, PKCE and auth URL', () => {
   assert.strictEqual(u.searchParams.get('access_type'), 'offline');
   assert.strictEqual(u.searchParams.get('code_challenge_method'), 'S256');
   assert.ok(u.searchParams.get('scope').includes('calendar.events'));
+  assert.ok(u.searchParams.get('scope').includes('calendar.calendarlist.readonly'));
   assert.strictEqual(u.searchParams.get('login_hint'), null);
   const hinted = new URL(G.buildAuthUrl({ clientId: cfg.clientId, redirectUri: 'http://127.0.0.1:1/callback', state: 's', challenge, loginHint: 'me@gmail.com' }));
   assert.strictEqual(hinted.searchParams.get('login_hint'), 'me@gmail.com');
@@ -95,4 +102,8 @@ test('gcal-logic: config validation, PKCE and auth URL', () => {
   assert.strictEqual(G.emailFromIdToken('garbage'), '');
   assert.ok(G.isGoogleId('abc_123'));
   assert.ok(!G.isGoogleId('../x'));
+  assert.ok(G.isCalendarId('primary'));
+  assert.ok(G.isCalendarId('family123@group.calendar.google.com'));
+  assert.ok(G.isCalendarId('en.indian#holiday@group.v.calendar.google.com'));
+  assert.ok(!G.isCalendarId('../../bad/path'));
 });
