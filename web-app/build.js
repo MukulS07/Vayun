@@ -14,11 +14,11 @@ const FIREBASE_CDN = 'https://www.gstatic.com';
 // What the page may talk to: Firebase sign-in, Firestore (teams) and Google Calendar; nothing else.
 const CSP = [
   "default-src 'self'",
-  `script-src 'self' ${FIREBASE_CDN} https://accounts.google.com`,
+  `script-src 'self' ${FIREBASE_CDN} https://apis.google.com https://accounts.google.com`, // apis.google.com: the sign-in pop-up helper
   "style-src 'self' 'unsafe-inline' https://accounts.google.com",
   "img-src 'self' https: data:",
   "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com",
-  "frame-src https://*.firebaseapp.com https://accounts.google.com",
+  "frame-src https://*.firebaseapp.com https://accounts.google.com https://*.googleapis.com",
   "object-src 'none'",
   "base-uri 'self'",
 ].join('; ');
