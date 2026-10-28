@@ -50,7 +50,7 @@ Vayun syncs your primary calendar. The sign-in token is encrypted with the OS ke
 <details>
 <summary>For maintainers: the bundled Google OAuth client</summary>
 
-Calendar sign-in uses Vayun's own OAuth client, set once in `desktop/gcal-logic.js` (`DEFAULT_GCAL_CLIENT`). To create it, in the Google Cloud project behind Vayun (`vayun-12d1b`): enable the **Google Calendar API**, set up the OAuth consent screen with the `calendar.events` scope, then **Credentials → Create credentials → OAuth client ID → Desktop app**, and paste the client ID and secret into `DEFAULT_GCAL_CLIENT`. A desktop client secret is not confidential, so shipping it in the app is expected. Until the consent screen is verified by Google, only listed test users can sign in. For local testing you can override it with `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `desktop/.env.local`.
+Calendar sign-in uses Vayun's own Google OAuth client (type **Desktop app**, project `vayun-12d1b`, scope `calendar.events`). The client ID and secret are **not committed**: locally they live in `desktop/gcal-client.json` (git-ignored, packaged into the app) as `{ "clientId": "…apps.googleusercontent.com", "clientSecret": "GOCSPX-…" }`, and GitHub Actions writes the same file from the `GCAL_CLIENT_ID` and `GCAL_CLIENT_SECRET` repository secrets (Settings → Secrets and variables → Actions). Without them a build still works but the Sign in button is disabled. Until Google verifies the consent screen, people see an "unverified app" warning (**Advanced → Go to Vayun**) and sign-ins are capped at 100. For local testing you can also override the client with `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `desktop/.env.local`.
 </details>
 
 ---
