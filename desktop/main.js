@@ -242,12 +242,23 @@ app.whenReady().then(() => {
   ipcMain.handle('ai:chat', (_e, messages) => ai.chat(messages));
 
   const auth = require('./auth');
+  const gcal = require('./gcal');
   ipcMain.handle('auth:status', () => auth.status());
-  ipcMain.handle('auth:signIn', () => auth.signIn());
-  ipcMain.handle('auth:signOut', () => auth.signOut());
+  // The Google Calendar link belongs to whoever is signed in to Vayun: signing out, or a different
+  // person signing in, unlinks it, so the next person never sees someone else's events.
+  ipcMain.handle('auth:signIn', async () => {
+    const before = auth.getUser()?.uid;
+    const r = await auth.signIn();
+    if (r?.ok && before && r.user?.uid !== before) await gcal.disconnect();
+    return r;
+  });
+  ipcMain.handle('auth:signOut', async () => {
+    const r = auth.signOut();
+    await gcal.disconnect();
+    return r;
+  });
   ipcMain.handle('auth:setConfig', (_e, cfg) => auth.setConfig(cfg));
   ipcMain.handle('auth:clearConfig', () => auth.clearConfig());
-  const gcal = require('./gcal');
   ipcMain.handle('gcal:status', () => gcal.status());
   ipcMain.handle('gcal:connect', () => gcal.connect());
   ipcMain.handle('gcal:disconnect', () => gcal.disconnect());

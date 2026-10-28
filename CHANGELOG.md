@@ -4,6 +4,9 @@ Every release is a git tag (`vX.Y.Z`) on the commit it was built from, and its i
 matching [GitHub Release](https://github.com/MukulS07/Vayun/releases). Installers are not committed to git
 (they are 140–270 MB, over GitHub's 100 MB file limit); the Release is where they are kept.
 
+## Unreleased
+- Each person's Google Calendar stays their own: signing out of Vayun, or a different person signing in, now unlinks the calendar, so the next person never sees someone else's events.
+
 ## v1.0.4 — 2026-10-28
 - **Google Calendar sign-in works.** Click **Sign in with Google** on the Calendar page to see, create, edit and delete your Google events.
 - The Google OAuth client is read from a git-ignored `desktop/gcal-client.json`; CI writes it from the `GCAL_CLIENT_ID` / `GCAL_CLIENT_SECRET` repository secrets, so the secret never enters the public repo.
