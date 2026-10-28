@@ -47,8 +47,28 @@ new sign-ups under **Authentication → Settings → User actions** while you so
 
 - People who signed in before teams existed see **One more sign-in needed** on the Team page. One click on
   **Sign in again** fixes it.
-- The head opens **Team → Start a team**, then shares the 8-character **invite code** from **Members**. Everyone else
-  uses **Join a team** and types the code.
+- Whoever opens **Team → Start a team** becomes the team's **owner** and first **admin**. They share the 8-character
+  **invite code** from **People**; everyone else uses **Join a team** and types it, and joins as a **member**.
+- Admins change roles in **People**:
+
+| Role | Can do |
+| :--- | :--- |
+| **Admin** | Everything: roles, people, invite code, all tasks and team events. The owner is always an admin and cannot be removed. |
+| **Lead** | Gives tasks and team events, flags tasks *Must do*, and edits the ones they made. Sees everyone's work. |
+| **Member** | Sees the team's tasks and changes the status of the ones given to them. |
+
+## 6. Updating the rules later
+
+Whenever `firestore.rules` changes (for example when roles arrived), publish the new text the same way as in step 2:
+Firestore Database → **Rules** → select all → paste → **Publish**. The app and the rules must match: an app newer than
+the published rules will be refused on anything the old rules do not know about. Teams created with an older version
+(where the creator was called the "head") must be deleted in **Firestore Database → Data** and started again.
+
+## Home, reminders and Must do
+
+Vayun now opens on **Home**. Nothing to set up: it reads your workspace, your Google Calendar link and your team. Add your
+own reminders at the top, pin pages from their ••• menu, and switch sections on or off with **Customize**. A task flagged
+**Must do** by an admin or lead stays at the top of the person's Home screen every day until they finish it.
 
 ## Testing the rules
 
@@ -76,10 +96,11 @@ npm run test:rules
 A built-in demo team lets you click through the whole page with no setup and no network.
 
 ```bash
-# the signed-in person is the head of a demo team
+# the signed-in person is the owner and admin of a demo team (the default)
 VAYUN_TEAM_BACKEND=memory npm start
 
-# the signed-in person is a member whose tasks were given by someone else
+# ...or a lead, or a plain member, whose work was given by someone else
+VAYUN_TEAM_BACKEND=memory VAYUN_TEAM_DEMO=lead npm start
 VAYUN_TEAM_BACKEND=memory VAYUN_TEAM_DEMO=member npm start
 ```
 
@@ -93,6 +114,7 @@ $env:VAYUN_TEAM_BACKEND = 'memory'; npm start
 | :--- | :--- |
 | `firestore.rules` | Who may read and change what in the database |
 | `desktop/app/team-logic.js` | The same permission rules in code, plus sorting and grouping |
+| `desktop/app/home-logic.js`, `home.js` | What the Home screen shows, and the screen itself |
 | `desktop/team-service.js` | Keeps a local copy and checks for changes on a schedule |
 | `desktop/team-store-firestore.js` | The only code that talks to Firestore (`team-store-memory.js` is the reference it must match) |
 | `desktop/app/team.js` | The Team page |

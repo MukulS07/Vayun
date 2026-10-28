@@ -16,7 +16,8 @@
 - ✍️ **Block-Based Editor** — Clean writing canvas supporting Markdown, headers, checklists, code blocks, quotes, and dividers.
 - 🗂️ **Workspaces & Databases** — Create multiple isolated workspaces with customizable database views (Tables, Boards, Calendars).
 - 📅 **Calendar with Google Calendar sync** — Month and week views of your workspace events and dated database rows; link Google Calendar to see, create, edit and delete your Google events from Vayun.
-- 👥 **Team tasks & shared calendar** — the head gives tasks to people and everyone sees theirs, sorted and grouped however they like; team events show on everyone's Calendar. Free, on Firebase's free plan (one-time [setup](docs/team-setup.md)).
+- 🏠 **Home landing screen** — Vayun opens on what needs you today: must-do tasks, overdue work, what is due today and tomorrow, important work, today's calendar, your own reminders and pinned pages. Switch sections on or off.
+- 👥 **Team tasks & shared calendar, with roles** — admins, leads and members. Admins and leads give tasks (and can flag a task *Must do*); everyone sees theirs, sorted and grouped however they like; team events show on everyone's Calendar. Free, on Firebase's free plan (one-time [setup](docs/team-setup.md)).
 - 🤖 **Native AI Assistant** (<kbd>⌘J</kbd> / <kbd>Ctrl+J</kbd>) — Draft, summarize, ideate, and structure content without leaving your workflow.
 - ⚡ **Global Quick Search** (<kbd>⌥⌘K</kbd> / <kbd>Ctrl+Alt+K</kbd>) — Find any note instantly from anywhere in your operating system.
 - ⏱️ **Built-in Productivity Tools** — Study timers, Pomodoro counters, habit trackers, and interactive mind maps.

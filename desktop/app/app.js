@@ -82,6 +82,32 @@ function openCalendar() {
   openPage(cal.id);
 }
 
+// Home is the landing screen: one page per workspace, shown first every time Vayun opens. Its own settings
+// (reminders, pins, hidden sections) live in data.home and are changed in place.
+let homeReady = false;
+function homeData() {
+  if (!homeReady) { data.home = FolioHomeLogic.cleanHome(data.home); homeReady = true; }
+  return data.home;
+}
+function openHome() {
+  let page = data.pages.find(p => p.kind === 'home');
+  if (!page) {
+    page = { id: uid(), title: 'Home', parentId: null, kind: 'home', blocks: [] };
+    data.pages.unshift(page);
+  }
+  openPage(page.id);
+}
+function togglePin() {
+  const home = homeData();
+  home.pins = home.pins.includes(current.id) ? home.pins.filter(x => x !== current.id) : [...home.pins, current.id];
+  save();
+  renderToolbar();
+}
+function markRowDone(rowId) {
+  const row = byId(rowId);
+  if (row && row.props) { row.props.status = 'Done'; save(); }
+}
+
 // The team page, like the calendar, is one page per workspace; the sidebar button opens it.
 function openTeam() {
   let page = data.pages.find(p => p.kind === 'team');
@@ -137,6 +163,8 @@ function renderTemplate() {
     activeTemplate = FolioCalendar.mount(host, current, { getPages: () => data.pages, dateProp, openRow: id => openPage(id), onChange: () => save(), openTeam });
   } else if (current.kind === 'team') {
     activeTemplate = FolioTeam.mount(host, current, { onChange: () => save() });
+  } else if (current.kind === 'home') {
+    activeTemplate = FolioHome.mount(host, current, { data: () => data, home: homeData, save, openPage: id => openPage(id), openCalendar, openTeam, markRowDone });
   }
 }
 function render() {
@@ -146,7 +174,7 @@ function render() {
   renderMeta();
   renderFavs();
   renderToolbar();
-  if (current.kind === 'template' || current.kind === 'calendar' || current.kind === 'team') { renderTemplate(); return; }
+  if (current.kind === 'template' || current.kind === 'calendar' || current.kind === 'team' || current.kind === 'home') { renderTemplate(); return; }
   unmountTemplate();
   $('#tpl').hidden = true;
   $('#title').hidden = false;
@@ -259,6 +287,7 @@ function commandItems() {
     cmd('Ask the assistant', () => FolioAssistantUI.open()),
     cmd('Open calendar', openCalendar),
     cmd('Open team', openTeam),
+    cmd('Open Home', openHome),
     cmd('Toggle light / dark', toggleLightDark),
     cmd('Change theme…', () => $('#theme-btn').click()),
     cmd('New Life OS page', () => FolioPicker.open(createTemplatePage, { template: 'life' })),
@@ -289,7 +318,7 @@ function renderSidebar() {
     const label = document.createElement('span');
     label.className = 'tree-label';
     label.textContent = p.title || 'Untitled';
-    a.append(icon(isDb(p) ? 'table' : p.kind === 'template' ? p.template : p.kind === 'calendar' ? 'calendar' : p.kind === 'team' ? 'team' : 'page'), label);
+    a.append(icon(isDb(p) ? 'table' : p.kind === 'template' ? p.template : p.kind === 'calendar' ? 'calendar' : p.kind === 'team' ? 'team' : p.kind === 'home' ? 'home' : 'page'), label);
     a.style.paddingLeft = `${12 + depth * 14}px`;
     if (p === current) { a.className = 'active'; a.setAttribute('aria-current', 'page'); }
     a.onclick = e => { e.preventDefault(); openPage(p.id); };
@@ -307,6 +336,7 @@ const ICONS = {
   study: 'M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2z M5 19V5',
   calendar: 'M4 6h16v14H4z M4 10h16 M8 3v5 M16 3v5',
   team: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M2 20c0-3.3 3-5 7-5s7 1.7 7 5 M17 11a2.5 2.5 0 1 0 0-5 M18 15c2.5 0 4 1.5 4 4',
+  home: 'M3 11l9-7 9 7 M5 10v10h14V10 M10 20v-6h4v6',
 };
 function icon(name) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -334,7 +364,7 @@ function renderToolbar() {
   bar.innerHTML = '';
   const add = (...els) => els.forEach(el => bar.append(el));
   const more = [];
-  if (current.kind !== 'template' && current.kind !== 'calendar' && current.kind !== 'team') {
+  if (current.kind !== 'template' && current.kind !== 'calendar' && current.kind !== 'team' && current.kind !== 'home') {
     if (isDb(current)) {
       const v = viewOf(current);
       for (const t of VIEW_TYPES) add(button(t[0].toUpperCase() + t.slice(1), () => { current.view = { ...v, type: t }; render(); save(); }, { active: v.type === t, id: `view-${t}` }));
@@ -352,6 +382,7 @@ function renderToolbar() {
     for (const [label, ext] of exp) more.push(button(`Export ${label}`, () => exportCurrent(ext), { id: `exp-${ext}` }));
     more.push(button('Duplicate', duplicatePage, { id: 'dup-btn' }), button('Move to…', movePage, { id: 'move-btn' }));
   }
+  if (current.kind !== 'home') more.unshift(button(homeData().pins.includes(current.id) ? 'Unpin from Home' : 'Pin to Home', togglePin, { id: 'pin-btn' }));
   more.push(button('Delete page', deletePage, { id: 'del-btn' }));
   add(moreMenu(more));
 }
@@ -1361,6 +1392,7 @@ $('#new-btn').onclick = () => createPage(null);
 $('#new-db-btn').onclick = createDatabase;
 $('#cal-btn').onclick = openCalendar;
 $('#team-btn').onclick = openTeam;
+$('#home-btn').onclick = openHome;
 $('#templates-btn').onclick = () => FolioPicker.open(createTemplatePage);
 $('#theme-btn').onclick = () => FolioAppearance.open(() => data.appearance, a => { data.appearance = a; applyTheme(); save(); });
 
@@ -1409,7 +1441,8 @@ if (api.isMac) {
 (async () => {
   data = await api.load();
   applyTheme();
-  openPage(pendingPageId || data.recent[0] || data.pages[0]?.id);
+  if (pendingPageId) openPage(pendingPageId); // something asked for a specific page (for example Quick Search)
+  else openHome(); // otherwise every opening starts on the landing screen
 })();
 
 // Workspace switcher: the sidebar header shows the active workspace and goes back to the start page.
