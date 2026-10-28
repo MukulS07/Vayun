@@ -1,0 +1,171 @@
+rules_version = '2';
+
+// Vayun team data. Who may do what:
+//   - Anyone signed in can create a team (and becomes its head) and look up one invite code they know.
+//   - Only members can read a team, its tasks and its events.
+//   - Only the head adds, edits and removes tasks and team events. The person a task is given to can
+//     change only its status.
+//   - Someone with the invite code can add themselves to a team; members can remove themselves; the
+//     head can remove anyone else and make a new invite code.
+//   - Nothing is ever really deleted from tasks or events (they are marked deleted), so everyone's
+//     app can notice the change.
+// app/team-logic.js has the same rules in code (checkTaskPatch); change both together.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+
+    // An invite code points at a team. You can look up a code you know, but nobody can list them.
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['teamId', 'headUid', 'createdAt'])
+        && request.resource.data.headUid == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && getAfter(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.headUid == request.auth.uid
+        && getAfter(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.inviteCode == code;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.headUid == request.auth.uid;
+    }
+
+    match /teams/{teamId} {
+      function before() { return resource.data; }
+      function after() { return request.resource.data; }
+      function isMemberOf(team) { return signedIn() && request.auth.uid in team.memberIds; }
+      function isHeadOf(team) { return isMemberOf(team) && team.members[request.auth.uid].role == 'head'; }
+      function changedKeys() { return after().diff(before()).affectedKeys(); }
+
+      allow read: if isMemberOf(resource.data);
+
+      allow create: if signedIn()
+        && after().keys().hasOnly(['name', 'headUid', 'memberIds', 'members', 'inviteCode', 'createdAt', 'updatedAt'])
+        && after().name is string && after().name.size() > 0 && after().name.size() <= 60
+        && after().headUid == request.auth.uid
+        && after().memberIds == [request.auth.uid]
+        && after().members.keys().hasOnly([request.auth.uid])
+        && after().members[request.auth.uid].role == 'head'
+        && after().members[request.auth.uid].keys().hasOnly(['name', 'email', 'photoURL', 'role'])
+        && after().inviteCode is string && after().inviteCode.size() == 8
+        && after().createdAt == request.time
+        && after().updatedAt == request.time;
+
+      allow update: if signedIn()
+        && after().updatedAt == request.time
+        && (headEdit() || selfLeave() || selfJoin());
+
+      // The head renames the team, makes a new invite code or removes people, and stays head and member.
+      function headEdit() {
+        return isHeadOf(before())
+          && after().headUid == before().headUid
+          && changedKeys().hasOnly(['name', 'inviteCode', 'memberIds', 'members', 'updatedAt'])
+          && after().name is string && after().name.size() > 0 && after().name.size() <= 60
+          && after().inviteCode is string && after().inviteCode.size() == 8
+          && request.auth.uid in after().memberIds
+          && after().members[request.auth.uid].role == 'head'
+          && after().memberIds.toSet() == after().members.keys().toSet();
+      }
+
+      // A member removes only themselves.
+      function selfLeave() {
+        return isMemberOf(before()) && !isHeadOf(before())
+          && changedKeys().hasOnly(['memberIds', 'members', 'updatedAt'])
+          && after().memberIds.toSet() == before().memberIds.toSet().difference([request.auth.uid].toSet())
+          && after().members.diff(before().members).affectedKeys().hasOnly([request.auth.uid])
+          && !(request.auth.uid in after().members.keys());
+      }
+
+      // Someone adds only themselves, as a member, and proves they know the current invite code.
+      function selfJoin() {
+        return !(request.auth.uid in before().memberIds)
+          && changedKeys().hasOnly(['memberIds', 'members', 'updatedAt'])
+          && after().memberIds.toSet() == before().memberIds.toSet().union([request.auth.uid].toSet())
+          && after().members.diff(before().members).affectedKeys().hasOnly([request.auth.uid])
+          && after().members[request.auth.uid].role == 'member'
+          && after().members[request.auth.uid].joinCode == before().inviteCode
+          && after().members[request.auth.uid].keys().hasOnly(['name', 'email', 'photoURL', 'role', 'joinCode'])
+          && after().members[request.auth.uid].name is string && after().members[request.auth.uid].name.size() <= 100;
+      }
+
+      allow delete: if false;
+
+      match /tasks/{taskId} {
+        function team() { return get(/databases/$(database)/documents/teams/$(teamId)).data; }
+        function inTeam() { return signedIn() && request.auth.uid in team().memberIds; }
+        function asHead() { return inTeam() && team().members[request.auth.uid].role == 'head'; }
+        function validTask(t) {
+          return t.title is string && t.title.size() > 0 && t.title.size() <= 200
+            && t.notes is string && t.notes.size() <= 4000
+            && t.assigneeUid is string && t.assigneeUid in team().memberIds
+            && t.status in ['todo', 'doing', 'done']
+            && t.priority in ['low', 'medium', 'high']
+            && t.dueDate is string && (t.dueDate == '' || t.dueDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+            && t.deleted is bool
+            && t.createdBy is string;
+        }
+
+        allow read: if inTeam();
+
+        allow create: if asHead()
+          && request.resource.data.keys().hasOnly(['title', 'notes', 'assigneeUid', 'createdBy', 'status', 'priority', 'dueDate', 'deleted', 'createdAt', 'updatedAt'])
+          && validTask(request.resource.data)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.deleted == false
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time;
+
+        allow update: if inTeam()
+          && request.resource.data.updatedAt == request.time
+          && (
+            (asHead()
+              && request.resource.data.keys().hasOnly(['title', 'notes', 'assigneeUid', 'createdBy', 'status', 'priority', 'dueDate', 'deleted', 'createdAt', 'updatedAt'])
+              && validTask(request.resource.data)
+              && request.resource.data.createdBy == resource.data.createdBy
+              && request.resource.data.createdAt == resource.data.createdAt)
+            ||
+            (resource.data.assigneeUid == request.auth.uid
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+              && request.resource.data.status in ['todo', 'doing', 'done'])
+          );
+
+        allow delete: if false;
+      }
+
+      match /events/{eventId} {
+        function team() { return get(/databases/$(database)/documents/teams/$(teamId)).data; }
+        function inTeam() { return signedIn() && request.auth.uid in team().memberIds; }
+        function asHead() { return inTeam() && team().members[request.auth.uid].role == 'head'; }
+        function validEvent(e) {
+          return e.title is string && e.title.size() > 0 && e.title.size() <= 300
+            && e.startDate is string && e.startDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+            && e.endDate is string && e.endDate.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+            && e.allDay is bool
+            && e.startTime is string && (e.startTime == '' || e.startTime.matches('^[0-2][0-9]:[0-5][0-9]$'))
+            && e.endTime is string && (e.endTime == '' || e.endTime.matches('^[0-2][0-9]:[0-5][0-9]$'))
+            && e.notes is string && e.notes.size() <= 8000
+            && e.deleted is bool
+            && e.createdBy is string;
+        }
+
+        allow read: if inTeam();
+
+        allow create: if asHead()
+          && request.resource.data.keys().hasOnly(['title', 'startDate', 'endDate', 'allDay', 'startTime', 'endTime', 'notes', 'createdBy', 'deleted', 'createdAt', 'updatedAt'])
+          && validEvent(request.resource.data)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.deleted == false
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time;
+
+        allow update: if asHead()
+          && request.resource.data.keys().hasOnly(['title', 'startDate', 'endDate', 'allDay', 'startTime', 'endTime', 'notes', 'createdBy', 'deleted', 'createdAt', 'updatedAt'])
+          && validEvent(request.resource.data)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.updatedAt == request.time;
+
+        allow delete: if false;
+      }
+    }
+  }
+}
