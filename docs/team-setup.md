@@ -17,11 +17,13 @@ Firebase console → **Build → Firestore Database → Create database**.
 Firestore Database → **Rules** tab → replace everything with the contents of [`firestore.rules`](../firestore.rules) →
 **Publish**. These rules are what stop a member from assigning tasks, or a stranger from reading a team, so do not skip them.
 
-## 3. Let the Firebase key use Firestore
+## 3. Optional: narrow the Firebase key
 
-Google Cloud console → **APIs & Services → Credentials** → the *Browser key (auto created by Firebase)* → **API restrictions**.
-The list must include **Cloud Firestore API**. If you narrow the key, keep these three: **Identity Toolkit API**,
-**Token Service API** and **Cloud Firestore API**.
+Vayun's team requests carry the signed-in person's token, not the API key, so the key does not need Firestore. Sign-in
+only needs **Identity Toolkit API** and **Token Service API**. Firebase allows about 25 APIs on the key by default
+(including ones that can cost money if abused), so it is worth trimming: Google Cloud console → **APIs & Services →
+Credentials** → the *Browser key (auto created by Firebase)* → **API restrictions** → keep just those two → Save. Then sign
+in to Vayun once to check it still works.
 
 ## 4. Stay on the free plan
 
