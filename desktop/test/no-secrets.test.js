@@ -28,9 +28,9 @@ test('scanText ignores placeholders, short test values and docs', () => {
 
 test('scanFiles refuses local credential files but allows the .example templates', () => {
   const read = () => '';
-  const files = ['desktop/gcal-client.json', 'desktop/firebase-config.json', 'desktop/.env.local', '.env', 'desktop/.env.local.example'];
+  const files = ['desktop/gcal-client.json', 'desktop/firebase-config.json', 'desktop/.env.local', '.env', 'SECRETS.local.txt', 'desktop/.env.local.example'];
   const bad = scanFiles(files, read).map(f => f.file);
-  assert.deepStrictEqual(bad, ['desktop/gcal-client.json', 'desktop/firebase-config.json', 'desktop/.env.local', '.env']);
+  assert.deepStrictEqual(bad, ['desktop/gcal-client.json', 'desktop/firebase-config.json', 'desktop/.env.local', '.env', 'SECRETS.local.txt']);
 });
 
 test('no credentials are tracked in this repository', t => {

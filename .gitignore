@@ -10,6 +10,7 @@ desktop/.env*
 !desktop/.env*.example
 desktop/firebase-config.json
 desktop/gcal-client.json
+SECRETS.local.txt
 web/
 
 # Logs

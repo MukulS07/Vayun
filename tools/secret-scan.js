@@ -18,7 +18,7 @@ const RULES = [
 // Local credential files that must never be tracked (the *.example templates are fine).
 const FORBIDDEN_FILE = file => {
   const base = path.basename(file);
-  return /^(gcal-client|firebase-config)\.json$/.test(base) || (/^\.env(\..+)?$/.test(base) && !base.endsWith('.example'));
+  return /^(gcal-client|firebase-config)\.json$/.test(base) || base === 'SECRETS.local.txt' || (/^\.env(\..+)?$/.test(base) && !base.endsWith('.example'));
 };
 
 const SKIP = /(^|\/)(package-lock\.json|node_modules\/)|\.(png|jpe?g|webp|gif|ico|woff2?|pdf|zip|exe|dmg|asar)$/i;
