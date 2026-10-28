@@ -4,7 +4,7 @@ Every release is a git tag (`vX.Y.Z`) on the commit it was built from, and its i
 matching [GitHub Release](https://github.com/MukulS07/Vayun/releases). Installers are not committed to git
 (they are 140–270 MB, over GitHub's 100 MB file limit); the Release is where they are kept.
 
-## Unreleased
+## v1.0.7 — 2026-10-28
 - **Teams.** The head of a team gives tasks to people; each person sees theirs (or the whole team's), sorted by due date, priority or status and grouped by person or status. Team events from the head show on everyone's Calendar page next to their private Google events. Team data lives in Cloud Firestore on the free plan; personal pages stay on your PC. One-time setup: [docs/team-setup.md](docs/team-setup.md). Tried for real on the live Firebase project (sign-in, team, task, status change, team event).
 - The team security rules are tested against Google's Firestore emulator (`npm run test:rules`): the shared checks plus attacks that skip the app's own checks.
 - Sign-in now also keeps Firebase's long-lived refresh token (encrypted on your PC), which teams need. People who were already signed in are asked to sign in once more on the Team page.
