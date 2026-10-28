@@ -45,7 +45,7 @@ Pre-built binaries are automatically compiled via GitHub Actions:
 
 ### 🌐 On the web
 
-Vayun also runs in a browser tab, with the same screens as the desktop app: Home, pages and databases, themes, Google sign-in and Teams. Pages are kept in that browser. The assistant, Notion and PDF import, and Google Calendar are desktop-only for now. How it is built and put on a website: [web-app/README.md](web-app/README.md).
+Vayun also runs in a browser tab, with the same screens as the desktop app: Home, pages and databases, themes, Google sign-in, Google Calendar and Teams. Pages are kept in that browser. The assistant and Notion and PDF import are desktop-only for now. How it is built and put on a website: [web-app/README.md](web-app/README.md).
 
 ---
 

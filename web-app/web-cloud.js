@@ -82,6 +82,7 @@
       const uid = current && current.uid;
       try { const { auth, A } = await firebase(); await A.signOut(auth); } catch { /* already signed out */ }
       current = null;
+      try { sessionStorage.removeItem('vayun-gcal-token'); } catch { /* ignore */ }
       if (uid) team.forget(uid);
       emit('auth:changed', null);
       return { ok: true };
@@ -100,6 +101,120 @@
     teamCreateEvent: input => team.createEvent(obj(input)),
     teamUpdateEvent: (id, input) => team.updateEvent(String(id ?? ''), obj(input)),
     teamDeleteEvent: id => team.deleteEvent(String(id ?? '')),
+  });
+
+  // ---- Google Calendar, through the same Google sign-in (no second client to set up) ----
+  // Signing in again with the two Calendar permissions added gives this page a short-lived access token (about an hour).
+  // It is kept for this browser tab only. When it runs out the Calendar page shows its Sign in button again.
+  const GCAL = 'https://www.googleapis.com/calendar/v3';
+  const SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/calendar.calendarlist.readonly'];
+  const TOKEN_KEY = 'vayun-gcal-token';
+  const isGoogleId = id => typeof id === 'string' && /^[a-zA-Z0-9_-]{1,1024}$/.test(id);
+  const isCalendarId = id => typeof id === 'string' && /^[a-zA-Z0-9_.#@%+-]{1,1024}$/.test(id);
+  const readToken = () => { try { const t = JSON.parse(sessionStorage.getItem(TOKEN_KEY) || 'null'); return t && t.expires > Date.now() && t.uid === (current && current.uid) ? t : null; } catch { return null; } };
+  const gStatus = () => { const t = readToken(); return { isConfigured: true, connected: Boolean(t), email: t ? t.email : '' }; };
+  const linkAgain = () => Object.assign(new Error('Google Calendar needs to be linked again. Press Sign in with Google.'), { disconnected: true });
+
+  async function gapi(method, pathname, { query, body } = {}) {
+    const t = readToken();
+    if (!t) throw linkAgain();
+    const r = await fetch(GCAL + pathname + (query ? '?' + new URLSearchParams(query) : ''), {
+      method, headers: { Authorization: 'Bearer ' + t.token, Accept: 'application/json', ...(body && { 'Content-Type': 'application/json' }) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (r.status === 401) { sessionStorage.removeItem(TOKEN_KEY); emit('gcal:changed', gStatus()); throw linkAgain(); }
+    if (r.status === 204) return {};
+    const json = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((json.error && json.error.message) || 'Google Calendar error ' + r.status);
+    return json;
+  }
+  const wrap = fn => async (...args) => {
+    try { return await fn(...args); } catch (e) { return { error: e.message || 'Could not reach Google Calendar.', disconnected: Boolean(e.disconnected) }; }
+  };
+  const zone = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  const L = () => window.FolioCalLogic; // loaded with the screens, after this file
+
+  Object.assign(api, {
+    gcalStatus: async () => { await firebase().catch(() => {}); return gStatus(); },
+    gcalConnect: async () => {
+      try {
+        const { auth, A } = await firebase();
+        const provider = new A.GoogleAuthProvider();
+        SCOPES.forEach(s => provider.addScope(s));
+        if (current && current.email) provider.setCustomParameters({ login_hint: current.email });
+        const r = await A.signInWithPopup(auth, provider);
+        toUser(r.user);
+        const cred = A.GoogleAuthProvider.credentialFromResult(r);
+        if (!cred || !cred.accessToken) return { error: 'Google did not give Vayun calendar access. Try again and allow the calendar permissions.' };
+        sessionStorage.setItem(TOKEN_KEY, JSON.stringify({ token: cred.accessToken, uid: r.user.uid, email: r.user.email || '', expires: Date.now() + 55 * 60 * 1000 }));
+        const st = gStatus();
+        emit('gcal:changed', st);
+        team.start();
+        return { ok: true, ...st };
+      } catch (e) {
+        const code = (e && e.code) || '';
+        if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return { error: 'Sign-in was cancelled.' };
+        if (code === 'auth/popup-blocked') return { error: 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.' };
+        if (code === 'auth/unauthorized-domain') return { error: 'This website address is not allowed to sign in yet. Add it under Authentication, Settings, Authorized domains in the Firebase console.' };
+        return { error: 'Could not link Google Calendar. ' + (e && e.message ? e.message : '') };
+      }
+    },
+    gcalDisconnect: async () => { sessionStorage.removeItem(TOKEN_KEY); const st = gStatus(); emit('gcal:changed', st); return st; },
+    gcalList: wrap(async range => {
+      const C = L();
+      if (!C.isDate(range && range.from) || !C.isDate(range && range.to) || range.to < range.from) return { error: 'Bad range.' };
+      let calendars = [{ id: 'primary', summary: 'Primary', primary: true }];
+      let note = '';
+      try {
+        const cl = await gapi('GET', '/users/me/calendarList');
+        if (Array.isArray(cl.items) && cl.items.length) {
+          calendars = cl.items.filter(c => c && c.id && c.selected !== false).map(c => ({ id: c.id, summary: c.summary || c.id, primary: Boolean(c.primary), color: c.backgroundColor || '', accessRole: c.accessRole || 'reader' }));
+        }
+      } catch (e) {
+        if (e.disconnected) throw e;
+        if (/403|permission|scope/i.test(e.message || '')) note = 'To see your other calendars (like Family), press Sign in with Google again and allow the calendar permissions.';
+      }
+      const events = [], seen = new Set();
+      const fetchCalendar = async cal => {
+        let pageToken;
+        for (let i = 0; i < 5; i++) {
+          const query = {
+            timeMin: new Date(range.from + 'T00:00:00').toISOString(), timeMax: new Date(C.addDays(range.to, 1) + 'T00:00:00').toISOString(),
+            singleEvents: 'true', orderBy: 'startTime', maxResults: '250', ...(pageToken && { pageToken }),
+          };
+          const r = await gapi('GET', '/calendars/' + encodeURIComponent(cal.id) + '/events', { query });
+          for (const g of r.items || []) { const e = C.fromGoogleEvent(g, cal); if (e && !seen.has(e.id)) { seen.add(e.id); events.push(e); } }
+          pageToken = r.nextPageToken;
+          if (!pageToken) break;
+        }
+      };
+      const results = await Promise.allSettled(calendars.map(fetchCalendar));
+      results.forEach((res, i) => { if (res.status === 'rejected' && calendars[i].primary && res.reason && res.reason.disconnected) throw res.reason; });
+      return { events, calendars, ...(note && { note }) };
+    }),
+    gcalCreate: wrap(async (arg, calendarId) => {
+      const input = arg && arg.event ? arg.event : arg; const calId = isCalendarId(arg && arg.calendarId || calendarId) ? (arg && arg.calendarId || calendarId) : 'primary';
+      const C = L(), e = C.normalizeEventInput(input);
+      if (e.error) return e;
+      return { event: C.fromGoogleEvent(await gapi('POST', '/calendars/' + encodeURIComponent(calId) + '/events', { body: C.toGoogleEvent(e, zone()) }), { id: calId }) };
+    }),
+    gcalUpdate: wrap(async (googleId, input, calendarId) => {
+      if (googleId && typeof googleId === 'object') { calendarId = googleId.calendarId || calendarId; input = googleId.event; googleId = googleId.googleId; }
+      if (!isGoogleId(googleId)) return { error: 'Bad event id.' };
+      const calId = isCalendarId(calendarId) ? calendarId : 'primary';
+      const C = L(), e = C.normalizeEventInput(input);
+      if (e.error) return e;
+      const body = C.toGoogleEvent(e, zone());
+      if (e.allDay) { body.start.dateTime = null; body.end.dateTime = null; } else { body.start.date = null; body.end.date = null; }
+      return { event: C.fromGoogleEvent(await gapi('PATCH', '/calendars/' + encodeURIComponent(calId) + '/events/' + encodeURIComponent(googleId), { body }), { id: calId }) };
+    }),
+    gcalDelete: wrap(async (googleId, calendarId) => {
+      if (googleId && typeof googleId === 'object') { calendarId = googleId.calendarId || calendarId; googleId = googleId.googleId; }
+      if (!isGoogleId(googleId)) return { error: 'Bad event id.' };
+      const calId = isCalendarId(calendarId) ? calendarId : 'primary';
+      await gapi('DELETE', '/calendars/' + encodeURIComponent(calId) + '/events/' + encodeURIComponent(googleId));
+      return { ok: true };
+    }),
   });
 
   // Start Firebase at once if a session may already exist, so a returning person is signed in when the page opens.

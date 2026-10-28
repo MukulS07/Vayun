@@ -36,14 +36,15 @@ protected by restrictions, not secrecy (see below).
 2. **Restrict the web API key.** Google Cloud console → APIs and services → Credentials → the browser key → Application
    restrictions: HTTP referrers → add `https://yoursite.com/*`. Keep the API restriction to Identity Toolkit and Token
    Service (and Firestore if you also use it from the site).
-3. **Google Calendar on the web** (not built yet). Needs a separate OAuth client of type *Web application* with your
-   website as an authorized JavaScript origin. The desktop client cannot be reused.
+3. **Google Calendar** uses the same Google sign-in (no second client). The Calendar API must be switched on in the same Google
+   Cloud project as Firebase (`vayun-12d1b`), and the consent screen must list the two calendar permissions. The page gets an
+   access token that lasts about an hour; after that the Calendar page shows its Sign in with Google button again.
 
 ## What works on the web today
 
 | Works | Desktop app only (for now) |
 | :--- | :--- |
-| Home screen and reminder popup, pages and the block editor, databases, templates, search, themes, HTML import, exports (download) | Assistant, Notion and PDF import, voice typing, Google Calendar |
+| Home screen and reminder popup, pages and the block editor, databases, templates, search, themes, HTML import, exports (download), Google Calendar (re-link about hourly) | Assistant, Notion and PDF import, voice typing |
 | Sign in with Google, Teams, roles, Must do tasks and team events | |
 
 Pages are kept in the browser they were made in. They do not move between the desktop app and the web.
