@@ -185,7 +185,7 @@
     let teamReady = false; // the popup waits until the team's tasks have arrived (or we know there are none to wait for)
     onHomeTeam = snapshot => { team = snapshot; draw(); };
     draw();
-    api.authStatus().then(st => { if (!alive) return; const n = st && st.user && (st.user.displayName || st.user.email || ''); userName = String(n).split(/[ @]/)[0]; draw(); }).catch(() => {});
+    api.authStatus().then(st => { if (!alive) return; const n = (st && st.user && (st.user.displayName || st.user.email)) || ''; userName = String(n).split(/[ @]/)[0]; draw(); }).catch(() => {});
     api.teamState().then(s => {
       if (!alive) return;
       team = s;
