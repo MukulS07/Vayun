@@ -1,7 +1,7 @@
 {
   "name": "pages-desktop",
   "productName": "Vayun",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Vayun - local notes, planners and an AI assistant",
   "author": "Mukul Sharma",
   "private": true,

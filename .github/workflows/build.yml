@@ -44,9 +44,19 @@ jobs:
             node -e "require('fs').writeFileSync('gcal-client.json', JSON.stringify({ clientId: process.env.GCAL_CLIENT_ID, clientSecret: process.env.GCAL_CLIENT_SECRET }))"
           fi
 
+      # DMG creation on GitHub's macOS runners fails at random (the same commit can pass and fail),
+      # so the build gets up to 3 tries. A real error fails all three and still fails the job.
       - name: Build macOS Distributables (Apple Silicon arm64, Universal & Intel)
         working-directory: desktop
-        run: npm run dist:mac:all -- --publish never
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if npm run dist:mac:all -- --publish never; then exit 0; fi
+            echo "::warning::macOS build attempt $attempt failed"
+            rm -rf release
+            sleep 15
+          done
+          exit 1
 
       - name: Upload macOS Artifacts
         uses: actions/upload-artifact@v4
