@@ -4,11 +4,12 @@ Every release is a git tag (`vX.Y.Z`) on the commit it was built from, and its i
 matching [GitHub Release](https://github.com/MukulS07/Vayun/releases). Installers are not committed to git
 (they are 140–270 MB, over GitHub's 100 MB file limit); the Release is where they are kept.
 
-## Unreleased
+## v1.0.5 — 2026-10-28
+- **Google Calendar sign-in works** in the downloadable installers (v1.0.4's GitHub builds were made before the Google client secrets were added to the repo, so their Sign in button was disabled).
 - Each person's Google Calendar stays their own: signing out of Vayun, or a different person signing in, now unlinks the calendar, so the next person never sees someone else's events.
 
 ## v1.0.4 — 2026-10-28
-- **Google Calendar sign-in works.** Click **Sign in with Google** on the Calendar page to see, create, edit and delete your Google events.
+- Google Calendar sign-in added to the app (but disabled in the GitHub-built installers; fixed in v1.0.5). Click **Sign in with Google** on the Calendar page to see, create, edit and delete your Google events.
 - The Google OAuth client is read from a git-ignored `desktop/gcal-client.json`; CI writes it from the `GCAL_CLIENT_ID` / `GCAL_CLIENT_SECRET` repository secrets, so the secret never enters the public repo.
 - The macOS build retries up to 3 times, because DMG creation on GitHub's runners fails at random.
 
