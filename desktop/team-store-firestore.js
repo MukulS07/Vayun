@@ -11,8 +11,10 @@ const OVERLAP_SECONDS = 120; // re-read recent changes so a write that committed
 
 class FirestoreTeamStore {
   // project: Firebase project id. getToken(): async Firebase ID token. me(): { uid, name, email, photoURL }.
-  constructor({ project, getToken, me, fetch: fetchImpl = globalThis.fetch }) {
+  // baseUrl: only for tests, to talk to Google's local Firestore emulator instead of the real service.
+  constructor({ project, getToken, me, fetch: fetchImpl = globalThis.fetch, baseUrl = R.BASE }) {
     this.project = project;
+    this.base = baseUrl;
     this.getToken = getToken;
     this.meSource = me;
     this.fetch = fetchImpl;
@@ -25,7 +27,7 @@ class FirestoreTeamStore {
     return u;
   }
   _id() { return crypto.randomUUID().replace(/-/g, '').slice(0, 20); }
-  _url(suffix) { return `${R.BASE}/${R.docsRoot(this.project)}${suffix}`; }
+  _url(suffix) { return `${this.base}/${R.docsRoot(this.project)}${suffix}`; }
   async _call(method, url, body) { return R.request(this.fetch, await this.getToken(), method, url, body); }
   async _commit(writes) { return this._call('POST', this._url(':commit'), { writes }); }
   async _get(path) {

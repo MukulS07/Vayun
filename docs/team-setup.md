@@ -36,12 +36,38 @@ Keep the project on Firebase's free **Spark** plan and do not add a billing acco
 If a day's limit is passed, team sync pauses until it resets (midnight Pacific time) and nothing is billed. Vayun checks
 for changes about once every 90 seconds, only while its window is in use, so a small team stays far below the limit.
 
+**One risk of "free for everyone":** anyone with a Google account can sign in to Vayun, and the daily limits are shared by
+all users, so someone hostile could use them up with junk. The rules cap how big each item can be but cannot count how
+many a person creates. Glance at **Firebase console → Firestore → Usage** now and then. If you ever see abuse, switch off
+new sign-ups under **Authentication → Settings → User actions** while you sort it out.
+
 ## 5. First use
 
 - People who signed in before teams existed see **One more sign-in needed** on the Team page. One click on
   **Sign in again** fixes it.
 - The head opens **Team → Start a team**, then shares the 8-character **invite code** from **Members**. Everyone else
   uses **Join a team** and types the code.
+
+## Testing the rules
+
+```bash
+cd desktop
+npm run test:rules
+```
+
+This starts Google's Firestore emulator on your PC (it downloads once, about 140 MB, and needs Java 11 or newer; no
+Firebase account is needed), loads `firestore.rules`, and runs 21 tests: the shared checks every backend must pass, plus
+attack tests that send raw requests the way a hostile client would, each paired with a request that must succeed. Run it
+after any change to `firestore.rules`.
+
+On Windows, if it stops with "Unable to establish loopback connection", Java dislikes the short `NAME~1` temp folder.
+Create a plain folder and point Java at it for that run:
+
+```powershell
+New-Item -ItemType Directory -Force C:\Users\Public\fbtmp
+$env:JAVA_TOOL_OPTIONS = '-Djava.io.tmpdir=C:\Users\Public\fbtmp -Djdk.net.unixdomain.tmpdir=C:\Users\Public\fbtmp'
+npm run test:rules
+```
 
 ## Trying it without Firebase
 

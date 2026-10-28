@@ -15,6 +15,13 @@ service cloud.firestore {
 
     function signedIn() { return request.auth != null; }
 
+    // A person's entry in a team: only these fields, only strings, and not absurdly long.
+    function sane(person) {
+      return person.name is string && person.name.size() <= 100
+        && person.email is string && person.email.size() <= 200
+        && person.photoURL is string && person.photoURL.size() <= 1000;
+    }
+
     // An invite code points at a team. You can look up a code you know, but nobody can list them.
     match /invites/{code} {
       allow get: if signedIn();
@@ -46,6 +53,7 @@ service cloud.firestore {
         && after().members.keys().hasOnly([request.auth.uid])
         && after().members[request.auth.uid].role == 'head'
         && after().members[request.auth.uid].keys().hasOnly(['name', 'email', 'photoURL', 'role'])
+        && sane(after().members[request.auth.uid])
         && after().inviteCode is string && after().inviteCode.size() == 8
         && after().createdAt == request.time
         && after().updatedAt == request.time;
@@ -84,7 +92,7 @@ service cloud.firestore {
           && after().members[request.auth.uid].role == 'member'
           && after().members[request.auth.uid].joinCode == before().inviteCode
           && after().members[request.auth.uid].keys().hasOnly(['name', 'email', 'photoURL', 'role', 'joinCode'])
-          && after().members[request.auth.uid].name is string && after().members[request.auth.uid].name.size() <= 100;
+          && sane(after().members[request.auth.uid]);
       }
 
       allow delete: if false;

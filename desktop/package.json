@@ -9,6 +9,7 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test \"test/*.test.js\"",
+    "test:rules": "cd .. && npx --yes firebase-tools@15.34.1 emulators:exec --only firestore --project demo-vayun \"node --test desktop/test-rules/rules.test.js\"",
     "dist": "electron-builder",
     "dist:win": "electron-builder --win nsis",
     "dist:mac": "electron-builder --mac --arm64",

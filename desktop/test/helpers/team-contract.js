@@ -14,7 +14,7 @@ const rejectsWith = (p, code) => assert.rejects(p, e => e.code === code, `expect
 module.exports = function runContract(name, makeServer) {
   // A team with a head (Mukul), two members (Ana, Raj) and an outsider (Eve).
   async function setup() {
-    const server = makeServer();
+    const server = await makeServer();
     const s = Object.fromEntries(Object.entries(USERS).map(([k, u]) => [k, server.storeFor(u)]));
     const team = await s.head.createTeam('Design');
     await s.ana.joinTeam(team.inviteCode);
