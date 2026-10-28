@@ -107,17 +107,17 @@ npm run dist:mac:universal
 npm run dist:win
 ```
 
-Builds land in a folder per version: `desktop/release/<version>/` (for example `desktop/release/1.0.5/Vayun-Setup-1.0.5.exe`), so older builds are kept side by side.
+Builds land in a folder per version: `desktop/release/<version>/` (for example `desktop/release/1.0.6/Vayun-Setup-1.0.6.exe`), so older builds are kept side by side.
 
 ### Releasing an update to every platform
 
-1. Bump the version in `desktop/package.json` (for example `npm version 1.0.6 --no-git-tag-version` inside `desktop/`) and commit.
+1. Bump the version in `desktop/package.json` (for example `npm version 1.0.7 --no-git-tag-version` inside `desktop/`) and commit.
 2. Tag and push:
    ```bash
-   git tag v1.0.6
+   git tag v1.0.7
    git push origin master --tags
    ```
-3. GitHub Actions builds the Windows `.exe` and the macOS `.dmg`/`.zip` (Apple Silicon, Intel and Universal) and publishes them together as the **v1.0.6** release.
+3. GitHub Actions builds the Windows `.exe` and the macOS `.dmg`/`.zip` (Apple Silicon, Intel and Universal) and publishes them together as the **v1.0.7** release.
 
 ---
 
