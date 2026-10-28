@@ -122,7 +122,10 @@
 
     const summary = { mustDo: mustdo.length, overdue: overdue.length, dueSoon: soon.length, important: important.length, events: calendar.length, attention: attention.length };
     summary.needYou = summary.mustDo + summary.overdue + summary.dueSoon;
-    return { sections, summary, empty: !sections.length };
+    // The one thing to start with: the first item of the most urgent section that is not a calendar or team overview.
+    const lead = ['mustdo', 'overdue', 'soon', 'important'].map(id => sections.find(s => s.id === id)).find(Boolean);
+    const focus = lead ? { sectionId: lead.id, item: lead.items[0] } : null;
+    return { sections, summary, focus, empty: !sections.length };
   }
 
   return { SECTIONS, cleanHome, normalizeReminder, rowsFromPages, build, timeLabel };

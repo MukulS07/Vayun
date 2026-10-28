@@ -14,6 +14,22 @@
   let onHomeTeam = null;
   root.api?.on('team:changed', s => onHomeTeam?.(s));
 
+  // The reminder popup lives on the window, so it stays when the person moves to another page. One at a time.
+  let toastEl = null, snoozeTimer = null, toastDone = false;
+  function closePopup() { if (toastEl) { toastEl.remove(); toastEl = null; } }
+  function popup({ label, title, note, open, snooze }) {
+    closePopup(); clearTimeout(snoozeTimer);
+    const close = () => closePopup();
+    toastEl = h('div', { class: 'home-toast', role: 'status', onkeydown: e => { if (e.key === 'Escape') close(); } },
+      h('div', { class: 'home-toast-head' },
+        h('div', {}, h('p', { class: 'home-eyebrow late' }, label), h('p', { class: 'home-toast-title' }, title), note ? h('p', { class: 'home-toast-note' }, note) : ''),
+        h('button', { type: 'button', class: 'home-toast-x', 'aria-label': 'Close reminder', onclick: close }, '✕')),
+      h('div', { class: 'home-toast-actions' },
+        h('button', { type: 'button', class: 'home-open primary', onclick: () => { close(); open(); } }, 'Open task'),
+        h('button', { type: 'button', class: 'home-open', onclick: () => { close(); snooze(); } }, 'Snooze 1 hour')));
+    document.body.append(toastEl);
+  }
+
   // ctx: { data(): the workspace, home(): its Home settings (changed in place), save(), openPage(id), openCalendar(),
   //        openTeam(), markRowDone(id) }
   function mount(host, page, ctx) {
@@ -41,16 +57,15 @@
       });
     }
 
-    // ---- one line in a section ----
-    function itemRow(sec, it) {
-      const overdue = it.dueDate && it.dueDate < today();
-      const due = it.dueDate ? h('span', { class: `home-due${overdue ? ' late' : ''}` }, (overdue ? 'Overdue · ' : it.dueDate === today() ? 'Today · ' : '') + shortDate(it.dueDate)) : '';
-      const open = () => {
-        if (it.ref.type === 'team-task') ctx.openTeam();
-        else if (it.ref.type === 'row' || it.ref.type === 'page') ctx.openPage(it.ref.id);
-        else if (it.ref.type === 'event') ctx.openCalendar();
-      };
-      const title = h('button', { type: 'button', class: 'home-item-title', onclick: open, disabled: it.kind === 'reminder' }, it.mustDo ? h('span', { class: 'team-must' }, 'Must do') : '', it.title);
+    const openItem = it => {
+      if (it.ref.type === 'team-task') ctx.openTeam();
+      else if (it.ref.type === 'row' || it.ref.type === 'page') ctx.openPage(it.ref.id);
+      else if (it.ref.type === 'event') ctx.openCalendar();
+    };
+    const dueText = it => it.dueDate ? (it.dueDate < today() ? 'Overdue · ' : it.dueDate === today() ? 'Today · ' : '') + shortDate(it.dueDate) : '';
+
+    // ---- the buttons that finish or start an item (used on the focus card and in the lists) ----
+    function itemActions(sec, it) {
       let actions = '';
       if (it.kind === 'task' && sec.id !== 'attention') {
         actions = [
@@ -67,10 +82,18 @@
       } else if (it.kind === 'page') {
         actions = h('button', { type: 'button', class: 'cal-link', title: 'Unpin from Home', onclick: () => { const home = ctx.home(); home.pins = home.pins.filter(x => x !== it.ref.id); ctx.save(); draw(); } }, '✕');
       }
+      return actions;
+    }
+
+    // ---- one line in a section ----
+    function itemRow(sec, it) {
+      const overdue = it.dueDate && it.dueDate < today();
+      const due = it.dueDate ? h('span', { class: `home-due${overdue ? ' late' : ''}` }, dueText(it)) : '';
+      const title = h('button', { type: 'button', class: 'home-item-title', onclick: () => openItem(it), disabled: it.kind === 'reminder' }, it.mustDo ? h('span', { class: 'team-must' }, 'Must do') : '', it.title);
       return h('div', { class: `home-item${it.kind === 'reminder' ? ' static' : ''}` },
         it.kind === 'event' ? h('span', { class: 'home-time' }, it.time) : '',
         h('div', { class: 'home-item-main' }, title, h('div', { class: 'home-sub' }, it.sub || '')),
-        due, h('span', { class: 'home-actions' }, actions));
+        due, h('span', { class: 'home-actions' }, itemActions(sec, it)));
     }
 
     function sectionCard(sec) {
@@ -78,6 +101,35 @@
         h('h2', {}, sec.title, h('span', { class: 'home-count' }, String(sec.items.length + sec.more))),
         sec.items.map(it => itemRow(sec, it)),
         sec.more ? h('p', { class: 'small home-more' }, `+ ${sec.more} more on the Team page`) : '');
+    }
+
+    // ---- the dark "start here" card and the three small counts beside it ----
+    const FOCUS_LABEL = { mustdo: 'Start here · Must do', overdue: 'Start here · Overdue', soon: 'Start here · Due soon', important: 'Start here · Important' };
+    function focusCard(focus) {
+      const it = focus.item;
+      return h('section', { class: 'home-focus' },
+        h('div', {},
+          h('p', { class: 'home-eyebrow' }, FOCUS_LABEL[focus.sectionId]),
+          h('h2', {}, it.title),
+          h('p', { class: 'home-focus-sub' }, [it.sub, dueText(it)].filter(Boolean).join(' · '))),
+        h('div', { class: 'home-focus-actions' }, itemActions({ id: focus.sectionId }, it), it.kind === 'reminder' ? '' : h('button', { type: 'button', class: 'home-open', onclick: () => openItem(it) }, 'Open')));
+    }
+    const stat = (label, n, note, tone) => h('div', { class: `home-stat${tone ? ' ' + tone : ''}` },
+      h('div', {}, h('p', { class: 'home-eyebrow' }, label), h('p', { class: 'home-stat-n' }, String(n))), h('span', {}, note));
+
+    // ---- the reminder popup: shown once when Vayun opens, and again after a snooze ----
+    function toastFor(r) {
+      if (!r.focus || !(r.summary.mustDo || r.summary.overdue)) return false;
+      const it = r.focus.item;
+      const more = r.summary.needYou - 1;
+      popup({
+        label: r.focus.sectionId === 'mustdo' ? 'Must do' + (it.dueDate ? ' · ' + (it.dueDate === today() ? 'due today' : dueText(it).replace('Overdue · ', 'overdue since ')) : '') : dueText(it) || 'Overdue',
+        title: it.title,
+        note: more > 0 ? `and ${more} more ${more === 1 ? 'thing needs' : 'things need'} you today.` : (it.sub || ''),
+        open: () => openItem(it),
+        snooze: () => { snoozeTimer = setTimeout(() => toastFor(compute()), 60 * 60 * 1000); },
+      });
+      return true;
     }
 
     // ---- the whole screen ----
@@ -109,29 +161,38 @@
       const s = r.summary;
       const parts = [s.mustDo && `${s.mustDo} must do`, s.overdue && `${s.overdue} overdue`, s.dueSoon && `${s.dueSoon} due today or tomorrow`].filter(Boolean);
       const line = s.needYou ? `${s.needYou} ${s.needYou === 1 ? 'thing needs' : 'things need'} you: ${parts.join(' · ')}` : 'Nothing is overdue or due soon.';
+      // the focus card shows the lead item, so the lists below leave it out
+      const fk = r.focus && r.focus.item.key;
+      const lists = r.sections.map(sec => ({ ...sec, items: sec.items.filter(i => i.key !== fk) })).filter(sec => sec.items.length || sec.more);
       host.innerHTML = '';
       host.append(
         h('div', { class: 'home-hero' },
           h('div', {},
+            h('p', { class: 'home-eyebrow' }, new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })),
             h('h1', {}, userName ? `${greeting()}, ${userName}` : greeting()),
-            h('p', { class: 'home-date' }, new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })),
             h('p', { class: `home-summary${s.needYou ? ' urgent' : ''}` }, line + (s.events ? ` · ${s.events} event${s.events === 1 ? '' : 's'} today` : ''))),
-          h('button', { type: 'button', class: 'cal-link', onclick: () => { customizing = !customizing; draw(); } }, customizing ? 'Done customizing' : 'Customize')),
-        addForm(),
+          h('button', { type: 'button', class: 'home-open', onclick: () => { customizing = !customizing; draw(); } }, customizing ? 'Done customizing' : 'Customize')),
         customizing ? customizePanel() : '',
+        r.focus ? h('div', { class: 'home-top' }, focusCard(r.focus), h('div', { class: 'home-stats' },
+          stat('Overdue', s.overdue, 'needs a decision', s.overdue ? 'late' : ''), stat('Due soon', s.dueSoon, 'today and tomorrow'), stat('Today', s.events, s.events === 1 ? 'event' : 'events'))) : '',
         r.empty
-          ? h('div', { class: 'home-clear' }, h('h2', {}, 'You’re all clear'), h('p', {}, 'Nothing needs you right now. Add a reminder above, or pin a page with ••• → Pin to Home.'))
-          : h('div', { class: 'home-grid' }, r.sections.map(sectionCard)));
+          ? h('div', { class: 'home-clear' }, h('h2', {}, 'You’re all clear'), h('p', {}, 'Nothing needs you right now. Add a reminder below, or pin a page with ••• → Pin to Home.'))
+          : h('div', { class: 'home-grid' }, lists.map(sectionCard)),
+        addForm());
+      if (teamReady && !toastDone && toastFor(r)) toastDone = true; // once per session, as soon as there is something to say
     }
 
+    let teamReady = false; // the popup waits until the team's tasks have arrived (or we know there are none to wait for)
     onHomeTeam = snapshot => { team = snapshot; draw(); };
     draw();
     api.authStatus().then(st => { if (!alive) return; const n = st && st.user && (st.user.displayName || st.user.email || ''); userName = String(n).split(/[ @]/)[0]; draw(); }).catch(() => {});
     api.teamState().then(s => {
       if (!alive) return;
-      team = s; draw();
+      team = s;
       const stale = !s.syncedAt || Date.now() - Date.parse(s.syncedAt) > 20000;
-      if (s.signedIn && s.canSync && stale) api.teamRefresh(); // fresh must-dos every time Vayun opens
+      const refreshing = s.signedIn && s.canSync && stale;
+      teamReady = !refreshing; draw();
+      if (refreshing) Promise.resolve(api.teamRefresh()).catch(() => {}).then(() => { if (!teamReady) { teamReady = true; draw(); } }); // fresh must-dos every time Vayun opens
     });
     api.gcalStatus().then(async st => {
       if (!alive || !st || !st.connected) return;

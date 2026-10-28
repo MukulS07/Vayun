@@ -116,3 +116,14 @@ test('stored home data is cleaned: bad reminders, duplicate pins and unknown sec
   assert.ok(H.normalizeReminder({ text: 'x', date: '31/12' }).error);
   assert.deepStrictEqual(H.normalizeReminder({ text: ' Call  Priya ', date: '2026-11-02' }), { text: 'Call Priya', date: '2026-11-02' });
 });
+
+test('the focus is the first item of the most urgent section, and none when nothing needs you', () => {
+  const tasks = [task('1', { mustDo: true, dueDate: '2026-10-20' }), task('2', { dueDate: '2026-10-27' }), task('3', { dueDate: today })];
+  const r = H.build({ today, uid: 'me', team: { tasks, events: [], team, role: 'member' } });
+  assert.deepStrictEqual([r.focus.sectionId, r.focus.item.key], ['mustdo', 't:1']);
+  const noMust = H.build({ today, uid: 'me', team: { tasks: tasks.slice(1), events: [], team, role: 'member' } });
+  assert.deepStrictEqual([noMust.focus.sectionId, noMust.focus.item.key], ['overdue', 't:2']);
+  const hidden = H.build({ today, uid: 'me', team: { tasks, events: [], team, role: 'member' }, hidden: ['mustdo', 'overdue'] });
+  assert.strictEqual(hidden.focus.item.key, 't:3', 'a section switched off never supplies the focus');
+  assert.strictEqual(H.build({ today, uid: 'me', team: null }).focus, null);
+});
