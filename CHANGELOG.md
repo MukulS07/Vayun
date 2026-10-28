@@ -4,6 +4,10 @@ Every release is a git tag (`vX.Y.Z`) on the commit it was built from, and its i
 matching [GitHub Release](https://github.com/MukulS07/Vayun/releases). Installers are not committed to git
 (they are 140–270 MB, over GitHub's 100 MB file limit); the Release is where they are kept.
 
+## Unreleased
+- The Firebase web API key is no longer in the source code. It is read from a git-ignored `desktop/firebase-config.json` that is packaged into the app; CI writes it from a new `FIREBASE_API_KEY` repository secret (add it before the next release, or the tagged build stops).
+- New leak guard: `tools/secret-scan.js` runs in `npm test`/CI and as an optional pre-commit hook (`.githooks/pre-commit`) and blocks key-shaped strings and credential files from being committed.
+
 ## v1.0.5 — 2026-10-28
 - **Google Calendar sign-in works** in the downloadable installers (v1.0.4's GitHub builds were made before the Google client secrets were added to the repo, so their Sign in button was disabled).
 - Each person's Google Calendar stays their own: signing out of Vayun, or a different person signing in, now unlinks the calendar, so the next person never sees someone else's events.
