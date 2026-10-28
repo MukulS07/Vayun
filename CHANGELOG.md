@@ -4,6 +4,11 @@ Every release is a git tag (`vX.Y.Z`) on the commit it was built from, and its i
 matching [GitHub Release](https://github.com/MukulS07/Vayun/releases). Installers are not committed to git
 (they are 140–270 MB, over GitHub's 100 MB file limit); the Release is where they are kept.
 
+## Unreleased
+- **Teams.** The head of a team gives tasks to people; each person sees theirs (or the whole team's), sorted by due date, priority or status and grouped by person or status. Team events from the head show on everyone's Calendar page next to their private Google events. Team data lives in Cloud Firestore on the free plan; personal pages stay on your PC. One-time setup: [docs/team-setup.md](docs/team-setup.md).
+- Sign-in now also keeps Firebase's long-lived refresh token (encrypted on your PC), which teams need. People who were already signed in are asked to sign in once more on the Team page.
+- Signing out removes the local copy of your team data, like it already did for the Google Calendar link.
+
 ## v1.0.6 — 2026-10-28
 - **Multi-calendar Google Calendar sync**: View, create, edit, and delete events across all your Google calendars (primary, secondary, holidays, family) with dedicated calendar colors and selection.
 - **Google Calendar sign-in is on in the downloadable installers.** The GitHub builds now get the Google client from repository secrets (v1.0.4 and v1.0.5 were built before they were found, so their Sign in button was disabled).

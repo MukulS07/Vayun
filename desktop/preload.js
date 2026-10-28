@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = ['search:open', 'page:open', 'page:new', 'quick:shown', 'auth:changed', 'gcal:changed'];
+const EVENTS = ['search:open', 'page:open', 'page:new', 'quick:shown', 'auth:changed', 'gcal:changed', 'team:changed'];
 
 contextBridge.exposeInMainWorld('api', {
   platform: process.platform,
@@ -35,6 +35,19 @@ contextBridge.exposeInMainWorld('api', {
   gcalUpdate: (googleId, event, calendarId) => ipcRenderer.invoke('gcal:update', { googleId, event, calendarId }),
   gcalDelete: (googleId, calendarId) => ipcRenderer.invoke('gcal:delete', { googleId, calendarId }),
   gcalOpen: link => ipcRenderer.send('gcal:open', link),
+  teamState: () => ipcRenderer.invoke('team:state'),
+  teamRefresh: () => ipcRenderer.invoke('team:refresh'),
+  teamCreate: name => ipcRenderer.invoke('team:createTeam', name),
+  teamJoin: code => ipcRenderer.invoke('team:joinTeam', code),
+  teamSelect: id => ipcRenderer.invoke('team:selectTeam', id),
+  teamLeave: () => ipcRenderer.invoke('team:leaveTeam'),
+  teamRotateInvite: () => ipcRenderer.invoke('team:rotateInvite'),
+  teamRemoveMember: uid => ipcRenderer.invoke('team:removeMember', uid),
+  teamCreateTask: input => ipcRenderer.invoke('team:createTask', input),
+  teamUpdateTask: (id, patch) => ipcRenderer.invoke('team:updateTask', id, patch),
+  teamCreateEvent: input => ipcRenderer.invoke('team:createEvent', input),
+  teamUpdateEvent: (id, input) => ipcRenderer.invoke('team:updateEvent', id, input),
+  teamDeleteEvent: id => ipcRenderer.invoke('team:deleteEvent', id),
   startDictation: () => ipcRenderer.invoke('voice:start'),
   setTitleBar: (color, symbolColor) => ipcRenderer.send('win:titlebar', { color, symbolColor }),
   on: (channel, fn) => {

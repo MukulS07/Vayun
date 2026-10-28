@@ -82,6 +82,16 @@ function openCalendar() {
   openPage(cal.id);
 }
 
+// The team page, like the calendar, is one page per workspace; the sidebar button opens it.
+function openTeam() {
+  let page = data.pages.find(p => p.kind === 'team');
+  if (!page) {
+    page = { id: uid(), title: 'Team', parentId: null, kind: 'team', blocks: [] };
+    data.pages.push(page);
+  }
+  openPage(page.id);
+}
+
 function createDatabase() {
   const db = makeDatabase(uid(), '', TASK_SCHEMA);
   db.blocks = [];
@@ -124,7 +134,9 @@ function renderTemplate() {
     current.state = FolioTemplates.sanitizeStudy(current.state);
     activeTemplate = FolioStudy.mount(host, current, { resolvedTheme: resolved, onChange: () => save() });
   } else if (current.kind === 'calendar') {
-    activeTemplate = FolioCalendar.mount(host, current, { getPages: () => data.pages, dateProp, openRow: id => openPage(id), onChange: () => save() });
+    activeTemplate = FolioCalendar.mount(host, current, { getPages: () => data.pages, dateProp, openRow: id => openPage(id), onChange: () => save(), openTeam });
+  } else if (current.kind === 'team') {
+    activeTemplate = FolioTeam.mount(host, current, { onChange: () => save() });
   }
 }
 function render() {
@@ -134,7 +146,7 @@ function render() {
   renderMeta();
   renderFavs();
   renderToolbar();
-  if (current.kind === 'template' || current.kind === 'calendar') { renderTemplate(); return; }
+  if (current.kind === 'template' || current.kind === 'calendar' || current.kind === 'team') { renderTemplate(); return; }
   unmountTemplate();
   $('#tpl').hidden = true;
   $('#title').hidden = false;
@@ -246,6 +258,7 @@ function commandItems() {
   return [
     cmd('Ask the assistant', () => FolioAssistantUI.open()),
     cmd('Open calendar', openCalendar),
+    cmd('Open team', openTeam),
     cmd('Toggle light / dark', toggleLightDark),
     cmd('Change theme…', () => $('#theme-btn').click()),
     cmd('New Life OS page', () => FolioPicker.open(createTemplatePage, { template: 'life' })),
@@ -276,7 +289,7 @@ function renderSidebar() {
     const label = document.createElement('span');
     label.className = 'tree-label';
     label.textContent = p.title || 'Untitled';
-    a.append(icon(isDb(p) ? 'table' : p.kind === 'template' ? p.template : p.kind === 'calendar' ? 'calendar' : 'page'), label);
+    a.append(icon(isDb(p) ? 'table' : p.kind === 'template' ? p.template : p.kind === 'calendar' ? 'calendar' : p.kind === 'team' ? 'team' : 'page'), label);
     a.style.paddingLeft = `${12 + depth * 14}px`;
     if (p === current) { a.className = 'active'; a.setAttribute('aria-current', 'page'); }
     a.onclick = e => { e.preventDefault(); openPage(p.id); };
@@ -293,6 +306,7 @@ const ICONS = {
   life: 'M3 19l6-9 4 6 3-4 5 7z',
   study: 'M5 5a2 2 0 0 1 2-2h12v16H7a2 2 0 0 0-2 2z M5 19V5',
   calendar: 'M4 6h16v14H4z M4 10h16 M8 3v5 M16 3v5',
+  team: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M2 20c0-3.3 3-5 7-5s7 1.7 7 5 M17 11a2.5 2.5 0 1 0 0-5 M18 15c2.5 0 4 1.5 4 4',
 };
 function icon(name) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -320,7 +334,7 @@ function renderToolbar() {
   bar.innerHTML = '';
   const add = (...els) => els.forEach(el => bar.append(el));
   const more = [];
-  if (current.kind !== 'template' && current.kind !== 'calendar') {
+  if (current.kind !== 'template' && current.kind !== 'calendar' && current.kind !== 'team') {
     if (isDb(current)) {
       const v = viewOf(current);
       for (const t of VIEW_TYPES) add(button(t[0].toUpperCase() + t.slice(1), () => { current.view = { ...v, type: t }; render(); save(); }, { active: v.type === t, id: `view-${t}` }));
@@ -1346,6 +1360,7 @@ $('#title').addEventListener('keydown', e => {
 $('#new-btn').onclick = () => createPage(null);
 $('#new-db-btn').onclick = createDatabase;
 $('#cal-btn').onclick = openCalendar;
+$('#team-btn').onclick = openTeam;
 $('#templates-btn').onclick = () => FolioPicker.open(createTemplatePage);
 $('#theme-btn').onclick = () => FolioAppearance.open(() => data.appearance, a => { data.appearance = a; applyTheme(); save(); });
 

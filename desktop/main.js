@@ -244,17 +244,57 @@ app.whenReady().then(() => {
   const auth = require('./auth');
   const gcal = require('./gcal');
   ipcMain.handle('auth:status', () => auth.status());
-  // The Google Calendar link belongs to whoever is signed in to Vayun: signing out, or a different
-  // person signing in, unlinks it, so the next person never sees someone else's events.
+  // Teams: a local copy of the active team plus gentle checks for changes (team-service.js). VAYUN_TEAM_BACKEND=memory
+  // swaps Firestore for a built-in demo team so the page can be tried without Firebase.
+  const { createTeamService } = require('./team-service');
+  const demo = process.env.VAYUN_TEAM_BACKEND === 'memory';
+  let demoServer = null;
+  const team = createTeamService({
+    dir: app.getPath('userData'),
+    getUser: () => auth.getUser(),
+    canSync: () => demo || auth.canSync(),
+    makeStore: async me => {
+      if (demo) {
+        const mem = require('./team-store-memory');
+        if (!demoServer) { demoServer = mem.createMemoryServer(); await mem.seedDemo(demoServer, me, process.env.VAYUN_TEAM_DEMO === 'member' ? 'member' : 'head'); }
+        return demoServer.storeFor(me);
+      }
+      const { FirestoreTeamStore } = require('./team-store-firestore');
+      return new FirestoreTeamStore({ project: auth.loadConfig().projectId, getToken: () => auth.getFirebaseToken(), me });
+    },
+    notify: snapshot => { for (const w of BrowserWindow.getAllWindows()) if (!w.isDestroyed()) w.webContents.send('team:changed', snapshot); },
+    isActive: () => Boolean(mainWin && !mainWin.isDestroyed() && mainWin.isFocused()),
+  });
+  team.start();
+  app.on('browser-window-focus', () => team.focus());
+  const obj = v => (v && typeof v === 'object' ? v : {});
+  ipcMain.handle('team:state', () => team.state());
+  ipcMain.handle('team:refresh', () => team.refresh({ full: true, teams: true }));
+  ipcMain.handle('team:createTeam', (_e, name) => team.createTeam(String(name ?? '')));
+  ipcMain.handle('team:joinTeam', (_e, code) => team.joinTeam(String(code ?? '')));
+  ipcMain.handle('team:selectTeam', (_e, id) => team.selectTeam(String(id ?? '')));
+  ipcMain.handle('team:leaveTeam', () => team.leaveTeam());
+  ipcMain.handle('team:rotateInvite', () => team.rotateInvite());
+  ipcMain.handle('team:removeMember', (_e, uid) => team.removeMember(String(uid ?? '')));
+  ipcMain.handle('team:createTask', (_e, input) => team.createTask(obj(input)));
+  ipcMain.handle('team:updateTask', (_e, id, patch) => team.updateTask(String(id ?? ''), obj(patch)));
+  ipcMain.handle('team:createEvent', (_e, input) => team.createEvent(obj(input)));
+  ipcMain.handle('team:updateEvent', (_e, id, input) => team.updateEvent(String(id ?? ''), obj(input)));
+  ipcMain.handle('team:deleteEvent', (_e, id) => team.deleteEvent(String(id ?? '')));
+
+  // The Google Calendar link and the team copy belong to whoever is signed in to Vayun: signing out, or a
+  // different person signing in, removes them, so the next person never sees someone else's events or tasks.
   ipcMain.handle('auth:signIn', async () => {
     const before = auth.getUser()?.uid;
     const r = await auth.signIn();
-    if (r?.ok && before && r.user?.uid !== before) await gcal.disconnect();
+    if (r?.ok && before && r.user?.uid !== before) { await gcal.disconnect(); team.forget(before); }
     return r;
   });
   ipcMain.handle('auth:signOut', async () => {
+    const uid = auth.getUser()?.uid;
     const r = auth.signOut();
     await gcal.disconnect();
+    team.forget(uid);
     return r;
   });
   ipcMain.handle('auth:setConfig', (_e, cfg) => auth.setConfig(cfg));

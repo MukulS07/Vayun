@@ -1,5 +1,5 @@
 // Firebase Authentication Manager for Electron (Main Process)
-const { app, BrowserWindow, shell } = require('electron');
+const { app, BrowserWindow, safeStorage, shell } = require('electron');
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -10,6 +10,8 @@ const {
   sanitizeUser,
   generateAuthHtml,
 } = require('./auth-logic');
+const { refreshIdToken } = require('./firebase-token');
+const { TeamError } = require('./team-error');
 
 const configFile = () => path.join(app.getPath('userData'), 'firebase.json');
 const sessionFile = () => path.join(app.getPath('userData'), 'auth-session.json');
@@ -59,19 +61,50 @@ function getUser() {
   return null;
 }
 
-function saveUser(user, idToken) {
+// The refresh token is long-lived, so it is stored encrypted (Electron safeStorage), never as plain text.
+let idCache = null; // { idToken, expiresAt } for the current person
+
+function saveUser(user, refreshToken) {
   const sanitized = sanitizeUser(user);
   if (!sanitized) return null;
   const payload = {
     user: sanitized,
-    idToken: idToken || null,
+    refresh: refreshToken && safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(String(refreshToken)).toString('base64') : null,
     updatedAt: Date.now(),
   };
   fs.writeFileSync(sessionFile(), JSON.stringify(payload, null, 2), 'utf8');
+  idCache = null;
   return sanitized;
 }
 
+function readSession() {
+  try { return JSON.parse(fs.readFileSync(sessionFile(), 'utf8')); } catch { return null; }
+}
+function readRefresh() {
+  const s = readSession();
+  if (!s || !s.refresh) return null;
+  try { return safeStorage.decryptString(Buffer.from(s.refresh, 'base64')); } catch { return null; }
+}
+
+// A valid Firebase ID token for the signed-in person, renewed from the refresh token when it runs out.
+async function getFirebaseToken() {
+  if (idCache && idCache.expiresAt > Date.now()) return idCache.idToken;
+  const refresh = readRefresh();
+  if (!refresh) throw new TeamError('Sign in again to use teams.', 'auth');
+  const r = await refreshIdToken({ apiKey: loadConfig().apiKey, refreshToken: refresh });
+  idCache = { idToken: r.idToken, expiresAt: r.expiresAt };
+  const s = readSession();
+  if (s && r.refreshToken !== refresh && safeStorage.isEncryptionAvailable()) {
+    s.refresh = safeStorage.encryptString(r.refreshToken).toString('base64');
+    fs.writeFileSync(sessionFile(), JSON.stringify(s, null, 2), 'utf8');
+  }
+  return r.idToken;
+}
+
+const canSync = () => Boolean(getUser() && readSession()?.refresh);
+
 function clearUser() {
+  idCache = null;
   try {
     if (fs.existsSync(sessionFile())) {
       fs.unlinkSync(sessionFile());
@@ -88,6 +121,7 @@ function status() {
     isConfigured: val.valid,
     missing: val.missing,
     user,
+    canSync: Boolean(user && readSession()?.refresh), // people signed in before teams existed must sign in once more
     config: {
       projectId: cfg.projectId || '',
       authDomain: cfg.authDomain || '',
@@ -157,7 +191,7 @@ function signIn() {
         req.on('end', () => {
           try {
             const data = JSON.parse(body);
-            const user = saveUser(data, data.idToken);
+            const user = saveUser(data, data.refreshToken);
             res.writeHead(200, { 'Content-Type': 'application/json' });
             res.end(JSON.stringify({ ok: true }));
 
@@ -211,6 +245,9 @@ function signIn() {
 module.exports = {
   status,
   getUser,
+  loadConfig,
+  getFirebaseToken,
+  canSync,
   setConfig,
   clearConfig,
   signIn,

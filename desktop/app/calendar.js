@@ -4,6 +4,7 @@
 (function (root) {
   const { h } = root.FolioUI;
   const C = root.FolioCalLogic;
+  const TL = root.FolioTeamLogic;
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const MAX_CHIPS = 3;
@@ -21,7 +22,7 @@
   function chip(e, onEvent) {
     const time = e.allDay ? '' : e.startTime + ' ';
     const gName = e.calendarTitle ? ` (${e.calendarTitle})` : '';
-    const titleAttr = `${time}${e.title}${e.source === 'google' ? ` · Google Calendar${gName}` : e.source === 'row' ? ` · ${e.notes}` : ''}`;
+    const titleAttr = `${time}${e.title}${e.source === 'google' ? ` · Google Calendar${gName}` : e.source === 'row' ? ` · ${e.notes}` : e.source === 'team' ? ` · Team${e.kind === 'task' ? ' task' : ''}` : ''}`;
     const btn = h('button', {
       type: 'button', class: `cal-chip cal-${e.source}`, title: titleAttr,
       onclick: ev => { ev.stopPropagation(); onEvent(e); },
@@ -71,8 +72,8 @@
   const field = (label, input) => h('label', {}, label, input);
 
   // Event form. Resolves { action: 'save', value } | { action: 'delete' } | null.
-  function eventDialog(e, { canDelete, targets }) {
-    return dialog(e.id ? 'Edit event' : 'New event', (form, done) => {
+  function eventDialog(e, { canDelete, targets, readOnly, title: heading }) {
+    return dialog(heading || (e.id ? 'Edit event' : 'New event'), (form, done) => {
       const title = h('input', { type: 'text', value: e.title || '', maxlength: '300', 'aria-label': 'Title' });
       const allDay = h('input', { type: 'checkbox' });
       allDay.checked = e.allDay !== false;
@@ -109,10 +110,12 @@
         err,
         h('div', { class: 'cal-actions' },
           canDelete && h('button', { type: 'button', class: 'cal-del', onclick: () => done({ action: 'delete' }) }, 'Delete'),
-          h('button', { type: 'submit' }, 'Save'),
-          h('button', { type: 'button', onclick: () => done(null) }, 'Cancel')));
+          readOnly ? '' : h('button', { type: 'submit' }, 'Save'),
+          h('button', { type: 'button', onclick: () => done(null) }, readOnly ? 'Close' : 'Cancel')));
+      if (readOnly) form.querySelectorAll('input, textarea, select').forEach(el => { el.disabled = true; });
       form.onsubmit = ev => {
         ev.preventDefault();
+        if (readOnly) return done(null);
         const value = C.normalizeEventInput({ title: title.value, allDay: allDay.checked, startDate: startDate.value, endDate: endDate.value, startTime: startTime.value, endTime: endTime.value, notes: notes.value });
         if (value.error) { err.textContent = value.error; return; }
         done({ action: 'save', value, target: target?.value });
@@ -132,10 +135,13 @@
   // One listener for the window; it reaches whichever calendar page is mounted.
   let onGcalChanged = null;
   root.api?.on('gcal:changed', () => onGcalChanged?.());
+  let onCalTeamChanged = null;
+  root.api?.on('team:changed', s => onCalTeamChanged?.(s));
 
   // Full calendar page. page.events holds this workspace's own events.
-  function mount(host, page, { getPages, dateProp, openRow, onChange }) {
+  function mount(host, page, { getPages, dateProp, openRow, onChange, openTeam = () => {} }) {
     const api = root.api;
+    let team = null; // latest team snapshot: tasks and events people share with me
     let view = page.calView === 'week' ? 'week' : 'month';
     let anchor = today();
     let gstat = { connected: false, isConfigured: false };
@@ -179,18 +185,31 @@
     function onMore(date) { anchor = date; setView('week'); }
     async function onEvent(e) {
       if (e.source === 'row') return openRow(e.rowId);
+      if (e.source === 'team') return e.kind === 'task' ? openTeam() : editTeamEvent(e);
       await editEvent(e);
+    }
+
+    // Team events: the head edits them; everyone else can only look.
+    async function editTeamEvent(e) {
+      const head = team && team.role === 'head';
+      const r = await eventDialog({ ...e, id: e.teamEventId }, { canDelete: head, readOnly: !head, title: 'Team event' });
+      if (!r) return;
+      if (r.action === 'delete' && !confirm(`Delete "${e.title}" for the whole team?`)) return;
+      const res = r.action === 'delete' ? await api.teamDeleteEvent(e.teamEventId) : await api.teamUpdateEvent(e.teamEventId, r.value);
+      if (res && res.error) alert(`Team: ${res.error}`);
     }
 
     async function editEvent(e) {
       const isNew = !e.id;
       let targets = null;
-      if (isNew && gstat.connected) {
+      const teamTarget = team && team.team && team.role === 'head' ? [['team', `Team: ${team.team.name} (everyone sees it)`]] : [];
+      if (isNew && (gstat.connected || teamTarget.length)) {
         const writable = gCalendars.filter(c => c.accessRole !== 'reader' && c.accessRole !== 'freeBusyReader');
         const cals = writable.length ? writable : gCalendars;
         targets = [
-          ...(cals.length ? cals.map(c => [`google:${c.id}`, `Google: ${c.summary || c.id}`]) : [['google:primary', `Google Calendar${gstat.email ? ` (${gstat.email})` : ''}`]]),
+          ...(!gstat.connected ? [] : cals.length ? cals.map(c => [`google:${c.id}`, `Google: ${c.summary || c.id}`]) : [['google:primary', `Google Calendar${gstat.email ? ` (${gstat.email})` : ''}`]]),
           ['local', 'This workspace only'],
+          ...teamTarget, // last, so adding something for the whole team is always a deliberate choice
         ];
       }
       const canDelete = !isNew && (e.source !== 'google' || (e.calendarAccessRole !== 'reader' && e.calendarAccessRole !== 'freeBusyReader'));
@@ -202,6 +221,11 @@
         else if (isNew) page.events.push({ id: 'l' + crypto.randomUUID().slice(0, 8), source: 'local', ...r.value });
         else Object.assign(page.events.find(x => x.id === e.id) || {}, r.value);
         onChange();
+        return draw();
+      }
+      if (where === 'team') {
+        const res = await api.teamCreateEvent(r.value);
+        if (res && res.error) alert(`Team: ${res.error}`);
         return draw();
       }
       if (r.action === 'delete' && !confirm(`Delete "${e.title}" from Google Calendar?`)) return;
@@ -236,7 +260,8 @@
       if (!alive) return;
       const r = range();
       const label = view === 'week' ? `${shortDay(r.from)} – ${shortDay(r.to)}, ${r.to.slice(0, 4)}` : monthLabel(anchor);
-      const events = [...page.events, ...C.rowEvents(getPages(), dateProp), ...gEvents];
+      const teamItems = team && team.team ? TL.calendarItems(team.tasks, team.events, team.team, team.uid) : [];
+      const events = [...page.events, ...C.rowEvents(getPages(), dateProp), ...gEvents, ...teamItems];
       host.innerHTML = '';
       host.append(
         h('div', { class: 'cal-bar' },
@@ -256,14 +281,17 @@
         h('div', { class: 'cal-legend' },
           h('span', { class: 'cal-key cal-local' }, 'Workspace'),
           gstat.connected && h('span', { class: 'cal-key cal-google' }, 'Google Calendar'),
+          team && team.team && h('span', { class: 'cal-key cal-team' }, `Team: ${team.team.name}`),
           h('span', { class: 'cal-key cal-row' }, 'Database rows')));
     }
 
     onGcalChanged = refreshStatus;
+    onCalTeamChanged = s => { team = s; draw(); };
     draw();
     refreshStatus();
-    return { destroy() { alive = false; onGcalChanged = null; host.innerHTML = ''; host.className = ''; } };
+    api.teamState().then(s => { if (alive) { team = s; draw(); } });
+    return { destroy() { alive = false; onGcalChanged = null; onCalTeamChanged = null; host.innerHTML = ''; host.className = ''; } };
   }
 
-  root.FolioCalendar = { grid, mount, daysFor, monthLabel };
+  root.FolioCalendar = { grid, mount, daysFor, monthLabel, dialog, field };
 })(typeof self !== 'undefined' ? self : globalThis);

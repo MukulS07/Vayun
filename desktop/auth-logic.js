@@ -289,14 +289,14 @@ function generateAuthHtml(firebaseConfig, port) {
       try {
         const cred = await signInWithPopup(auth, provider);
         const user = cred.user;
-        const idToken = await user.getIdToken();
 
         const payload = {
           uid: user.uid,
           email: user.email,
           displayName: user.displayName,
           photoURL: user.photoURL,
-          idToken
+          // Long-lived; the app keeps it encrypted and trades it for short-lived tokens when it needs them.
+          refreshToken: user.refreshToken
         };
 
         const res = await fetch('/callback', {

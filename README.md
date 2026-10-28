@@ -16,6 +16,7 @@
 - ✍️ **Block-Based Editor** — Clean writing canvas supporting Markdown, headers, checklists, code blocks, quotes, and dividers.
 - 🗂️ **Workspaces & Databases** — Create multiple isolated workspaces with customizable database views (Tables, Boards, Calendars).
 - 📅 **Calendar with Google Calendar sync** — Month and week views of your workspace events and dated database rows; link Google Calendar to see, create, edit and delete your Google events from Vayun.
+- 👥 **Team tasks & shared calendar** — the head gives tasks to people and everyone sees theirs, sorted and grouped however they like; team events show on everyone's Calendar. Free, on Firebase's free plan (one-time [setup](docs/team-setup.md)).
 - 🤖 **Native AI Assistant** (<kbd>⌘J</kbd> / <kbd>Ctrl+J</kbd>) — Draft, summarize, ideate, and structure content without leaving your workflow.
 - ⚡ **Global Quick Search** (<kbd>⌥⌘K</kbd> / <kbd>Ctrl+Alt+K</kbd>) — Find any note instantly from anywhere in your operating system.
 - ⏱️ **Built-in Productivity Tools** — Study timers, Pomodoro counters, habit trackers, and interactive mind maps.
@@ -127,6 +128,7 @@ Vayun operates entirely on a local-first paradigm:
 - **Zero telemetry or tracking.**
 - Data is stored locally in your OS application support directory (`%APPDATA%/Pages` on Windows, `~/Library/Application Support/Pages` on macOS).
 - Database structures and markdown content use atomic file operations to prevent file corruption during crashes or abrupt system shutdowns.
+- **Teams are the one exception:** the tasks, team events and member names of a team you join are stored in Google's Cloud Firestore so everyone in the team can see them. Your personal pages and notes never leave your PC, and signing out removes the local copy of team data.
 
 ---
 
