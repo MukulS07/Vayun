@@ -20,8 +20,16 @@ function parseEnv(content) {
   return res;
 }
 
+// The Firebase web API key is a public project identifier, but it is kept out of git so key scanners
+// (and people reading the repo) never see it. It lives in a git-ignored desktop/firebase-config.json that is
+// packaged into the app; CI writes it from the FIREBASE_API_KEY repository secret. Without it the app asks
+// for a Firebase config in its settings dialog.
+function bundledApiKey() {
+  try { return String(require('./firebase-config.json').apiKey || ''); } catch { return ''; }
+}
+
 const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: 'AIzaSyDXnN2LQiZO9fEpYqKIRa_TH_AeYhZtyqE',
+  apiKey: bundledApiKey(),
   authDomain: 'vayun-12d1b.firebaseapp.com',
   projectId: 'vayun-12d1b',
   storageBucket: 'vayun-12d1b.firebasestorage.app',

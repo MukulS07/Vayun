@@ -31,6 +31,21 @@ jobs:
         working-directory: desktop
         run: npm test
 
+      - name: Add Firebase web config
+        working-directory: desktop
+        shell: bash
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+        run: |
+          if [ -z "$FIREBASE_API_KEY" ]; then
+            case "$GITHUB_REF" in
+              refs/tags/*) echo "::error::FIREBASE_API_KEY repository secret is missing; a release without it cannot sign people in. Add it under Settings, Secrets and variables, Actions."; exit 1;;
+              *) echo "::warning::FIREBASE_API_KEY secret is not set; Vayun sign-in will need a Firebase config in this build.";;
+            esac
+          else
+            node -e "require('fs').writeFileSync('firebase-config.json', JSON.stringify({ apiKey: process.env.FIREBASE_API_KEY }))"
+          fi
+
       - name: Add Google Calendar OAuth client
         working-directory: desktop
         shell: bash
@@ -89,6 +104,21 @@ jobs:
       - name: Run tests
         working-directory: desktop
         run: npm test
+
+      - name: Add Firebase web config
+        working-directory: desktop
+        shell: bash
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+        run: |
+          if [ -z "$FIREBASE_API_KEY" ]; then
+            case "$GITHUB_REF" in
+              refs/tags/*) echo "::error::FIREBASE_API_KEY repository secret is missing; a release without it cannot sign people in. Add it under Settings, Secrets and variables, Actions."; exit 1;;
+              *) echo "::warning::FIREBASE_API_KEY secret is not set; Vayun sign-in will need a Firebase config in this build.";;
+            esac
+          else
+            node -e "require('fs').writeFileSync('firebase-config.json', JSON.stringify({ apiKey: process.env.FIREBASE_API_KEY }))"
+          fi
 
       - name: Add Google Calendar OAuth client
         working-directory: desktop

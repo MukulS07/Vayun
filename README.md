@@ -51,6 +51,10 @@ Vayun syncs your primary calendar. The sign-in token is encrypted with the OS ke
 <summary>For maintainers: the bundled Google OAuth client</summary>
 
 Calendar sign-in uses Vayun's own Google OAuth client (type **Desktop app**, project `vayun-12d1b`, scope `calendar.events`). The client ID and secret are **not committed**: locally they live in `desktop/gcal-client.json` (git-ignored, packaged into the app) as `{ "clientId": "…apps.googleusercontent.com", "clientSecret": "GOCSPX-…" }`, and GitHub Actions writes the same file from the `GCAL_CLIENT_ID` and `GCAL_CLIENT_SECRET` repository secrets (Settings → Secrets and variables → Actions). Without them a build still works but the Sign in button is disabled. Until Google verifies the consent screen, people see an "unverified app" warning (**Advanced → Go to Vayun**) and sign-ins are capped at 100. For local testing you can also override the client with `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `desktop/.env.local`.
+
+The Firebase web key used for Vayun sign-in follows the same pattern: `desktop/firebase-config.json` locally (`{ "apiKey": "AIza…" }`, git-ignored and packaged), and the `FIREBASE_API_KEY` repository secret in CI. A tagged release build fails if that secret is missing.
+
+**Keeping keys out of git:** `node tools/secret-scan.js` (also run by `npm test`, so CI catches it) fails if a key-shaped string or a credential file such as `.env`, `gcal-client.json` or `firebase-config.json` is tracked. To block such commits locally too, run once per clone: `git config core.hooksPath .githooks`.
 </details>
 
 ---

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks commits that contain credentials. Enable once per clone: git config core.hooksPath .githooks
+node tools/secret-scan.js --staged || { echo "Commit blocked by tools/secret-scan.js"; exit 1; }

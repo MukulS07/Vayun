@@ -32,6 +32,7 @@
       "gcal.js",
       "gcal-logic.js",
       "gcal-client.json",
+      "firebase-config.json",
       "pdf-import.js",
       "notion-import.js",
       "app/**/*",
