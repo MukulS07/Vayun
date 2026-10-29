@@ -31,9 +31,12 @@ This guide covers everything needed to build, live-preview, and ship the **Vayun
   - Native file chooser via `WebChromeClient.onShowFileChooser` for importing HTML/Markdown notes.
   - Offline workspace backup export to portable `.json`.
 
-### Phase 4: Cloud Sync & Operational Setup
-- **Cloud Firestore**: Team sync using [`firestore.rules`](../firestore.rules).
-- **Google Sign-In**: Firebase Authentication with scoped credentials.
+### Phase 4: Cloud Sync & Operational Setup (✅ Completed)
+- **Cloud Firestore**: Team sync for tasks and events using [`firestore.rules`](../firestore.rules).
+- **Google Sign-In & Multi-Window OAuth**:
+  - Scoped Firebase Authentication with Google Sign-In.
+  - Multi-window handler (`onCreateWindow`) in native `MainActivity.kt` with clean Mobile Chrome User Agent for smooth OAuth flows.
+  - Auth profile pill in drawer and direct sign-in triggers on Team and Calendar pages.
 
 ---
 

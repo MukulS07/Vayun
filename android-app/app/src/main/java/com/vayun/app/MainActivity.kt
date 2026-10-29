@@ -1,11 +1,13 @@
 package com.vayun.app
 
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Message
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -63,8 +65,15 @@ class MainActivity : AppCompatActivity() {
         settings.allowContentAccess = true // Allowed for reading chosen files via file picker
         settings.allowFileAccessFromFileURLs = false
         settings.allowUniversalAccessFromFileURLs = false
-        settings.javaScriptCanOpenWindowsAutomatically = false
         settings.setGeolocationEnabled(false)
+
+        // OAuth & Multi-Window Support for Google Sign-In & Firebase Auth
+        settings.javaScriptCanOpenWindowsAutomatically = true
+        settings.setSupportMultipleWindows(true)
+
+        // Modern Mobile Chrome User Agent (removes embedded "; wv" flag to ensure Google OAuth passes)
+        val defaultUserAgent = settings.userAgentString
+        settings.userAgentString = defaultUserAgent.replace("; wv", "").replace("Version/4.0 ", "")
 
         // Rendering & Caching for offline-first reliability
         settings.cacheMode = WebSettings.LOAD_DEFAULT
@@ -80,7 +89,7 @@ class MainActivity : AppCompatActivity() {
         // 3. Register Native Javascript Interface Bridge
         webView.addJavascriptInterface(WebAppInterface(this), "VayunAndroid")
 
-        // 4. WebChromeClient for File Chooser & Console
+        // 4. WebChromeClient for File Chooser & OAuth Popups
         webView.webChromeClient = object : WebChromeClient() {
             override fun onShowFileChooser(
                 webView: WebView?,
@@ -104,6 +113,41 @@ class MainActivity : AppCompatActivity() {
                 }
                 return true
             }
+
+            override fun onCreateWindow(
+                view: WebView?,
+                isDialog: Boolean,
+                isUserGesture: Boolean,
+                resultMsg: Message?
+            ): Boolean {
+                val authWebView = WebView(this@MainActivity)
+                val authSettings = authWebView.settings
+                authSettings.javaScriptEnabled = true
+                authSettings.domStorageEnabled = true
+                authSettings.userAgentString = settings.userAgentString
+
+                val authDialog = Dialog(this@MainActivity, android.R.style.Theme_DeviceDefault_NoActionBar_Fullscreen)
+                authDialog.setContentView(authWebView)
+                authDialog.show()
+
+                authWebView.webChromeClient = object : WebChromeClient() {
+                    override fun onCloseWindow(window: WebView?) {
+                        authDialog.dismiss()
+                        window?.destroy()
+                    }
+                }
+
+                authWebView.webViewClient = object : WebViewClient() {
+                    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                        return false
+                    }
+                }
+
+                val transport = resultMsg?.obj as? WebView.WebViewTransport
+                transport?.webView = authWebView
+                resultMsg?.sendToTarget()
+                return true
+            }
         }
 
         // 5. Client Navigation Policy
@@ -115,7 +159,7 @@ class MainActivity : AppCompatActivity() {
                     return false
                 }
                 // Allow trusted Firebase and Google OAuth domains
-                if (url.contains("accounts.google.com") || url.contains("firebaseapp.com")) {
+                if (url.contains("accounts.google.com") || url.contains("firebaseapp.com") || url.contains("googleapis.com")) {
                     return false
                 }
                 // Disallow arbitrary external URL navigation within webview (opens external browser instead)

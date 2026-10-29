@@ -49,9 +49,13 @@ Vayun for Android shares the same core screen codebase (`desktop/app/`) as the d
   - **Native Android Share Sheet**: Topbar `#share-btn` triggers Android's `ACTION_SEND` chooser to share notes to WhatsApp, Gmail, Keep, Drive, etc.
   - **Clipboard & Connectivity**: Native clipboard copy and network availability detection.
 
-### Phase 4: Cloud Sync, Auth & Teams Verification
-- **Cloud Firestore**: Team tasks and events sync securely using existing [`firestore.rules`](../firestore.rules).
-- **Firebase Auth**: Sign in with Google with credentials scoped strictly to Identity Toolkit and Token Service.
+### Phase 4: Cloud Sync, Auth & Teams Verification (✅ Completed)
+- **Cloud Firestore**: Team tasks and team calendar events sync in real-time using Firestore REST API with strict [`firestore.rules`](../firestore.rules).
+- **Firebase Auth & Google Sign-In**:
+  - Scoped to Identity Toolkit and Token Service.
+  - Native multi-window popup handler (`WebChromeClient.onCreateWindow`) with clean Mobile Chrome User Agent so Google OAuth succeeds in Android WebView without embedded restrictions.
+  - Active auth state reflected in slide-over drawer (`#side-auth-mount`) and inline on Team & Calendar pages.
+  - Google Calendar two-way synchronization via scoped OAuth credentials.
 
 ---
 

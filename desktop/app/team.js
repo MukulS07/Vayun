@@ -205,7 +205,7 @@
       host.innerHTML = '';
       listBox = null;
       if (!S) return void host.append(h('p', { class: 'team-none' }, 'Loading…'));
-      if (!S.signedIn) return void host.append(notice('Sign in to use teams', 'Use “Sign in with Google” at the bottom of the sidebar. Teams are shared with the people you invite.'));
+      if (!S.signedIn) return void host.append(notice('Sign in to use teams', 'Teams are shared in real-time with the people you invite.', h('button', { type: 'button', class: 'cal-new auth-btn-google', style: 'margin-top:12px;', onclick: () => api.authSignIn() }, 'Sign in with Google')));
       if (!S.canSync) return void host.append(notice('One more sign-in needed', 'Teams need a fresh sign-in on this PC. It takes a few seconds.', h('button', { type: 'button', class: 'cal-new', onclick: () => api.authSignIn() }, 'Sign in again')));
       if (!S.team) return void host.append(setupView());
       listBox = h('div', { class: 'team-list' });

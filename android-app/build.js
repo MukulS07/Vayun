@@ -93,7 +93,7 @@ function androidConfig() {
     apiKey,
     authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'vayun-12d1b.firebaseapp.com',
     projectId: process.env.FIREBASE_PROJECT_ID || 'vayun-12d1b',
-    appId: process.env.FIREBASE_APP_ID || '1:578293090527:android:vayun',
+    appId: process.env.FIREBASE_APP_ID || '1:578293090527:web:cce43dac8af2c70a94816a',
     platform: 'android'
   };
   return `window.VAYUN_WEB_CONFIG = ${JSON.stringify(cfg)};\n`;

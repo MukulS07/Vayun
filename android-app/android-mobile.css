@@ -414,6 +414,33 @@ button:active,
     background: var(--hover) !important;
   }
 
+  /* Mobile Auth Pill in Slide-Over Drawer */
+  #side-auth-mount {
+    margin-top: 10px !important;
+    padding: 0 4px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .auth-user-pill {
+    width: 100% !important;
+    justify-content: space-between !important;
+    border-radius: 10px !important;
+    padding: 8px 10px !important;
+    box-sizing: border-box !important;
+  }
+  .auth-user-title {
+    max-width: 160px !important;
+    font-size: 13.5px !important;
+  }
+  .auth-user-email {
+    max-width: 160px !important;
+  }
+  .auth-btn-secondary {
+    min-height: 32px !important;
+    padding: 4px 10px !important;
+    font-size: 12px !important;
+  }
+
   .side-item kbd {
     display: none !important;
   }
