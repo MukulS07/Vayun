@@ -129,7 +129,11 @@
     try {
       const res = await window.api.authSignIn();
       if (res?.error) {
-        alert(res.error);
+        if (res.isIframe && confirm(res.error + '\n\nWould you like to open Vayun in your browser now?')) {
+          window.open(location.href, '_blank');
+        } else {
+          alert(res.error);
+        }
       }
     } catch (err) {
       console.error('Sign-in error', err);

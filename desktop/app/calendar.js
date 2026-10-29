@@ -58,10 +58,12 @@
   // Small modal; resolves with what `build` passes to done(), or null when dismissed.
   function dialog(title, build) {
     return new Promise(resolve => {
+      document.querySelector('#backdrop')?.classList.remove('visible');
       const wrap = h('div', { class: 'backdrop visible' });
       const form = h('form', { class: 'panel form cal-form' }, h('h2', {}, title));
       const done = v => { wrap.remove(); resolve(v); };
       wrap.onmousedown = e => { if (e.target === wrap) done(null); };
+      wrap.ontouchstart = e => { if (e.target === wrap) done(null); };
       form.onkeydown = e => { if (e.key === 'Escape') done(null); };
       build(form, done);
       wrap.append(form);
@@ -177,7 +179,7 @@
     let team = null; // latest team snapshot: tasks and events people share with me
     let view = page.calView === 'week' ? 'week' : 'month';
     let anchor = today();
-    let gstat = { connected: false, isConfigured: false };
+    let gstat = { connected: false, isConfigured: true };
     let gEvents = [], gCalendars = [], gKey = '', gLoading = false, gError = '', gNote = '';
     let alive = true;
     if (!Array.isArray(page.events)) page.events = [];
@@ -273,15 +275,26 @@
     }
 
     async function signIn() {
-      gError = 'Finish signing in with Google in your browser…'; draw();
+      gError = 'Connecting to Google…'; draw();
       const r = await api.gcalConnect();
-      gError = r.error || '';
+      if (r && r.error) {
+        gError = r.error;
+        if (r.isIframe) {
+          if (confirm(r.error + '\n\nWould you like to open Vayun in your browser now?')) {
+            window.open(location.href, '_blank');
+          }
+        } else {
+          alert(r.error);
+        }
+      } else {
+        gError = '';
+      }
       refreshStatus();
     }
     function googleBar() {
       if (!gstat.connected) {
-        return h('button', { type: 'button', class: 'auth-btn-google cal-signin', onclick: signIn, disabled: !gstat.isConfigured,
-          title: gstat.isConfigured ? 'Show and edit your Google Calendar events here' : 'Google sign-in for Calendar is not available in this build yet' },
+        return h('button', { type: 'button', class: 'auth-btn-google cal-signin', onclick: signIn, disabled: gstat.isConfigured === false,
+          title: gstat.isConfigured !== false ? 'Show and edit your Google Calendar events here' : 'Google sign-in for Calendar is not available in this build yet' },
         gMark(), h('span', {}, 'Sign in with Google'));
       }
       return h('div', { class: 'cal-gwrap' },

@@ -60,12 +60,29 @@
   });
 
   Object.assign(api, {
-    authStatus: async () => { await firebase().catch(() => {}); return statusOf(); },
+    authStatus: async () => statusOf(),
     authSignIn: async () => {
       try {
         const { auth, A } = await firebase();
         const before = current && current.uid;
-        const r = await A.signInWithPopup(auth, new A.GoogleAuthProvider());
+        let r;
+        try {
+          r = await A.signInWithPopup(auth, new A.GoogleAuthProvider());
+        } catch (popupErr) {
+          const code = popupErr && popupErr.code || '';
+          if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return { error: 'Sign-in was cancelled.' };
+          if (window.self !== window.top) {
+            return {
+              error: 'Google Sign-in popups are blocked inside this simulator iframe. Please open Vayun in a browser tab to sign in.',
+              isIframe: true
+            };
+          }
+          if (code === 'auth/popup-blocked') {
+            await A.signInWithRedirect(auth, new A.GoogleAuthProvider());
+            return { ok: true, redirecting: true };
+          }
+          throw popupErr;
+        }
         toUser(r.user);
         if (before && before !== current.uid) team.forget(before);
         team.start();
@@ -135,14 +152,34 @@
   const L = () => window.FolioCalLogic; // loaded with the screens, after this file
 
   Object.assign(api, {
-    gcalStatus: async () => { await firebase().catch(() => {}); return gStatus(); },
+    gcalStatus: async () => gStatus(),
     gcalConnect: async () => {
       try {
         const { auth, A } = await firebase();
         const provider = new A.GoogleAuthProvider();
         SCOPES.forEach(s => provider.addScope(s));
         if (current && current.email) provider.setCustomParameters({ login_hint: current.email });
-        const r = await A.signInWithPopup(auth, provider);
+        let r;
+        try {
+          r = await A.signInWithPopup(auth, provider);
+        } catch (popupErr) {
+          const code = (popupErr && popupErr.code) || '';
+          if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+            return { error: 'Sign-in was cancelled.' };
+          }
+          if (window.self !== window.top) {
+            return {
+              error: 'Google Calendar sign-in popups are blocked inside this simulator iframe. Please open Vayun in a browser tab to link Google Calendar.',
+              isIframe: true
+            };
+          }
+          if (code === 'auth/popup-blocked') {
+            sessionStorage.setItem('vayun-gcal-redirect-pending', '1');
+            await A.signInWithRedirect(auth, provider);
+            return { ok: true, redirecting: true };
+          }
+          throw popupErr;
+        }
         toUser(r.user);
         const cred = A.GoogleAuthProvider.credentialFromResult(r);
         if (!cred || !cred.accessToken) return { error: 'Google did not give Vayun calendar access. Try again and allow the calendar permissions.' };
@@ -218,5 +255,28 @@
   });
 
   // Start Firebase at once if a session may already exist, so a returning person is signed in when the page opens.
-  firebase().then(() => team.start()).catch(() => {});
+  // Pre-warm Firebase and handle redirect result if returning from signInWithRedirect
+  firebase().then(async ({ auth, A }) => {
+    try {
+      const r = await A.getRedirectResult(auth);
+      if (r && r.user) {
+        toUser(r.user);
+        const cred = A.GoogleAuthProvider.credentialFromResult(r);
+        if (cred && cred.accessToken) {
+          sessionStorage.setItem(TOKEN_KEY, JSON.stringify({
+            token: cred.accessToken,
+            uid: r.user.uid,
+            email: r.user.email || '',
+            expires: Date.now() + 55 * 60 * 1000
+          }));
+          sessionStorage.removeItem('vayun-gcal-redirect-pending');
+          emit('gcal:changed', gStatus());
+        }
+        emit('auth:changed', current);
+      }
+    } catch (e) {
+      console.warn('Redirect sign-in error:', e);
+    }
+    team.start();
+  }).catch(() => {});
 })();

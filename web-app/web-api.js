@@ -105,7 +105,8 @@
   }
 
   const desktopOnly = what => ({ error: `${what} works in the Vayun desktop app for now. Download it from the Vayun website.` });
-  const signedOut = () => ({ isConfigured: false, missing: [], user: null, canSync: false, config: { projectId: '', authDomain: '' } });
+  const hasCfg = () => Boolean(window.VAYUN_WEB_CONFIG && window.VAYUN_WEB_CONFIG.apiKey);
+  const signedOut = () => ({ isConfigured: hasCfg(), missing: [], user: null, canSync: false, config: { projectId: window.VAYUN_WEB_CONFIG?.projectId || '', authDomain: window.VAYUN_WEB_CONFIG?.authDomain || '' } });
   const noTeam = () => ({ signedIn: false, canSync: false, teams: [], team: null, role: null, tasks: [], events: [], uid: '', syncedAt: null, error: null });
 
   const base = {
@@ -178,7 +179,7 @@
     authSignOut: async () => ({ ok: true }),
     authSetConfig: async () => ({ error: 'Not used on the web.' }),
     authClearConfig: async () => ({ ok: true }),
-    gcalStatus: async () => ({ isConfigured: false, connected: false, email: '' }),
+    gcalStatus: async () => ({ isConfigured: hasCfg(), connected: false, email: '' }),
     gcalConnect: async () => desktopOnly('Google Calendar'),
     gcalDisconnect: async () => ({ ok: true }),
     gcalList: async () => desktopOnly('Google Calendar'),

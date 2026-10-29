@@ -138,6 +138,17 @@
 
         if (window.__vayunAndroid?.haptic) window.__vayunAndroid.haptic();
 
+        // Dismiss any open modals or search when switching tabs
+        if (target !== 'search') {
+          const searchBackdrop = document.querySelector('#backdrop');
+          if (searchBackdrop) searchBackdrop.classList.remove('visible');
+          document.querySelectorAll('.backdrop.visible:not(#backdrop)').forEach(b => {
+            const closeBtn = b.querySelector('.cal-actions button:last-child, button[data-action="close"]');
+            if (closeBtn) closeBtn.click();
+            else b.remove();
+          });
+        }
+
         if (target === 'home') {
           bottomBar.querySelectorAll('.mobile-tab-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
