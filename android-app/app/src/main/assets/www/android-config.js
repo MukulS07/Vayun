@@ -1,0 +1,1 @@
+window.VAYUN_WEB_CONFIG = {"apiKey":"AIzaSyDXnN2LQiZO9fEpYqKIRa_TH_AeYhZtyqE","authDomain":"vayun-12d1b.firebaseapp.com","projectId":"vayun-12d1b","appId":"1:578293090527:android:vayun","platform":"android"};

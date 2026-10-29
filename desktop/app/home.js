@@ -89,7 +89,8 @@
     function itemRow(sec, it) {
       const overdue = it.dueDate && it.dueDate < today();
       const due = it.dueDate ? h('span', { class: `home-due${overdue ? ' late' : ''}` }, dueText(it)) : '';
-      const title = h('button', { type: 'button', class: 'home-item-title', onclick: () => openItem(it), disabled: it.kind === 'reminder' }, it.mustDo ? h('span', { class: 'team-must' }, 'Must do') : '', it.title);
+      const colorTag = it.color ? h('span', { class: 'home-tag-dot', style: `background-color:${it.color};` }) : '';
+      const title = h('button', { type: 'button', class: 'home-item-title', onclick: () => openItem(it), disabled: it.kind === 'reminder' }, it.mustDo ? h('span', { class: 'team-must' }, 'Must do') : '', colorTag, it.title);
       return h('div', { class: `home-item${it.kind === 'reminder' ? ' static' : ''}` },
         it.kind === 'event' ? h('span', { class: 'home-time' }, it.time) : '',
         h('div', { class: 'home-item-main' }, title, h('div', { class: 'home-sub' }, it.sub || '')),

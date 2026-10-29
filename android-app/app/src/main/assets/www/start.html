@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; font-src 'self' data:; img-src 'self' https: data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://*.googleapis.com; object-src 'none'; base-uri 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Vayun on Android</title>
+  <link rel="stylesheet" href="fonts.css">
+  <link rel="stylesheet" href="tokens.css">
+  <script src="android-config.js"></script>
+  <script src="android-api.js"></script>
+  <script src="android-team.js"></script>
+  <script src="android-cloud.js"></script>
+  <script src="android-theme.js"></script>
+  <script src="android-config.js"></script>
+  <script src="android-api.js"></script>
+  <script src="android-team.js"></script>
+  <script src="android-cloud.js"></script>
+  <script src="android-theme.js"></script>
+  <script src="theme.js"></script>
+  <script src="themes-data.js"></script>
+  <script src="theme-boot.js"></script>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="android-mobile.css">
+  <link rel="stylesheet" href="android-mobile.css">
+</head>
+
+<body>
+  <main class="start">
+    <header class="start-head">
+      <div class="brand-mark lg" aria-hidden="true"><img src="brand/vayun.webp" alt=""></div>
+      <div>
+        <div class="brand-title-wrap">
+          <h1 class="wordmark-h1"><svg class="wordmark" viewBox="0 0 350 50" role="img" aria-label="Vayun"><g fill="none" stroke="currentColor" stroke-width="2"><path d="M1 1 L21 49 L41 1"/><path d="M78 49 L98 1 L118 49"/><path d="M155 1 L175 25 L195 1 M175 25 V49"/><path d="M232 1 V31 A20 18 0 0 0 272 31 V1"/><path d="M309 49 V1 L349 49 V1"/></g></svg></h1>
+          <span class="brand-credit">by Maytrix</span>
+        </div>
+        <p class="muted">Pick a workspace or create a new one. Everything stays on this PC.</p>
+      </div>
+      <div id="start-auth-mount" class="start-auth-mount"></div>
+    </header>
+
+    <section class="start-block" aria-labelledby="ws-heading">
+      <h2 id="ws-heading">Your workspaces</h2>
+      <div id="ws-grid" class="ws-grid"></div>
+    </section>
+
+    <section class="start-block" aria-labelledby="new-heading">
+      <h2 id="new-heading">New workspace</h2>
+      <form id="new-form" class="new-form">
+        <label>Name
+          <input id="new-name" type="text" maxlength="60" placeholder="For example: Home, Work, Study" required
+            autocomplete="off">
+        </label>
+        <label>Start with
+          <select id="new-template">
+            <option value="blank">A blank page</option>
+            <option value="tasks">A Tasks database</option>
+          </select>
+        </label>
+        <p id="new-error" class="error" role="alert" hidden></p>
+        <button type="submit" class="primary">Create workspace</button>
+      </form>
+    </section>
+  </main>
+  <script src="model.js"></script>
+  <script src="start.js"></script>
+  <script src="auth-ui.js"></script>
+</body>
+
+</html>

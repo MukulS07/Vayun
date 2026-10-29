@@ -65,7 +65,12 @@
     if (endDate < startDate) return { error: 'The event cannot end before it starts.' };
     const allDay = Boolean(input.allDay);
     const notes = String(input.notes ?? '').slice(0, 8000);
-    if (allDay) return { title, startDate, endDate, allDay: true, startTime: '', endTime: '', notes };
+    const color = typeof input.color === 'string' && (/^#[0-9a-fA-F]{6}$/.test(input.color) || input.color === '') ? input.color : '';
+    if (allDay) {
+      const out = { title, startDate, endDate, allDay: true, startTime: '', endTime: '', notes };
+      if (color) out.color = color;
+      return out;
+    }
     const startTime = isTime(input.startTime) ? input.startTime : '09:00';
     let endTime = isTime(input.endTime) ? input.endTime : '';
     if (!endTime) {
@@ -74,7 +79,9 @@
       else endTime = `${pad(h + 1)}:${pad(m)}`;
     }
     if (endDate === startDate && endTime <= startTime) return { error: 'The event must end after it starts.' };
-    return { title, startDate, endDate, allDay: false, startTime, endTime, notes };
+    const out = { title, startDate, endDate, allDay: false, startTime, endTime, notes };
+    if (color) out.color = color;
+    return out;
   }
 
   // Database rows with a date become read-only calendar items that open the row.

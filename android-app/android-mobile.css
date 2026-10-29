@@ -1,0 +1,723 @@
+/* ==========================================================================
+   Vayun Mobile - Complete Mobile UI Overhaul
+   Modals, Z-Index Isolation, Calendar, Safe Areas & Bottom Navigation
+   ========================================================================== */
+
+/* 1. Safe Area Insets (Notches, Island, Android Gesture Pill) */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --mobile-nav-height: 56px;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  -webkit-touch-callout: none;
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* 2. Global Touch Targets */
+button, 
+.side-item, 
+.icon-btn, 
+.tab, 
+.crumb-item,
+.mobile-tab-btn,
+.mobile-menu-trigger,
+#tree a {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
+
+button:active, 
+.side-item:active, 
+.icon-btn:active, 
+.ws-card:active,
+#tree a:active {
+  opacity: 0.82;
+  transform: scale(0.98);
+  transition: transform 0.08s ease, opacity 0.08s ease;
+}
+
+/* Smooth momentum scrolling */
+.side, 
+.main, 
+.page, 
+#doc, 
+#blocks, 
+.content-area, 
+.calpage, 
+.homepage,
+.table-wrap, 
+.board,
+.ws-grid {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line, rgba(255, 255, 255, 0.15));
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   3. GLOBAL MODAL DIALOGS & OVERLAYS (Fixes all bleed-through & overlapping)
+   ========================================================================== */
+.backdrop {
+  display: none !important;
+}
+
+.backdrop.visible {
+  display: flex !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(0, 0, 0, 0.78) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  z-index: 5000 !important; /* Always sits on top of all page content */
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* Modal Panels (Search, New Event, Settings, Forms) */
+.backdrop.visible .panel,
+.backdrop.visible .form,
+.backdrop.visible .cal-form,
+.backdrop.visible .settings-modal {
+  position: relative !important;
+  z-index: 5001 !important;
+  width: 100% !important;
+  max-width: 92vw !important;
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+  background: var(--card, #1E1E1E) !important;
+  border: 1px solid var(--line, #2E2E2E) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+  padding: 20px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  box-sizing: border-box !important;
+}
+
+/* Event Dialog Form Styling */
+.cal-form h2 {
+  margin: 0 0 6px !important;
+  font-size: 20px !important;
+  font-weight: 600 !important;
+  color: var(--fg) !important;
+}
+
+.cal-form label {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  font-size: 13px !important;
+  color: var(--muted) !important;
+}
+
+.cal-form input[type=text],
+.cal-form input[type=date],
+.cal-form input[type=time],
+.cal-form select,
+.cal-form textarea {
+  padding: 10px 12px !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 8px !important;
+  background: var(--bg) !important;
+  color: var(--fg) !important;
+  font-size: 14px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.cal-form .cal-pair {
+  display: flex !important;
+  gap: 10px !important;
+}
+
+.cal-form .cal-pair > label {
+  flex: 1 !important;
+}
+
+.cal-form .cal-check {
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  font-size: 13.5px !important;
+  color: var(--fg) !important;
+}
+
+.cal-color-row {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  margin: 4px 0 !important;
+}
+
+.cal-color-label {
+  font-size: 13px !important;
+  color: var(--muted) !important;
+  font-weight: 500 !important;
+}
+
+.cal-swatches {
+  display: flex !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+}
+
+.cal-swatch {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  border: 2px solid transparent !important;
+  background: var(--swatch-color, var(--card)) !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  transition: transform 0.12s ease, box-shadow 0.12s ease !important;
+  display: inline-block !important;
+}
+
+.cal-swatch:active {
+  transform: scale(0.92) !important;
+}
+
+.cal-swatch.default {
+  border: 2px dashed var(--muted) !important;
+  background: transparent !important;
+}
+
+.cal-swatch.on {
+  box-shadow: 0 0 0 2px var(--card, #1E1E1E), 0 0 0 4.5px var(--swatch-color, var(--accent)) !important;
+  transform: scale(1.12) !important;
+}
+
+.cal-swatch.default.on {
+  box-shadow: 0 0 0 2px var(--card, #1E1E1E), 0 0 0 4.5px var(--accent) !important;
+}
+
+.cal-actions {
+  display: flex !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-top: 14px !important;
+}
+
+.cal-actions button {
+  min-height: 40px !important;
+  padding: 0 16px !important;
+  border-radius: 8px !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  border: 1px solid var(--line) !important;
+  color: var(--fg) !important;
+}
+
+.cal-actions button[type=submit] {
+  background: var(--accent) !important;
+  color: var(--accent-ink) !important;
+  border: none !important;
+  font-weight: 600 !important;
+}
+
+.home-tag-dot {
+  display: inline-block !important;
+  width: 9px !important;
+  height: 9px !important;
+  border-radius: 50% !important;
+  margin-right: 6px !important;
+  vertical-align: middle !important;
+  flex-shrink: 0 !important;
+}
+
+/* ==========================================================================
+   4. Mobile Phone Breakpoint (< 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+  
+  /* --- Hide Desktop Window Tabs on Mobile --- */
+  .tabs, #tabs {
+    display: none !important;
+  }
+
+  /* --- App Shell & Layout --- */
+  .app {
+    display: flex !important;
+    flex-direction: column !important;
+    position: relative !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    z-index: 1 !important;
+  }
+
+  /* --- Topbar & Navigation Bar --- */
+  .topbar {
+    height: calc(46px + max(var(--safe-top), 6px)) !important;
+    padding-top: max(var(--safe-top), 6px) !important;
+    padding-left: max(8px, var(--safe-left)) !important;
+    padding-right: max(10px, var(--safe-right)) !important;
+    background: var(--bg) !important;
+    border-bottom: 1px solid var(--line) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+    z-index: 100 !important;
+  }
+
+  .mobile-menu-trigger {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    margin-right: 2px;
+    border-radius: 8px;
+    color: var(--fg, inherit);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .crumb {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    min-width: 0 !important;
+    flex: 1 !important;
+  }
+
+  .crumb button {
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    padding: 0 4px !important;
+  }
+
+  /* Clean up topbar action clutter on small screens */
+  .meta #edited {
+    display: none !important;
+  }
+
+  .meta {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+  }
+
+  #share-btn {
+    font-size: 12px !important;
+    padding: 4px 10px !important;
+    border-radius: 6px !important;
+  }
+
+  #star-btn {
+    width: 34px !important;
+    height: 34px !important;
+    font-size: 16px !important;
+  }
+
+  /* --- Slide-Over Navigation Drawer --- */
+  .side {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    z-index: 2000 !important;
+    width: 84% !important;
+    max-width: 320px !important;
+    height: 100vh !important;
+    padding-top: max(var(--safe-top), 16px) !important;
+    padding-bottom: max(calc(var(--safe-bottom) + 16px), 32px) !important;
+    transform: translateX(-100%);
+    transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-shadow: 6px 0 32px rgba(0, 0, 0, 0.5) !important;
+    background: var(--nav, #1C1C1C) !important;
+    border-right: 1px solid var(--line) !important;
+    pointer-events: auto !important;
+    overflow-y: auto !important;
+    display: flex !important;
+  }
+
+  .side.mobile-open {
+    transform: translateX(0) !important;
+    pointer-events: auto !important;
+  }
+
+  .side * {
+    pointer-events: auto !important;
+  }
+
+  .sidebar-backdrop {
+    display: none;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.6) !important;
+    z-index: 1990 !important;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .sidebar-backdrop.active {
+    display: block !important;
+    pointer-events: auto !important;
+  }
+
+  .side-item, #tree a {
+    min-height: 38px !important;
+    padding: 8px 12px !important;
+    font-size: 14px !important;
+  }
+
+  .side-item kbd {
+    display: none !important;
+  }
+
+  /* --- Main Content Area & Safe Area Bottom Margin --- */
+  .main {
+    flex: 1 !important;
+    width: 100vw !important;
+    height: calc(100vh - var(--mobile-nav-height)) !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+    z-index: 10 !important;
+  }
+
+  .page {
+    flex: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 16px 14px calc(var(--mobile-nav-height) + var(--safe-bottom) + 20px) !important;
+    overflow-y: auto !important;
+    margin: 0 !important;
+  }
+
+  .title {
+    font-size: 26px !important;
+    line-height: 1.25 !important;
+    margin-bottom: 12px !important;
+  }
+
+  .block {
+    padding: 5px 0 !important;
+  }
+
+  .block .text {
+    font-size: 15px !important;
+    line-height: 1.6 !important;
+  }
+
+  /* ==========================================================================
+     5. Calendar Page Mobile Layout Tuning
+     ========================================================================== */
+  .calpage {
+    padding: 12px 10px calc(var(--mobile-nav-height) + var(--safe-bottom) + 20px) !important;
+    gap: 12px !important;
+  }
+
+  .cal-bar {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+
+  .cal-nav {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  .cal-nav button {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding: 0 12px !important;
+    border-radius: 8px !important;
+    font-size: 13.5px !important;
+    border: 1px solid var(--line) !important;
+    color: var(--fg) !important;
+  }
+
+  .cal-title {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    margin: 0 !important;
+  }
+
+  .cal-tools {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .cal-seg {
+    display: inline-flex !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--line) !important;
+    overflow: hidden !important;
+    height: 34px !important;
+    background: var(--card) !important;
+  }
+
+  .cal-seg button {
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 16px !important;
+    font-size: 13px !important;
+    line-height: 32px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    color: var(--muted) !important;
+    background: transparent !important;
+    white-space: nowrap !important;
+  }
+
+  .cal-seg button.on {
+    background: var(--sel) !important;
+    color: var(--accent) !important;
+    font-weight: 600 !important;
+  }
+
+  .cal-new {
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 0 14px !important;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    background: var(--accent) !important;
+    color: var(--accent-ink) !important;
+    border: none !important;
+  }
+
+  .cal-signin, .auth-btn-google {
+    background: var(--card, #232323) !important;
+    color: var(--fg, #ECECEA) !important;
+    border: 1px solid var(--line, #2E2E2E) !important;
+    border-radius: 8px !important;
+    padding: 5px 12px !important;
+    font-size: 12px !important;
+    min-height: 34px !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  .cal-grid {
+    border-radius: 10px !important;
+    gap: 1px !important;
+    background: var(--line) !important;
+  }
+
+  .cal-head {
+    padding: 5px 2px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+    color: var(--muted) !important;
+  }
+
+  .cal-cell {
+    min-height: 52px !important;
+    padding: 3px 2px !important;
+    align-items: center !important;
+  }
+
+  .cal-date {
+    font-size: 11.5px !important;
+    padding: 1px 5px !important;
+  }
+
+  .cal-legend {
+    font-size: 11px !important;
+    justify-content: center !important;
+    gap: 10px !important;
+    margin-top: 8px !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* ==========================================================================
+     6. Mobile Bottom Navigation Bar (Elevated Floating Action Button)
+     ========================================================================== */
+  .mobile-bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(52px + max(var(--safe-bottom), 16px));
+    padding-bottom: max(var(--safe-bottom), 16px);
+    background: var(--nav, var(--card, #1C1C1C));
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 900;
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  .mobile-tab-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    flex: 1;
+    height: 100%;
+    color: var(--muted);
+    background: none;
+    border: none;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: color 0.15s ease, transform 0.1s ease;
+  }
+
+  .mobile-tab-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    fill: none;
+  }
+
+  .mobile-tab-btn.active {
+    color: var(--accent);
+  }
+
+  .mobile-tab-btn.active svg {
+    stroke: var(--accent);
+  }
+
+  .mobile-tab-btn.fab-item {
+    position: relative;
+    overflow: visible;
+  }
+
+  .mobile-tab-btn.fab-item .fab-circle {
+    width: 44px !important;
+    height: 44px !important;
+    border-radius: 50% !important;
+    background: var(--accent) !important;
+    color: var(--accent-ink) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transform: translateY(-8px) !important;
+    box-shadow: 0 4px 16px rgba(47, 179, 154, 0.45) !important;
+  }
+
+  .mobile-tab-btn.fab-item .fab-circle svg {
+    stroke: var(--accent-ink, #0E2A24) !important;
+    stroke-width: 2.4 !important;
+    width: 22px !important;
+    height: 22px !important;
+  }
+
+  .mobile-tab-btn.fab-item span {
+    display: none !important;
+  }
+
+  /* --- Start Page Responsive Tuning --- */
+  .start {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: max(var(--safe-top), 24px) 18px max(var(--safe-bottom), 28px) !important;
+    gap: 24px !important;
+    min-height: 100vh !important;
+  }
+
+  .start-head {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  .start-head .brand-title-wrap {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+  }
+
+  .ws-grid {
+    border-radius: 10px !important;
+  }
+
+  .new-form {
+    padding: 16px !important;
+  }
+
+  /* --- Home Landing Page Mobile Tuning --- */
+  .homepage {
+    padding: 16px 14px calc(var(--mobile-nav-height) + var(--safe-bottom) + 20px) !important;
+    gap: 16px !important;
+  }
+
+  .home-hero h1 {
+    font-size: 26px !important;
+    line-height: 1.2 !important;
+  }
+
+  .home-top {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .home-focus {
+    padding: 18px 16px !important;
+    border-radius: 14px !important;
+  }
+
+  .home-focus h2 {
+    font-size: 21px !important;
+  }
+
+  /* --- Database Table & Board Views --- */
+  .table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .board {
+    padding: 0 4px calc(var(--mobile-nav-height) + 16px) !important;
+  }
+
+  .slash-menu, .menu, .picker {
+    max-width: 90vw !important;
+  }
+}

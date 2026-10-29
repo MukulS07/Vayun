@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Vayun Signature Palette (Matching desktop tokens.css) -->
+    <color name="vayun_bg">#161616</color>
+    <color name="vayun_panel">#1E1E1E</color>
+    <color name="vayun_accent">#2FB39A</color>
+    <color name="vayun_text">#ECECEA</color>
+    <color name="vayun_status_bar">#161616</color>
+</resources>
+

@@ -99,12 +99,45 @@
         lastStart = startTime.value;
       };
       syncTimes();
+      const COLORS = [
+        { name: 'Default', hex: '' },
+        { name: 'Sage', hex: '#2FB39A' },
+        { name: 'Blue', hex: '#3B82F6' },
+        { name: 'Coral', hex: '#EF4444' },
+        { name: 'Amber', hex: '#F59E0B' },
+        { name: 'Purple', hex: '#A855F7' },
+        { name: 'Rose', hex: '#EC4899' },
+        { name: 'Teal', hex: '#06B6D4' },
+      ];
+      let selectedColor = e.color || '';
+      const colorRow = h('div', { class: 'cal-color-row' },
+        h('span', { class: 'cal-color-label' }, 'Color tag'),
+        h('div', { class: 'cal-swatches' },
+          COLORS.map(c => {
+            const btn = h('button', {
+              type: 'button',
+              class: `cal-swatch${selectedColor === c.hex ? ' on' : ''}${!c.hex ? ' default' : ''}`,
+              title: c.name,
+              'aria-label': c.name,
+              style: c.hex ? `--swatch-color: ${c.hex}` : '',
+              onclick: () => {
+                if (readOnly) return;
+                selectedColor = c.hex;
+                colorRow.querySelectorAll('.cal-swatch').forEach(s => s.classList.remove('on'));
+                btn.classList.add('on');
+              }
+            });
+            return btn;
+          })
+        )
+      );
       const err = h('p', { class: 'cal-error', role: 'alert' });
       form.append(
         field('Title', title),
         h('label', { class: 'cal-check' }, allDay, 'All day'),
         h('div', { class: 'cal-pair' }, field('Start date', startDate), field('End date', endDate)),
         times,
+        colorRow,
         field('Notes', notes),
         target ? field('Save to', target) : '',
         err,
@@ -116,7 +149,7 @@
       form.onsubmit = ev => {
         ev.preventDefault();
         if (readOnly) return done(null);
-        const value = C.normalizeEventInput({ title: title.value, allDay: allDay.checked, startDate: startDate.value, endDate: endDate.value, startTime: startTime.value, endTime: endTime.value, notes: notes.value });
+        const value = C.normalizeEventInput({ title: title.value, allDay: allDay.checked, startDate: startDate.value, endDate: endDate.value, startTime: startTime.value, endTime: endTime.value, notes: notes.value, color: selectedColor || undefined });
         if (value.error) { err.textContent = value.error; return; }
         done({ action: 'save', value, target: target?.value });
       };

@@ -1,0 +1,20 @@
+{
+  "name": "vayun-android",
+  "version": "1.0.0",
+  "description": "Vayun Android application - Local-first workspace with teams and cloud sync",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "preview": "node build.js && npx serve dist -l 8099"
+  },
+  "keywords": [
+    "vayun",
+    "android",
+    "local-first",
+    "notes",
+    "workspace"
+  ],
+  "author": "Vayun",
+  "license": "MIT"
+}
+

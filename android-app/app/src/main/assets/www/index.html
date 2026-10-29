@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com https://accounts.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; font-src 'self' data:; img-src 'self' https: data:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com; frame-src https://*.firebaseapp.com https://accounts.google.com https://*.googleapis.com; object-src 'none'; base-uri 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Vayun on Android</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="tokens.css">
+<script src="android-config.js"></script>
+  <script src="android-api.js"></script>
+  <script src="android-team.js"></script>
+  <script src="android-cloud.js"></script>
+  <script src="android-theme.js"></script>
+  <script src="android-config.js"></script>
+  <script src="android-api.js"></script>
+  <script src="android-team.js"></script>
+  <script src="android-cloud.js"></script>
+  <script src="android-theme.js"></script>
+  <script src="theme.js"></script>
+<script src="themes-data.js"></script>
+<script src="theme-boot.js"></script>
+<link rel="stylesheet" href="templates/templates.css">
+<link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="android-mobile.css">
+  <link rel="stylesheet" href="android-mobile.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="ws">
+      <div class="brand-mark" aria-hidden="true"><img src="brand/vayun.webp" alt=""></div>
+      <div class="ws-meta">
+        <div class="ws-name">My workspace</div>
+        <div class="ws-sub">by Maytrix</div>
+      </div>
+      <button class="icon-btn" id="theme-btn" type="button" title="Theme" aria-label="Change theme"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 3v18"/></svg></button>
+    </div>
+
+    <button class="side-item" id="home-btn" type="button">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7 M5 10v10h14V10 M10 20v-6h4v6"/></svg><span>Home</span>
+    </button>
+    <button class="side-item search" id="search-btn" type="button">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M20 20l-4-4"/></svg><span>Search</span><kbd>Ctrl K</kbd>
+    </button>
+    <button class="side-item" id="cal-btn" type="button">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v14H4z M4 10h16 M8 3v5 M16 3v5"/></svg><span>Calendar</span>
+    </button>
+    <button class="side-item" id="team-btn" type="button">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M2 20c0-3.3 3-5 7-5s7 1.7 7 5 M17 11a2.5 2.5 0 1 0 0-5 M18 15c2.5 0 4 1.5 4 4"/></svg><span>Team</span>
+    </button>
+    <button class="side-item" id="ai-btn" type="button">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z M19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/></svg><span>Assistant</span><kbd>Ctrl J</kbd>
+    </button>
+
+    <div class="side-group" id="favs-group" hidden>
+      <div class="side-head">Favorites</div>
+      <nav id="favs" aria-label="Favorites"></nav>
+    </div>
+
+    <div class="side-group">
+      <div class="side-head">Pages</div><nav id="tree" aria-label="Pages"></nav>
+    </div>
+
+    <div class="side-group">
+      <div class="side-head">New</div>
+      <button class="side-item" id="new-btn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg><span>Page</span></button>
+      <button class="side-item" id="templates-btn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M4 9h16 M9 20V9"/></svg><span>Template</span></button>
+      <button class="side-item" id="new-db-btn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4z M4 10h16 M10 5v14"/></svg><span>Tasks database</span></button>
+    </div>
+
+    <div class="side-group">
+      <div class="side-head">Import</div>
+      <button class="side-item" id="import-btn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4 M7 9l5-5 5 5 M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></svg><span>HTML or PDF</span></button>
+      <button class="side-item" id="notion-btn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16v12H4z M3 4h18v4H3z M10 12h4"/></svg><span>Notion export (.zip)</span></button>
+    </div>
+
+    <div class="side-bottom">
+      <div id="side-auth-mount"></div>
+      <div class="ws-storage-note">Stored on this PC</div>
+    </div>
+  </aside>
+
+  <section class="main">
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <header class="topbar">
+      <nav id="crumb" class="crumb" aria-label="Breadcrumb"></nav>
+      <div class="meta">
+        <span id="edited" class="edited"></span>
+        <button id="share-btn" class="share" type="button" disabled title="Sharing needs the server (Phase 2)">Share</button>
+        <button id="star-btn" class="icon-btn" type="button" aria-label="Favorite">☆</button>
+      </div>
+      <div id="toolbar" class="actions"></div>
+    </header>
+
+    <div class="page">
+      <div id="title" class="title" contenteditable="plaintext-only" role="textbox" aria-label="Page title"></div>
+      <div id="props" class="props" hidden></div>
+      <div id="doc">
+        <div id="blocks"></div>
+      </div>
+      <div id="dbview" hidden></div>
+      <div id="mindmap" hidden></div>
+      <div id="tpl" hidden></div>
+    </div>
+  </section>
+</div>
+
+<div class="backdrop" id="backdrop">
+  <div class="panel" role="dialog" aria-modal="true" aria-label="Search">
+    <input id="q" type="search" placeholder="Search pages…" autocomplete="off" role="combobox" aria-controls="results" aria-expanded="true">
+    <div class="label" id="label">Recent</div>
+    <ul id="results" role="listbox" aria-labelledby="label"></ul>
+    <footer>↑↓ to navigate · Enter to open · Esc to close</footer>
+  </div>
+</div>
+
+<script src="model.js"></script>
+<script src="calendar-logic.js"></script>
+<script src="team-logic.js"></script>
+<script src="home-logic.js"></script>
+<script src="export.js"></script>
+<script src="search.js"></script>
+<script src="html-import.js"></script>
+<script src="templates/tpl-ui.js"></script>
+<script src="template-logic.js"></script>
+<script src="templates/board.js"></script>
+<script src="templates/custom.js"></script>
+<script src="templates/life.js"></script>
+<script src="templates/study.js"></script>
+<script src="templates/picker.js"></script>
+<script src="calendar.js"></script>
+<script src="team.js"></script>
+<script src="home.js"></script>
+<script src="appearance.js"></script>
+<script src="app.js"></script>
+<script src="assistant-logic.js"></script>
+<script src="assistant.js"></script>
+<script src="auth-ui.js"></script>
+</body>
+</html>

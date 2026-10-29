@@ -107,7 +107,7 @@
       ...localEvents.filter(e => eventToday(e, today)).map(e => ({ ...e, source: 'workspace' })),
       ...googleEvents.filter(e => eventToday(e, today)).map(e => ({ ...e, source: 'google' })),
       ...((team && team.events) || []).filter(e => !e.deleted && eventToday(e, today)).map(e => ({ ...e, source: 'team' })),
-    ].map(e => ({ key: 'e:' + e.source + ':' + (e.id || e.googleId || e.title), kind: 'event', title: e.title, sub: { workspace: 'Workspace', google: 'Google Calendar', team: 'Team' }[e.source], time: timeLabel(e), startTime: e.allDay ? '' : (e.startTime || ''), ref: { type: 'event', source: e.source } }))
+    ].map(e => ({ key: 'e:' + e.source + ':' + (e.id || e.googleId || e.title), kind: 'event', title: e.title, sub: { workspace: 'Workspace', google: 'Google Calendar', team: 'Team' }[e.source], time: timeLabel(e), startTime: e.allDay ? '' : (e.startTime || ''), ref: { type: 'event', source: e.source }, color: e.color || '' }))
       .sort((a, b) => a.startTime.localeCompare(b.startTime) || a.title.localeCompare(b.title));
 
     const byId = new Map(pages.map(p => [p.id, p]));
