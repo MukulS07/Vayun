@@ -1,15 +1,19 @@
 package com.vayun.app
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.view.View
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
@@ -17,6 +21,28 @@ import androidx.webkit.WebViewFeature
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
+    private var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+
+    // Native file picker launcher for WebView <input type="file">
+    private val filePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK && result.data != null) {
+            val clipData = result.data?.clipData
+            val singleUri = result.data?.data
+            if (clipData != null) {
+                val uris = Array(clipData.itemCount) { i -> clipData.getItemAt(i).uri }
+                fileUploadCallback?.onReceiveValue(uris)
+            } else if (singleUri != null) {
+                fileUploadCallback?.onReceiveValue(arrayOf(singleUri))
+            } else {
+                fileUploadCallback?.onReceiveValue(null)
+            }
+        } else {
+            fileUploadCallback?.onReceiveValue(null)
+        }
+        fileUploadCallback = null
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,7 +60,7 @@ class MainActivity : AppCompatActivity() {
 
         // Strict security locks
         settings.allowFileAccess = true // Allowed for bundled assets (file:///android_asset/)
-        settings.allowContentAccess = false
+        settings.allowContentAccess = true // Allowed for reading chosen files via file picker
         settings.allowFileAccessFromFileURLs = false
         settings.allowUniversalAccessFromFileURLs = false
         settings.javaScriptCanOpenWindowsAutomatically = false
@@ -46,7 +72,7 @@ class MainActivity : AppCompatActivity() {
 
         // Safe Browsing check
         if (WebViewFeature.isFeatureSupported(WebViewFeature.START_SAFE_BROWSING)) {
-            WebViewCompat.startSafeBrowsing(this) { success ->
+            WebViewCompat.startSafeBrowsing(this) { _ ->
                 // Safe Browsing initialized
             }
         }
@@ -54,7 +80,33 @@ class MainActivity : AppCompatActivity() {
         // 3. Register Native Javascript Interface Bridge
         webView.addJavascriptInterface(WebAppInterface(this), "VayunAndroid")
 
-        // 4. Client Navigation Policy
+        // 4. WebChromeClient for File Chooser & Console
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                fileUploadCallback?.onReceiveValue(null)
+                fileUploadCallback = filePathCallback
+
+                val intent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply {
+                    type = "*/*"
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                }
+                try {
+                    filePickerLauncher.launch(intent)
+                } catch (_: Exception) {
+                    fileUploadCallback?.onReceiveValue(null)
+                    fileUploadCallback = null
+                    return false
+                }
+                return true
+            }
+        }
+
+        // 5. Client Navigation Policy
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 val url = request?.url?.toString() ?: return false
@@ -75,7 +127,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 5. Android System Back Button Dispatcher
+        // 6. Android System Back Button Dispatcher
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 // Query WebView JavaScript to see if app drawer / modal was handled
@@ -94,7 +146,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        // 6. Load Vayun Offline Screen Bundle
+        // 7. Load Vayun Offline Screen Bundle
         webView.loadUrl("file:///android_asset/www/start.html")
     }
 
@@ -113,4 +165,3 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 }
-

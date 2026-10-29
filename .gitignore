@@ -23,8 +23,16 @@ yarn-error.log*
 desktop/dist/
 desktop/release/
 desktop/dist-mac/
+android-app/app/src/main/assets/www/
+android-app/build/
+android-app/app/build/
+android-app/.gradle/
 dist/
 dist-mac/
+android-app/app/src/main/assets/www/
+android-app/build/
+android-app/app/build/
+android-app/.gradle/
 
 # Archives and binaries
 *.zip

@@ -1,9 +1,13 @@
 package com.vayun.app
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -13,8 +17,9 @@ import android.widget.Toast
 import androidx.core.view.WindowInsetsControllerCompat
 
 /**
- * Native bridge interface exposed to WebView JavaScript as `window.VayunAndroid`.
- * Provides haptics, status bar styling, native Android share sheets, and toasts.
+ * Phase 3 Native Bridge Interface exposed to WebView JavaScript as `window.VayunAndroid`.
+ * Provides haptic pulses, status bar styling, native Android share sheets, file imports,
+ * clipboard access, and network status checks.
  */
 class WebAppInterface(private val activity: Activity) {
 
@@ -30,10 +35,10 @@ class WebAppInterface(private val activity: Activity) {
     fun hapticFeedback() {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator?.vibrate(VibrationEffect.createOneShot(12, VibrationEffect.DEFAULT_AMPLITUDE))
+                vibrator?.vibrate(VibrationEffect.createOneShot(14, VibrationEffect.DEFAULT_AMPLITUDE))
             } else {
                 @Suppress("DEPRECATION")
-                vibrator?.vibrate(12)
+                vibrator?.vibrate(14)
             }
         } catch (_: Exception) {}
     }
@@ -71,10 +76,44 @@ class WebAppInterface(private val activity: Activity) {
     }
 
     @JavascriptInterface
+    fun copyToClipboard(text: String) {
+        activity.runOnUiThread {
+            try {
+                val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                val clip = ClipData.newPlainText("Vayun", text)
+                clipboard?.setPrimaryClip(clip)
+                Toast.makeText(activity, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+            } catch (_: Exception) {}
+        }
+    }
+
+    @JavascriptInterface
+    fun isNetworkAvailable(): Boolean {
+        val cm = activity.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = cm.activeNetwork ?: return false
+            val caps = cm.getNetworkCapabilities(network) ?: return false
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        } else {
+            @Suppress("DEPRECATION")
+            cm.activeNetworkInfo?.isConnected == true
+        }
+    }
+
+    @JavascriptInterface
+    fun getAppVersion(): String {
+        return try {
+            val pInfo = activity.packageManager.getPackageInfo(activity.packageName, 0)
+            pInfo.versionName ?: "1.0.0"
+        } catch (_: Exception) {
+            "1.0.0"
+        }
+    }
+
+    @JavascriptInterface
     fun showToast(message: String) {
         activity.runOnUiThread {
             Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
         }
     }
 }
-

@@ -1,4 +1,4 @@
-// Vayun Mobile - Theme Sync, Drawer Navigation & Bottom Bar Controller
+// Vayun Mobile - Phase 3 Theme Sync, Drawer Navigation, Haptics & Native Share Controller
 (function () {
   document.addEventListener('DOMContentLoaded', () => {
     const isMobile = () => window.innerWidth <= 768;
@@ -64,9 +64,9 @@
     // 3. Close drawer on navigation item selection
     if (sidebar) {
       sidebar.addEventListener('click', e => {
-        const item = e.target.closest('.side-item, #tree a, .ws, #theme-btn');
+        const item = e.target.closest('.side-item, #tree a, .ws, #theme-btn, .mobile-backup-item');
         if (item) {
-          if (item.id === 'theme-btn') return;
+          if (item.id === 'theme-btn' || item.classList.contains('mobile-backup-item')) return;
           if (isMobile()) {
             setTimeout(closeDrawer, 180);
           }
@@ -173,14 +173,13 @@
     document.addEventListener('click', e => {
       const backdrop = e.target;
       if (backdrop && backdrop.classList && backdrop.classList.contains('backdrop') && backdrop.classList.contains('visible')) {
-        // Tapped directly on the backdrop outside .panel or .form
         const closeBtn = backdrop.querySelector('.mobile-search-close-btn, .cal-actions button:last-child, button[data-action="close"]');
         if (closeBtn) closeBtn.click();
         else backdrop.classList.remove('visible');
       }
     });
 
-    // 7. Continuous Theme Sync to Android Chrome
+    // 7. Continuous Theme Sync to Android Status & Navigation Bar
     const syncThemeToSystem = () => {
       const computedBg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#161616';
       const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
@@ -197,6 +196,60 @@
     const note = document.querySelector('.ws-storage-note, p.muted');
     if (note && note.textContent.includes('PC')) {
       note.textContent = note.textContent.replace('this PC', 'this phone (Offline)');
+    }
+
+    // 9. Wire Native Share Button in Topbar
+    const shareBtn = document.getElementById('share-btn');
+    if (shareBtn) {
+      shareBtn.disabled = false;
+      shareBtn.removeAttribute('disabled');
+      shareBtn.setAttribute('title', 'Share note via Android');
+      shareBtn.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.__vayunAndroid?.haptic) window.__vayunAndroid.haptic();
+        if (window.api && typeof window.api.shareCurrentNote === 'function') {
+          window.api.shareCurrentNote();
+        }
+      });
+    }
+
+    // 10. Global Haptic Pulses on Task Checks, Done buttons, and Swatches
+    document.addEventListener('change', e => {
+      if (e.target && e.target.matches('input[type="checkbox"]')) {
+        if (window.__vayunAndroid?.haptic) window.__vayunAndroid.haptic();
+      }
+    });
+
+    document.addEventListener('click', e => {
+      const el = e.target.closest('.home-done, .cal-swatch, .cal-cell, .fab-circle, #star-btn, #theme-btn, .cal-seg button');
+      if (el) {
+        if (window.__vayunAndroid?.haptic) window.__vayunAndroid.haptic();
+      }
+    });
+
+    // 11. Add Offline Backup Option in Sidebar
+    if (sidebar && !document.getElementById('mobile-backup-btn')) {
+      const backupBtn = document.createElement('button');
+      backupBtn.id = 'mobile-backup-btn';
+      backupBtn.type = 'button';
+      backupBtn.className = 'side-item mobile-backup-item';
+      backupBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;vertical-align:-2px;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        <span>Backup Workspace (JSON)</span>
+      `;
+      backupBtn.addEventListener('click', async () => {
+        if (window.__vayunAndroid?.haptic) window.__vayunAndroid.haptic();
+        if (window.api && typeof window.api.exportWorkspaceBackup === 'function') {
+          const res = await window.api.exportWorkspaceBackup();
+          if (res) alert(`Backup saved: ${res}`);
+        }
+      });
+      sidebar.appendChild(backupBtn);
     }
   });
 })();

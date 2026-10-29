@@ -395,6 +395,25 @@ button:active,
     font-size: 14px !important;
   }
 
+  .mobile-backup-item {
+    margin-top: auto !important;
+    border-top: 1px solid var(--line) !important;
+    padding: 12px 14px !important;
+    color: var(--muted) !important;
+    font-size: 13px !important;
+    display: flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    background: transparent !important;
+    border-radius: 0 !important;
+  }
+
+  .mobile-backup-item:hover,
+  .mobile-backup-item:active {
+    color: var(--fg) !important;
+    background: var(--hover) !important;
+  }
+
   .side-item kbd {
     display: none !important;
   }

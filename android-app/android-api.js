@@ -1,17 +1,19 @@
-// Vayun on Android: The mobile bridge exposing window.api
+// Vayun on Android: Phase 3 Mobile Bridge exposing window.api
 // 100% compatible with desktop/app screens and web-api, with Android-native integration
 (function () {
   const DB_NAME = 'vayun-android';
   const STORE = 'kv';
   const nowDefaults = () => ({ active: 'main', workspaces: [{ id: 'main', name: 'My workspace', created: Date.now(), opened: 0 }] });
 
-  // ---- Key-Value Store on IndexedDB (Local-First Persistence) ----
+  // ---- Key-Value Store on IndexedDB (Local-First Persistence with Fail-Safe Fallbacks) ----
   let dbPromise = null;
   const memory = new Map();
+
   function db() {
     if (!dbPromise) {
       dbPromise = new Promise(resolve => {
         try {
+          if (typeof indexedDB === 'undefined') return resolve(null);
           const req = indexedDB.open(DB_NAME, 1);
           req.onupgradeneeded = () => req.result.createObjectStore(STORE);
           req.onsuccess = () => resolve(req.result);
@@ -23,24 +25,43 @@
   }
 
   async function kvGet(key) {
-    const d = await db();
-    if (!d) return memory.get(key);
-    return new Promise(resolve => {
-      const r = d.transaction(STORE).objectStore(STORE).get(key);
-      r.onsuccess = () => resolve(r.result);
-      r.onerror = () => resolve(undefined);
-    });
+    try {
+      const d = await db();
+      if (!d) {
+        try {
+          const raw = localStorage.getItem('vayun:' + key);
+          return raw ? JSON.parse(raw) : memory.get(key);
+        } catch { return memory.get(key); }
+      }
+      return new Promise(resolve => {
+        const tx = d.transaction(STORE, 'readonly');
+        const r = tx.objectStore(STORE).get(key);
+        r.onsuccess = () => resolve(r.result);
+        r.onerror = () => resolve(undefined);
+      });
+    } catch {
+      return memory.get(key);
+    }
   }
 
   async function kvSet(key, value) {
-    const d = await db();
-    if (!d) { memory.set(key, value); return true; }
-    return new Promise(resolve => {
-      const tx = d.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(value, key);
-      tx.oncomplete = () => resolve(true);
-      tx.onerror = tx.onabort = () => resolve(false);
-    });
+    try {
+      const d = await db();
+      if (!d) {
+        memory.set(key, value);
+        try { localStorage.setItem('vayun:' + key, JSON.stringify(value)); } catch {}
+        return true;
+      }
+      return new Promise(resolve => {
+        const tx = d.transaction(STORE, 'readwrite');
+        tx.objectStore(STORE).put(value, key);
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = tx.onabort = () => resolve(false);
+      });
+    } catch {
+      memory.set(key, value);
+      return true;
+    }
   }
 
   // ---- Workspaces Registry ----
@@ -51,7 +72,7 @@
   })();
   const activeEntry = () => registry.workspaces.find(w => w.id === registry.active) || registry.workspaces[0];
   const saveRegistry = () => kvSet('registry', registry);
-  const uid8 = () => crypto.randomUUID().slice(0, 8);
+  const uid8 = () => (crypto.randomUUID ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10));
 
   const migrate = d => {
     d.version = 2;
@@ -86,26 +107,54 @@
 
   // Android Native Back Button Handler
   window.handleAndroidBackPressed = function () {
+    // 1. Close slide-over navigation drawer if open
     const sidebar = document.querySelector('.side, .sidebar');
-    const backdrop = document.querySelector('.sidebar-backdrop');
+    const sideBackdrop = document.querySelector('.sidebar-backdrop');
     if (sidebar && sidebar.classList.contains('mobile-open')) {
       sidebar.classList.remove('mobile-open');
-      if (backdrop) backdrop.classList.remove('active');
+      if (sideBackdrop) sideBackdrop.classList.remove('active');
       return true;
     }
-    const modal = document.querySelector('.modal, .dialog, .picker, .slash-menu');
-    if (modal && !modal.hidden) {
-      modal.hidden = true;
+
+    // 2. Dismiss any active modal backdrops (Calendar event form, Search, Settings, Ask dialog)
+    const backdrops = Array.from(document.querySelectorAll('.backdrop.visible, .modal.visible, .dialog.visible, .settings-backdrop.visible'));
+    if (backdrops.length > 0) {
+      const topBackdrop = backdrops[backdrops.length - 1];
+      if (topBackdrop.id === 'backdrop') {
+        topBackdrop.classList.remove('visible');
+      } else {
+        const escEvent = new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true });
+        topBackdrop.dispatchEvent(escEvent);
+        if (topBackdrop.parentNode) topBackdrop.remove();
+      }
       return true;
     }
-    return false;
+
+    // 3. Close popovers, slash menus, or pickers
+    const popovers = document.querySelectorAll('.slash, .picker, .popover, .menu-dropdown');
+    for (const p of popovers) {
+      if (p.offsetParent !== null) {
+        p.remove();
+        return true;
+      }
+    }
+
+    // 4. In-page navigation: if not on Home screen, go back to Home
+    const isHome = document.querySelector('.homepage') !== null;
+    const homeBtn = document.getElementById('home-btn') || document.querySelector('.mobile-tab-btn[data-target="home"]');
+    if (!isHome && homeBtn) {
+      homeBtn.click();
+      return true;
+    }
+
+    return false; // let Android exit or go back in system stack
   };
 
   function haptic() {
     if (window.VayunAndroid && typeof window.VayunAndroid.hapticFeedback === 'function') {
       window.VayunAndroid.hapticFeedback();
     } else if (navigator.vibrate) {
-      navigator.vibrate(12);
+      navigator.vibrate(14);
     }
   }
 
@@ -149,7 +198,47 @@
     },
     openFromQuickSearch: () => {},
     closeQuickSearch: () => {},
-    importFiles: async () => [],
+    importFiles: async () => {
+      return new Promise(resolve => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = '.html,.htm,.md,.markdown,.txt,.json';
+        input.onchange = async () => {
+          const files = Array.from(input.files || []);
+          const results = [];
+          for (const file of files) {
+            try {
+              const text = await file.text();
+              const baseName = file.name.replace(/\.[^/.]+$/, '');
+              if (/\.json$/i.test(file.name)) {
+                try {
+                  const parsed = JSON.parse(text);
+                  if (parsed.blocks && Array.isArray(parsed.blocks)) {
+                    results.push({ name: baseName, title: parsed.title || baseName, blocks: parsed.blocks });
+                  } else {
+                    results.push({ name: baseName, html: `<p>${text.replace(/[<>&]/g, s => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[s])}</p>` });
+                  }
+                } catch {
+                  results.push({ name: baseName, html: `<p>${text}</p>` });
+                }
+              } else if (/\.(html|htm)$/i.test(file.name)) {
+                results.push({ name: baseName, html: text });
+              } else {
+                // Plain text or Markdown: wrap in paragraphs for htmlToBlocks
+                const lines = text.split(/\r?\n/).map(line => `<p>${line.replace(/[<>&]/g, s => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' })[s]) || '<br>'}</p>`).join('');
+                results.push({ name: baseName, html: lines });
+              }
+            } catch (err) {
+              results.push({ name: file.name, error: err.message });
+            }
+          }
+          resolve(results);
+        };
+        input.oncancel = () => resolve([]);
+        input.click();
+      });
+    },
     importNotion: async () => desktopOnly('Notion import'),
     listWorkspaces: async () => {
       await ready;
@@ -196,6 +285,56 @@
       return true;
     },
     exportFile: async (name, ext, content) => download(name, ext, content),
+    exportWorkspaceBackup: async () => {
+      await ready;
+      const ws = activeEntry();
+      const data = current || await kvGet('ws:' + ws.id) || welcome();
+      const date = new Date().toISOString().slice(0, 10);
+      const fileName = `${ws.name.replace(/[^\w-]/g, '_')}-backup-${date}`;
+      return download(fileName, 'json', JSON.stringify(data, null, 2));
+    },
+    shareCurrentNote: async () => {
+      const titleEl = document.querySelector('.title, #title, .page-title');
+      const title = (titleEl ? (titleEl.value || titleEl.textContent) : '').trim() || 'Note';
+      const blockEls = Array.from(document.querySelectorAll('.block .text, .block .content, #blocks [contenteditable]'));
+      const textLines = blockEls.map(el => (el.value || el.innerText || '').trim()).filter(Boolean);
+      const content = `${title}\n\n${textLines.join('\n\n')}`;
+
+      if (window.VayunAndroid && typeof window.VayunAndroid.shareText === 'function') {
+        window.VayunAndroid.shareText(title, content);
+      } else if (navigator.share) {
+        try {
+          await navigator.share({ title, text: content });
+        } catch { /* cancelled */ }
+      } else {
+        download(title, 'md', content);
+      }
+    },
+    copyToClipboard: async (text) => {
+      if (window.VayunAndroid && typeof window.VayunAndroid.copyToClipboard === 'function') {
+        window.VayunAndroid.copyToClipboard(text);
+        return true;
+      }
+      if (navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch { /* fallback */ }
+      }
+      return false;
+    },
+    isOnline: () => {
+      if (window.VayunAndroid && typeof window.VayunAndroid.isNetworkAvailable === 'function') {
+        return window.VayunAndroid.isNetworkAvailable();
+      }
+      return navigator.onLine;
+    },
+    getAppVersion: () => {
+      if (window.VayunAndroid && typeof window.VayunAndroid.getAppVersion === 'function') {
+        return window.VayunAndroid.getAppVersion();
+      }
+      return '1.0.0';
+    },
     aiStatus: async () => ({ hasKey: false, model: '', models: [], unavailable: true }),
     aiSetKey: async () => desktopOnly('The assistant'),
     aiClearKey: async () => ({ hasKey: false, model: '', models: [], unavailable: true }),
@@ -252,4 +391,5 @@
   window.__vayunWeb = { emit, kvGet, kvSet, ready };
   window.__vayunAndroid = { emit, haptic, kvGet, kvSet, ready };
   addEventListener('pagehide', () => { if (queued) flush(); });
+  addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && queued) flush(); });
 })();

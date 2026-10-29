@@ -22,12 +22,14 @@ This guide covers everything needed to build, live-preview, and ship the **Vayun
   - Safe-area insets (`env(safe-area-inset-top)`, `env(safe-area-inset-bottom)`) for camera notches and gesture navigation.
   - Responsive slide-over navigation drawer with backdrop dismissal.
 
-### Phase 3: Local-First Storage & Offline Engine
-- **Client Bridge (`android-api.js`)**: Matches Electron's `window.api` using IndexedDB for local-first, zero-cloud storage.
-- **Android Native Features**:
-  - Haptic feedback on task completion.
-  - System back button / gesture interceptor.
-  - Native Android share sheet (`Intent.ACTION_SEND`) when exporting notes.
+### Phase 3: Local-First Storage & Offline Engine (✅ Completed)
+- **Client Bridge (`android-api.js`)**: Matches Electron's `window.api` using IndexedDB for local-first, zero-cloud storage with automatic localStorage fallback and lifecycle debounced flushing.
+- **Android Native Features (`WebAppInterface.kt`)**:
+  - Haptic touch feedback on task checkboxes, navigation tabs, and calendar swatches.
+  - System back button / swipe gesture interceptor (closes drawers, backdrops, and dialogs before navigating or exiting).
+  - Native Android share sheet (`Intent.ACTION_SEND`) via topbar `#share-btn`.
+  - Native file chooser via `WebChromeClient.onShowFileChooser` for importing HTML/Markdown notes.
+  - Offline workspace backup export to portable `.json`.
 
 ### Phase 4: Cloud Sync & Operational Setup
 - **Cloud Firestore**: Team sync using [`firestore.rules`](../firestore.rules).
