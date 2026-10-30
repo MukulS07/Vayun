@@ -12,10 +12,40 @@ rules_version = '2';
 //   - Nothing is ever really deleted from tasks or events (they are marked deleted), so everyone's app can
 //     notice the change.
 // app/team-logic.js has the same rules in code (checkTaskPatch and friends); change both together.
+//
+// Superadmin ("God Mode"): a short, fixed allowlist of operator emails (see isSuperAdmin() below) that sits
+// above the whole team hierarchy. A superadmin bypasses every team-membership check below and can read/write
+// any team, task, event or invite in the system, plus the public release ledger, plus any document at any
+// path at all (the catch-all at the bottom, for the website's Universal Raw Entity Editor). This is the one
+// place the normal "nothing is really deleted" and "only members" guarantees are intentionally overridable —
+// treat changes to isSuperAdmin() as seriously as changes to the role logic above it.
+//
+// Release Admin: a narrower allowlist (see isReleaseAdmin()) for people who manage the public release ledger
+// (vayun-workspace's /admin page) but must NOT get superadmin's reach into team data. Every superadmin is
+// automatically a release admin too.
 service cloud.firestore {
   match /databases/{database}/documents {
 
     function signedIn() { return request.auth != null; }
+
+    // Superadmin / Release Admin allowlists. Keep this in sync with VITE_SUPERADMIN_EMAILS /
+    // VITE_ADMIN_EMAILS in vayun-workspace/.env.local — if they drift, the website's superadmin UI will
+    // let someone in but every Firestore call will fail.
+    function isSuperAdmin() {
+      return signedIn() && (
+        request.auth.token.superadmin == true ||
+        (request.auth.token.email != null && request.auth.token.email.lower() in ['mukulsharmaworks@gmail.com'])
+      );
+    }
+
+    function isReleaseAdmin() {
+      return isSuperAdmin() || (
+        signedIn() && (
+          request.auth.token.admin == true ||
+          (request.auth.token.email != null && request.auth.token.email.lower() in ['mukulsharmaworks@gmail.com'])
+        )
+      );
+    }
 
     // A person's entry in a team: only strings, and not absurdly long.
     function sane(person) {
@@ -24,20 +54,21 @@ service cloud.firestore {
         && person.photoURL is string && person.photoURL.size() <= 1000;
     }
 
-    // An invite code points at a team. You can look up a code you know, but nobody can list them. Only an
-    // admin of the team makes or removes its codes.
+    // An invite code points at a team. You can look up a code you know, but nobody can list them (except a
+    // superadmin, who can see every invite code in the system from the website's Invites tab). Only an admin
+    // of the team — or a superadmin — makes or removes its codes.
     match /invites/{code} {
       allow get: if signedIn();
-      allow list: if false;
-      allow create: if signedIn()
+      allow list: if isSuperAdmin();
+      allow create: if isSuperAdmin() || (signedIn()
         && request.resource.data.keys().hasOnly(['teamId', 'createdBy', 'createdAt'])
         && request.resource.data.createdBy == request.auth.uid
         && request.resource.data.createdAt == request.time
         && getAfter(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.members[request.auth.uid].role == 'admin'
-        && getAfter(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.inviteCode == code;
-      allow update: if false;
-      allow delete: if signedIn()
-        && get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.members[request.auth.uid].role == 'admin';
+        && getAfter(/databases/$(database)/documents/teams/$(request.resource.data.teamId)).data.inviteCode == code);
+      allow update: if isSuperAdmin();
+      allow delete: if isSuperAdmin() || (signedIn()
+        && get(/databases/$(database)/documents/teams/$(resource.data.teamId)).data.members[request.auth.uid].role == 'admin');
     }
 
     match /teams/{teamId} {
@@ -47,9 +78,9 @@ service cloud.firestore {
       function isAdminOf(team) { return isMemberOf(team) && team.members[request.auth.uid].role == 'admin'; }
       function changedKeys() { return after().diff(before()).affectedKeys(); }
 
-      allow read: if isMemberOf(resource.data);
+      allow read: if isSuperAdmin() || isMemberOf(resource.data);
 
-      allow create: if signedIn()
+      allow create: if isSuperAdmin() || (signedIn()
         && after().keys().hasOnly(['name', 'ownerUid', 'memberIds', 'members', 'inviteCode', 'createdAt', 'updatedAt'])
         && after().name is string && after().name.size() > 0 && after().name.size() <= 60
         && after().ownerUid == request.auth.uid
@@ -60,11 +91,11 @@ service cloud.firestore {
         && sane(after().members[request.auth.uid])
         && after().inviteCode is string && after().inviteCode.size() == 8
         && after().createdAt == request.time
-        && after().updatedAt == request.time;
+        && after().updatedAt == request.time);
 
-      allow update: if signedIn()
+      allow update: if isSuperAdmin() || (signedIn()
         && after().updatedAt == request.time
-        && (adminEdit() || selfLeave() || selfJoin());
+        && (adminEdit() || selfLeave() || selfJoin()));
 
       // An admin renames the team, makes a new invite code, changes roles or removes people. The owner stays an
       // admin and a member, and the person acting stays a member.
@@ -101,7 +132,9 @@ service cloud.firestore {
           && sane(after().members[request.auth.uid]);
       }
 
-      allow delete: if false;
+      // Teams are otherwise never deleted — "nothing is really deleted" — except by a superadmin, who can
+      // permanently remove a team from the website's Superadmin Portal.
+      allow delete: if isSuperAdmin();
 
       match /tasks/{taskId} {
         function team() { return get(/databases/$(database)/documents/teams/$(teamId)).data; }
@@ -122,19 +155,21 @@ service cloud.firestore {
             && t.createdBy is string;
         }
 
-        allow read: if inTeam();
+        allow read: if isSuperAdmin() || inTeam();
 
-        // Admins and leads give tasks.
-        allow create: if asLead()
+        // Admins and leads give tasks. A superadmin may create a task on any team, bypassing the normal shape
+        // checks (used by the website's Universal Raw Entity Editor / direct task tooling).
+        allow create: if isSuperAdmin() || (asLead()
           && request.resource.data.keys().hasOnly(['title', 'notes', 'assigneeUid', 'createdBy', 'status', 'priority', 'dueDate', 'mustDo', 'deleted', 'createdAt', 'updatedAt'])
           && validTask(request.resource.data, request.resource.data.assigneeUid in team().memberIds)
           && request.resource.data.createdBy == request.auth.uid
           && request.resource.data.deleted == false
           && request.resource.data.createdAt == request.time
-          && request.resource.data.updatedAt == request.time;
+          && request.resource.data.updatedAt == request.time);
 
-        // An admin edits any task, a lead the tasks they created, and the person a task is given to only its status.
-        allow update: if inTeam()
+        // An admin edits any task, a lead the tasks they created, and the person a task is given to only its
+        // status. A superadmin edits any task on any team without restriction.
+        allow update: if isSuperAdmin() || (inTeam()
           && request.resource.data.updatedAt == request.time
           && (
             ((asAdmin() || (asLead() && resource.data.createdBy == request.auth.uid))
@@ -146,9 +181,11 @@ service cloud.firestore {
             (resource.data.assigneeUid == request.auth.uid
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
               && request.resource.data.status in ['todo', 'doing', 'done'])
-          );
+          ));
 
-        allow delete: if false;
+        // Tasks are never hard-deleted by the app itself (soft-delete only, via the "deleted" flag above) —
+        // except by a superadmin.
+        allow delete: if isSuperAdmin();
       }
 
       match /events/{eventId} {
@@ -168,26 +205,82 @@ service cloud.firestore {
             && e.createdBy is string;
         }
 
-        allow read: if inTeam();
+        allow read: if isSuperAdmin() || inTeam();
 
-        // Admins and leads add team events; an admin changes any, a lead the ones they made.
-        allow create: if asLead()
+        // Admins and leads add team events; an admin changes any, a lead the ones they made. A superadmin adds
+        // or changes any team event on any team without restriction (used by the website's calendar tab).
+        allow create: if isSuperAdmin() || (asLead()
           && request.resource.data.keys().hasOnly(['title', 'startDate', 'endDate', 'allDay', 'startTime', 'endTime', 'notes', 'createdBy', 'deleted', 'createdAt', 'updatedAt'])
           && validEvent(request.resource.data)
           && request.resource.data.createdBy == request.auth.uid
           && request.resource.data.deleted == false
           && request.resource.data.createdAt == request.time
-          && request.resource.data.updatedAt == request.time;
+          && request.resource.data.updatedAt == request.time);
 
-        allow update: if (asAdmin() || (asLead() && resource.data.createdBy == request.auth.uid))
+        allow update: if isSuperAdmin() || (
+          (asAdmin() || (asLead() && resource.data.createdBy == request.auth.uid))
           && request.resource.data.keys().hasOnly(['title', 'startDate', 'endDate', 'allDay', 'startTime', 'endTime', 'notes', 'createdBy', 'deleted', 'createdAt', 'updatedAt'])
           && validEvent(request.resource.data)
           && request.resource.data.createdBy == resource.data.createdBy
           && request.resource.data.createdAt == resource.data.createdAt
-          && request.resource.data.updatedAt == request.time;
+          && request.resource.data.updatedAt == request.time);
 
-        allow delete: if false;
+        // Events are never hard-deleted by the app itself (soft-delete only) — except by a superadmin.
+        allow delete: if isSuperAdmin();
       }
+    }
+
+    // ===============================================================
+    // Public Release Ledger (vayun-workspace's /admin and /superadmin pages)
+    // ===============================================================
+    //
+    // Collection: releases, Document ID: {releaseId} (e.g. "v1-0-7")
+    //   id, version, title, releaseDate: string — release identification
+    //   channel: 'stable' | 'beta' | 'preview'
+    //   isLatest, isPublished: bool
+    //   releaseNotes: list (<= 50 strings, each <= 1000 chars); markdownNotes: string (optional, <= 10000 chars)
+    //   platforms: map (windows/macos/linux installer metadata); downloadsCount: number >= 0
+    //   createdAt, updatedAt: timestamp or number
+    match /releases/{releaseId} {
+      function isValidRelease(data) {
+        return data.keys().hasAll(['id', 'version', 'title', 'releaseDate', 'channel', 'isLatest', 'isPublished', 'releaseNotes', 'platforms', 'downloadsCount']) &&
+          data.keys().hasOnly(['id', 'version', 'title', 'releaseDate', 'channel', 'isLatest', 'isPublished', 'releaseNotes', 'markdownNotes', 'platforms', 'downloadsCount', 'createdAt', 'updatedAt']) &&
+          data.id is string && data.id.size() >= 1 && data.id.size() <= 50 &&
+          data.version is string && data.version.size() >= 1 && data.version.size() <= 50 &&
+          data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+          data.releaseDate is string && data.releaseDate.size() >= 1 && data.releaseDate.size() <= 20 &&
+          data.channel in ['stable', 'beta', 'preview'] &&
+          data.isLatest is bool &&
+          data.isPublished is bool &&
+          data.releaseNotes is list && data.releaseNotes.size() <= 50 &&
+          (!('markdownNotes' in data) || (data.markdownNotes is string && data.markdownNotes.size() <= 10000)) &&
+          data.platforms is map &&
+          data.downloadsCount is number && data.downloadsCount >= 0 &&
+          (!('createdAt' in data) || data.createdAt is timestamp || data.createdAt is number) &&
+          (!('updatedAt' in data) || data.updatedAt is timestamp || data.updatedAt is number);
+      }
+      function isDownloadCountIncrement() {
+        return resource.data.isPublished == true &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloadsCount']) &&
+          request.resource.data.downloadsCount == resource.data.downloadsCount + 1;
+      }
+
+      // Public can read published releases. Release Admins and Super Admins can read all releases.
+      allow read: if isReleaseAdmin() || resource.data.isPublished == true;
+      allow create: if isReleaseAdmin() && isValidRelease(request.resource.data) && request.resource.data.id == releaseId;
+      // Releases can be updated by admins, or incremented (+1) by public downloads.
+      allow update: if (isReleaseAdmin() && isValidRelease(request.resource.data) && request.resource.data.id == resource.data.id) ||
+        isDownloadCountIncrement();
+      allow delete: if isReleaseAdmin();
+    }
+
+    // ===============================================================
+    // Global Superadmin Fallback — Universal Raw Entity Editor
+    // ===============================================================
+    // Anything not matched above (and every path above, redundantly) is reachable by a superadmin for the
+    // website's raw document inspector/patcher. Deny by default for everyone else.
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
     }
   }
 }
