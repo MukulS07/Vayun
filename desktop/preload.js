@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = ['search:open', 'page:open', 'page:new', 'quick:shown', 'auth:changed', 'gcal:changed', 'team:changed'];
+const EVENTS = ['search:open', 'page:open', 'page:new', 'quick:shown', 'auth:changed', 'gcal:changed', 'team:changed', 'update:available'];
 
 contextBridge.exposeInMainWorld('api', {
   platform: process.platform,
@@ -51,6 +51,8 @@ contextBridge.exposeInMainWorld('api', {
   teamDeleteEvent: id => ipcRenderer.invoke('team:deleteEvent', id),
   startDictation: () => ipcRenderer.invoke('voice:start'),
   setTitleBar: (color, symbolColor) => ipcRenderer.send('win:titlebar', { color, symbolColor }),
+  checkForUpdate: () => ipcRenderer.invoke('update:check'),
+  openExternal: url => ipcRenderer.send('shell:openExternal', url),
   on: (channel, fn) => {
     if (EVENTS.includes(channel)) ipcRenderer.on(channel, (_e, ...args) => fn(...args));
   },

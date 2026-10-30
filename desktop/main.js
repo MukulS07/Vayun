@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu } = require('electron');
+const { app, BrowserWindow, dialog, globalShortcut, ipcMain, Menu, shell } = require('electron');
 
 function setupApplicationMenu() {
   if (process.platform !== 'darwin') {
@@ -94,6 +94,47 @@ const TITLEBAR_H = 40; // matches the tab bar height in style.css
 const webPreferences = { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true };
 let data, mainWin, quickWin;
 
+// ---- update check: ask the website's release ledger once at launch, push the result to whichever ----
+// ---- screen is showing. The website's /api/releases/latest is public and has no auth of its own.   ----
+const UPDATE_FEED_URL = 'https://vayun-workspace.vercel.app/api/releases/latest';
+let pendingUpdate = null; // cached result of the one launch-time check, reused by late-loading windows
+
+function isNewerVersion(remote, local) {
+  const a = String(remote || '').split('.').map(n => parseInt(n, 10) || 0);
+  const b = String(local || '').split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const x = a[i] || 0, y = b[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
+
+async function checkForUpdate() {
+  try {
+    const res = await fetch(UPDATE_FEED_URL, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return { available: false };
+    const data = await res.json();
+    const currentVersion = app.getVersion();
+    if (!isNewerVersion(data.latestVersion, currentVersion)) return { available: false };
+    const platformInfo = process.platform === 'darwin' ? data.platforms?.macos : data.platforms?.windows;
+    if (!platformInfo?.downloadUrl) return { available: false };
+    return {
+      available: true,
+      version: data.latestVersion,
+      currentVersion,
+      releaseDate: data.releaseDate,
+      downloadUrl: platformInfo.downloadUrl,
+    };
+  } catch {
+    // Offline, DNS failure, timeout — never block or interrupt the app over this.
+    return { available: false };
+  }
+}
+
+function pushUpdateTo(win) {
+  if (pendingUpdate?.available && win && !win.isDestroyed()) sendWhenLoaded(win, 'update:available', pendingUpdate);
+}
+
 // Workspaces: a registry lists them; each has its own data file. The first one is the old workspace.json.
 const registryFile = () => path.join(app.getPath('userData'), 'workspaces.json');
 function readRegistry() {
@@ -176,6 +217,7 @@ function showMain(pageId) {
       if (process.platform !== 'darwin') app.quit(); // on macOS keep running in dock
     });
     mainWin.loadFile(path.join(__dirname, 'app', 'start.html')); // the start page lists and creates workspaces
+    pushUpdateTo(mainWin);
   }
   if (pageId) sendWhenLoaded(mainWin, 'page:open', pageId);
   mainWin.show();
@@ -226,6 +268,12 @@ app.whenReady().then(() => {
   setupApplicationMenu();
   data = loadData();
   ipcMain.handle('data:load', () => data);
+
+  checkForUpdate().then(result => { pendingUpdate = result; pushUpdateTo(mainWin); });
+  ipcMain.handle('update:check', async () => pendingUpdate || (await checkForUpdate()));
+  ipcMain.on('shell:openExternal', (_e, url) => {
+    if (typeof url === 'string' && /^https:\/\//.test(url)) shell.openExternal(url);
+  });
   ipcMain.on('win:titlebar', (e, { color, symbolColor } = {}) => {
     const hex = v => typeof v === 'string' && /^#[0-9a-f]{3,8}$/i.test(v.trim()) ? v.trim() : null;
     const win = BrowserWindow.fromWebContents(e.sender);
@@ -367,10 +415,12 @@ app.whenReady().then(() => {
     writeRegistry();
     data = loadData();
     mainWin.loadFile(path.join(__dirname, 'app', 'index.html'));
+    pushUpdateTo(mainWin);
     return { ok: true };
   });
   ipcMain.handle('ws:back', () => {
     mainWin.loadFile(path.join(__dirname, 'app', 'start.html'));
+    pushUpdateTo(mainWin);
     return true;
   });  ipcMain.on('quick:close', () => quickWin?.hide());
   // Export: the renderer builds the file text; the user picks where it goes.
