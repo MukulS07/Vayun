@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Vayun Signature Palette (Matching desktop tokens.css) -->
-    <color name="vayun_bg">#161616</color>
-    <color name="vayun_panel">#1E1E1E</color>
+    <!-- Vayun Signature Brand Colors -->
     <color name="vayun_accent">#2FB39A</color>
-    <color name="vayun_text">#ECECEA</color>
-    <color name="vayun_status_bar">#161616</color>
-</resources>
+    <color name="vayun_accent_dark">#24947F</color>
+    <color name="vayun_accent_ink">#0E2A24</color>
 
+    <!-- Semantic Light Theme Colors -->
+    <color name="vayun_bg">#FFFFFF</color>
+    <color name="vayun_panel">#F5F5F5</color>
+    <color name="vayun_text">#1C1B19</color>
+    <color name="vayun_text_muted">#666663</color>
+    <color name="vayun_status_bar">#FFFFFF</color>
+</resources>

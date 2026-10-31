@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Semantic Dark Theme Colors (Matching Vayun signature palette) -->
+    <color name="vayun_bg">#161616</color>
+    <color name="vayun_panel">#1E1E1E</color>
+    <color name="vayun_text">#ECECEA</color>
+    <color name="vayun_text_muted">#9E9E9A</color>
+    <color name="vayun_status_bar">#161616</color>
+</resources>

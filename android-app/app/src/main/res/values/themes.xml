@@ -1,10 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Theme.Vayun" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+<resources>
+    <!-- Base Material 3 Application Theme -->
+    <style name="Theme.Vayun" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/vayun_accent</item>
+        <item name="colorSurface">@color/vayun_bg</item>
+        <item name="colorOnSurface">@color/vayun_text</item>
         <item name="android:statusBarColor">@color/vayun_status_bar</item>
         <item name="android:navigationBarColor">@color/vayun_bg</item>
         <item name="android:windowBackground">@color/vayun_bg</item>
     </style>
-</resources>
 
+    <!-- Material 3 Core SplashScreen Theme -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/vayun_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher</item>
+        <item name="postSplashScreenTheme">@style/Theme.Vayun</item>
+    </style>
+
+    <!-- Material 3 Auth / OAuth Modal Dialog Theme -->
+    <style name="Theme.Vayun.AuthDialog" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/vayun_bg</item>
+        <item name="android:statusBarColor">@color/vayun_status_bar</item>
+        <item name="android:navigationBarColor">@color/vayun_bg</item>
+    </style>
+</resources>
