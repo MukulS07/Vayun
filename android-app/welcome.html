@@ -98,6 +98,46 @@
     .cta .go svg { animation: nudge 3s var(--ease-out) 2.6s infinite; }
     @keyframes nudge { 0%, 55%, 100% { transform: none; } 70% { transform: translateX(3px); } 85% { transform: none; } }
 
+    /* ---------- Guest ---------- */
+    #screen-guest { transform: translateX(100%); opacity: 0; pointer-events: none; }
+    body.guest #screen-signin { transform: translateX(-24%); opacity: 0; pointer-events: none; }
+    body.guest #screen-guest { transform: none; opacity: 1; pointer-events: auto; }
+    .guest-body { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 22px 8px; display: flex; flex-direction: column; -webkit-overflow-scrolling: touch; }
+    .guest-body h2.heading { font-size: 34px; }
+    .field { margin-top: 22px; }
+    .field label { display: block; font: 500 11px 'Geist Mono', ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .field input { width: 100%; height: 52px; padding: 0 16px; border-radius: var(--radius); border: 1px solid rgba(255, 255, 255, 0.16); background: var(--surface); color: var(--text); font: inherit; font-size: 16px; outline: none; }
+    .field input:focus { border-color: var(--accent); }
+    .notice { margin-top: 20px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+    .notice h3 { margin: 0; padding: 14px 16px 6px; font: 500 11px 'Geist Mono', ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: #E5A548; }
+    .notice .row { display: flex; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line); }
+    .notice .row:first-of-type { border-top: 0; }
+    .notice .row svg { flex: none; margin-top: 2px; color: var(--muted); }
+    .notice .row b { display: block; font-size: 14.5px; font-weight: 600; }
+    .notice .row span { display: block; margin-top: 2px; font-size: 13.5px; line-height: 1.45; color: var(--muted); }
+    .agree { display: flex; align-items: flex-start; gap: 12px; margin: 20px 0 0; padding: 0; text-align: left; cursor: pointer; font-size: 14px; line-height: 1.45; color: var(--text); }
+    .agree .box { flex: none; width: 24px; height: 24px; margin-top: 0; border-radius: 8px; border: 1.6px solid rgba(255, 255, 255, 0.3); display: grid; place-items: center; transition: background 160ms ease-out, border-color 160ms ease-out; }
+    .agree .box svg { opacity: 0; transform: scale(0.6); transition: opacity 160ms ease-out, transform 160ms ease-out; }
+    .agree[aria-checked="true"] .box { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .agree[aria-checked="true"] .box svg { opacity: 1; transform: none; }
+    .agree .link { display: inline; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font: inherit; }
+    .guest-foot { padding: 12px 22px calc(16px + 2px); }
+    .btn.go { background: var(--accent); color: var(--accent-ink); }
+    .btn.go:disabled { background: var(--surface); color: var(--muted); opacity: 1; border: 1px solid var(--line); }
+    .g { opacity: 0; transform: translateY(12px); }
+    body.guest .g { opacity: 1; transform: none; transition: opacity 460ms var(--ease-out), transform 460ms var(--ease-out); transition-delay: calc(140ms + var(--k) * 50ms); }
+
+    /* Terms sheet */
+    #terms { position: absolute; inset: 0; z-index: 20; display: flex; flex-direction: column; background: var(--bg); transform: translateY(100%); transition: transform 320ms var(--ease); }
+    body.terms #terms { transform: none; }
+    #terms .bar { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 12px 0 22px; border-bottom: 1px solid var(--line); }
+    #terms .bar b { font: 500 22px 'Newsreader', Georgia, serif; letter-spacing: -0.01em; }
+    #terms .text { flex: 1; overflow-y: auto; padding: 18px 22px 28px; font-size: 14.5px; line-height: 1.6; color: var(--text-2, #C6C9C7); -webkit-overflow-scrolling: touch; }
+    #terms h4 { margin: 20px 0 4px; font: 600 15px 'Geist', sans-serif; color: var(--text); }
+    #terms h4:first-child { margin-top: 0; }
+    #terms p { margin: 0; }
+    #terms .ver { margin-top: 22px; font: 500 11px 'Geist Mono', ui-monospace, monospace; letter-spacing: .08em; color: var(--muted); }
+
     /* The shared Android shim adds app chrome to every page; this one has none. */
     .mobile-menu-trigger, .mobile-bottom-bar, .sidebar-backdrop, .mobile-snackbar { display: none !important; }
 
@@ -105,6 +145,8 @@
       .art path { animation: none; }
       .rise { transform: none; filter: none; animation-duration: 200ms; }
       .cta .go svg, .cta .go::after { animation: none; }
+      .g { transform: none; }
+      body.guest .g { transition-duration: 200ms; transition-delay: 0ms; }
       .s { transform: none; }
       body.signin .s { transition-duration: 200ms; transition-delay: 0ms; }
       .art svg { will-change: auto; }
@@ -140,7 +182,7 @@
     </div>
     <div class="signin-body">
       <h2 class="heading s" style="--k:0">Sign in<span>.</span></h2>
-      <p class="lede s" style="--k:1">Sign in to sync your workspaces and work with a team. Or keep everything on this phone.</p>
+      <p class="lede s" style="--k:1">Sign in to sync your workspaces and work with a team, or go in as a guest and keep everything on this phone.</p>
       <div class="actions">
         <button type="button" class="btn primary s" style="--k:2" id="google">
           <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
@@ -148,11 +190,55 @@
         </button>
         <p class="error" id="error" role="alert"></p>
         <div class="or s" style="--k:3">or</div>
-        <button type="button" class="btn ghost s" style="--k:4" id="local">Continue without an account</button>
-        <p class="note s" style="--k:5">Without an account your notes stay only on this phone. You can sign in later from the sidebar.</p>
+        <button type="button" class="btn ghost s" style="--k:4" id="local">Continue as guest</button>
+        <p class="note s" style="--k:5">As a guest your notes stay only on this phone. You can sign in later from the sidebar.</p>
       </div>
     </div>
     <div class="foot">Local-first. Private by default.</div>
+  </section>
+
+  <section id="screen-guest" class="screen" aria-label="Guest">
+    <div class="topbar">
+      <button type="button" class="back" id="back-guest" aria-label="Back"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+    </div>
+    <div class="guest-body">
+      <h2 class="heading g" style="--k:0">Guest mode<span>.</span></h2>
+      <p class="lede g" style="--k:1">Tell us what to call you, and read this once before you start.</p>
+      <div class="field g" style="--k:2">
+        <label for="guest-name">Your name</label>
+        <input id="guest-name" type="text" maxlength="40" autocomplete="off" autocapitalize="words" placeholder="For example, Mukul">
+      </div>
+      <div class="notice g" style="--k:3">
+        <h3>Good to know</h3>
+        <div class="row"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10a6 6 0 0 0-11.7-1.8A4.5 4.5 0 0 0 7 17h10.5a3.5 3.5 0 0 0 .5-7z"/><path d="M3 3l18 18"/></svg><div><b>Not synced to the cloud</b><span>Guest mode does not use cloud sync. Your notes stay on this phone and don't go anywhere else.</span></div></div>
+        <div class="row"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg><div><b>Stored temporarily on this device</b><span>Everything is saved locally only. Clearing the app's data, uninstalling it or resetting the phone erases it.</span></div></div>
+        <div class="row"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><div><b>No backup</b><span>Nothing is backed up for you. Save a copy from the sidebar (Backup Workspace), or sign in later to keep your work safe.</span></div></div>
+      </div>
+      <div class="agree g" style="--k:4" id="agree" role="checkbox" aria-checked="false" tabindex="0">
+        <span class="box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
+        <span>I understand this and agree to the <button type="button" class="link" id="open-terms">Terms &amp; Conditions</button>.</span>
+      </div>
+    </div>
+    <div class="guest-foot g" style="--k:5">
+      <button type="button" class="btn go" id="guest-go" disabled>Continue</button>
+    </div>
+  </section>
+
+  <section id="terms" aria-label="Terms and Conditions" aria-hidden="true">
+    <div class="bar"><b>Terms &amp; Conditions</b><button type="button" class="back" id="close-terms" aria-label="Close"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="text">
+      <h4>Guest mode</h4>
+      <p>Guest mode lets you use Vayun without an account. Your workspaces, pages and tasks are stored only in this app, on this phone. They are not sent to any server and are not synced to the cloud.</p>
+      <h4>Your data and backups</h4>
+      <p>Because nothing is stored online, Vayun cannot recover guest data for you. It can be lost if you clear the app's data, uninstall the app, reset or replace the phone, or if the phone's storage fails. Vayun does not make backups of guest data. You can save your own copy at any time from the sidebar using Backup Workspace.</p>
+      <h4>Signing in later</h4>
+      <p>You can sign in with Google at any time from the sidebar to use cloud features such as teams. Signing in is optional. Work you did as a guest stays on this phone unless you back it up.</p>
+      <h4>Privacy</h4>
+      <p>In guest mode Vayun does not collect your notes. The name you enter is saved on this phone only and is used to greet you in the app.</p>
+      <h4>Using the app</h4>
+      <p>Vayun is provided as it is, without a guarantee that it will always be available or free of errors. You are responsible for the content you store and for keeping your own copies of anything important.</p>
+      <p class="ver">VERSION 1 · GUEST MODE</p>
+    </div>
   </section>
 
   <script src="android-config.js"></script>
@@ -174,7 +260,23 @@
 
       $('go-signin').onclick = function () { showSignin(true); };
       $('back').onclick = function () { showSignin(false); };
-      $('local').onclick = done;
+      var guestName = $('guest-name'), agree = $('agree'), go = $('guest-go');
+      function showGuest(on) { body.classList.toggle('guest', on); if (on) setTimeout(function () { guestName.focus(); }, 380); else guestName.blur(); }
+      function showTerms(on) { body.classList.toggle('terms', on); $('terms').setAttribute('aria-hidden', String(!on)); }
+      function refresh() { go.disabled = !(guestName.value.trim().length > 0 && agree.getAttribute('aria-checked') === 'true'); }
+      $('local').onclick = function () { showGuest(true); };
+      $('back-guest').onclick = function () { showGuest(false); };
+      guestName.addEventListener('input', refresh);
+      agree.onkeydown = function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); agree.click(); } };
+      agree.onclick = function (e) { if (e.target && e.target.id === 'open-terms') return; agree.setAttribute('aria-checked', String(agree.getAttribute('aria-checked') !== 'true')); refresh(); };
+      $('open-terms').onclick = function (e) { e.stopPropagation(); showTerms(true); };
+      $('close-terms').onclick = function () { showTerms(false); };
+      go.onclick = function () {
+        var name = guestName.value.trim().replace(/\s+/g, ' ').slice(0, 40);
+        if (!name || agree.getAttribute('aria-checked') !== 'true') return;
+        try { localStorage.setItem('vayun:guestName', name); localStorage.setItem('vayun:guestTerms', '1:' + new Date().toISOString()); } catch (e) {}
+        done();
+      };
 
       google.onclick = async function () {
         errorEl.textContent = '';
@@ -186,11 +288,12 @@
           if (!api || !api.authSignIn) { done(); return; }
           var status = api.authStatus ? await api.authStatus() : null;
           if (status && status.isConfigured === false) {
-            errorEl.textContent = 'Google sign-in is not set up on this build. You can continue without an account.';
+            errorEl.textContent = 'Google sign-in is not set up on this build. You can continue as a guest.';
             return;
           }
           var res = await api.authSignIn();
           if (res && res.error) { errorEl.textContent = res.error; return; }
+          try { localStorage.removeItem('vayun:guestName'); } catch (e) {}
           done();
         } catch (err) {
           errorEl.textContent = 'Could not sign in: ' + ((err && err.message) || err);
@@ -231,6 +334,8 @@
 
       // Android back button: step back from sign-in first.
       window.handleAndroidBackPressed = function () {
+        if (body.classList.contains('terms')) { showTerms(false); return true; }
+        if (body.classList.contains('guest')) { showGuest(false); return true; }
         if (body.classList.contains('signin')) { showSignin(false); return true; }
         return false;
       };
