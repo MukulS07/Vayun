@@ -1799,4 +1799,5 @@ button:active,
   :root[data-app-theme="ink"] :is(.cal-new, .home-add button, .create-submit-btn) { background: var(--signal) !important; color: #1A0B06 !important; }
   :root[data-app-theme="ink"] .homepage { padding-top: 14px !important; }
   :root[data-app-theme="ink"] .topbar .actions#toolbar > button.on { border-color: var(--signal) !important; color: var(--signal) !important; }
+  :root[data-app-theme="ink"] .ws-storage-note { letter-spacing: .05em; font-size: 9.5px; }
 }

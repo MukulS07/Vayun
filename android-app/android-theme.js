@@ -403,3 +403,19 @@
     }
   });
 })();
+
+
+// Signing out returns to the first-run welcome (Get started, then Sign in or Continue as guest).
+(function () {
+  var api = window.api;
+  if (!api || typeof api.authSignOut !== 'function' || api.__welcomeOnSignOut) return;
+  var original = api.authSignOut.bind(api);
+  api.authSignOut = async function () {
+    var result = await original.apply(null, arguments);
+    if (result && result.error) return result;
+    try { localStorage.removeItem('vayun:welcomeSeen'); } catch (e) { /* private mode: the welcome just shows next time */ }
+    location.replace('welcome.html');
+    return result;
+  };
+  api.__welcomeOnSignOut = true;
+})();
