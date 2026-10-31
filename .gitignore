@@ -47,6 +47,12 @@ graphify-out/
 # Sample screenshots
 desktop/samples/*.png
 
+# IDE and local configuration
+.idea/
+*.iml
+local.properties
+android-app/local.properties
+
 # OS metadata
 .DS_Store
 Thumbs.db
