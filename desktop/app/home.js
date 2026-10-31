@@ -115,6 +115,21 @@
           h('p', { class: 'home-focus-sub' }, [it.sub, dueText(it)].filter(Boolean).join(' · '))),
         h('div', { class: 'home-focus-actions' }, itemActions({ id: focus.sectionId }, it), it.kind === 'reminder' ? '' : h('button', { type: 'button', class: 'home-open', onclick: () => openItem(it) }, 'Open')));
     }
+    const mast = () => {
+      const d = new Date();
+      return h('div', { class: 'home-mast', 'aria-hidden': 'true' },
+        h('span', { class: 'home-mast-d' }, String(d.getDate())),
+        h('span', { class: 'home-mast-m' }, d.toLocaleDateString(undefined, { weekday: 'short' }), h('br'), d.toLocaleDateString(undefined, { month: 'long' })));
+    };
+    const weekStrip = () => {
+      const now = new Date(), start = new Date(now);
+      start.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Monday first
+      return h('div', { class: 'home-week', 'aria-hidden': 'true' }, Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(start); d.setDate(start.getDate() + i);
+        return h('div', { class: d.toDateString() === now.toDateString() ? 'on' : '' },
+          d.toLocaleDateString(undefined, { weekday: 'short' }).slice(0, 3).toUpperCase(), h('b', {}, String(d.getDate())));
+      }));
+    };
     const stat = (label, n, note, tone) => h('div', { class: `home-stat${tone ? ' ' + tone : ''}` },
       h('div', {}, h('p', { class: 'home-eyebrow' }, label), h('p', { class: 'home-stat-n' }, String(n))), h('span', {}, note));
 
@@ -169,10 +184,12 @@
       host.append(
         h('div', { class: 'home-hero' },
           h('div', {},
+            mast(),
             h('p', { class: 'home-eyebrow' }, new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })),
             h('h1', {}, userName ? `${greeting()}, ${userName}` : greeting()),
             h('p', { class: `home-summary${s.needYou ? ' urgent' : ''}` }, line + (s.events ? ` · ${s.events} event${s.events === 1 ? '' : 's'} today` : ''))),
           h('button', { type: 'button', class: 'home-open', onclick: () => { customizing = !customizing; draw(); } }, customizing ? 'Done customizing' : 'Customize')),
+        weekStrip(),
         customizing ? customizePanel() : '',
         r.focus ? h('div', { class: 'home-top' }, focusCard(r.focus), h('div', { class: 'home-stats' },
           stat('Overdue', s.overdue, 'needs a decision', s.overdue ? 'late' : ''), stat('Due soon', s.dueSoon, 'today and tomorrow'), stat('Today', s.events, s.events === 1 ? 'event' : 'events'))) : '',
@@ -186,7 +203,9 @@
     let teamReady = false; // the popup waits until the team's tasks have arrived (or we know there are none to wait for)
     onHomeTeam = snapshot => { team = snapshot; draw(); };
     draw();
-    api.authStatus().then(st => { if (!alive) return; const n = (st && st.user && (st.user.displayName || st.user.email)) || ''; userName = String(n).split(/[ @]/)[0]; draw(); }).catch(() => {});
+    api.authStatus().then(st => { if (!alive) return; let n = (st && st.user && (st.user.displayName || st.user.email)) || '';
+      if (!n) { try { n = localStorage.getItem('vayun:guestName') || ''; } catch { /* no storage */ } } // guest mode keeps the name you gave it
+      userName = String(n).split(/[ @]/)[0]; draw(); }).catch(() => {});
     api.teamState().then(s => {
       if (!alive) return;
       team = s;
