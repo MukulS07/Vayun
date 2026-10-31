@@ -143,7 +143,7 @@ Builds land in a folder per version: `desktop/release/<version>/` (for example `
    git tag v1.0.8
    git push origin master --tags
    ```
-4. GitHub Actions builds the Windows `.exe` and the macOS `.dmg`/`.zip` (Apple Silicon, Intel and Universal) and publishes them together as the **Vayun v1.0.8 — <your tagline>** release, with the changelog text as its description and a table saying which file to download.
+4. GitHub Actions builds the Windows `.exe` and the macOS `.dmg`/`.zip` (Apple Silicon, Intel and Universal) and publishes them together as the **`Vayun v1.0.8 — <your tagline>`** release, with the changelog text as its description and a table saying which file to download.
 
 ---
 
