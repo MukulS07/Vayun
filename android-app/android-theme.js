@@ -1,6 +1,66 @@
 // Vayun Mobile - Phase 3 Theme Sync, Drawer Navigation, Haptics & Native Share Controller
 (function () {
   document.addEventListener('DOMContentLoaded', () => {
+    // 0. Branded Vayun Loading Screen Lifecycle
+    const loadingScreen = document.getElementById('vayun-loading-screen');
+    const loadingCaption = document.getElementById('loading-caption');
+
+    const dismissLoadingScreen = (delay = 400) => {
+      if (!loadingScreen) return;
+      setTimeout(() => {
+        loadingScreen.classList.add('fade-out');
+        setTimeout(() => {
+          loadingScreen.style.display = 'none';
+        }, 400);
+      }, delay);
+    };
+
+    const showLoadingScreen = (msg = 'Loading…') => {
+      if (!loadingScreen) return;
+      if (loadingCaption) loadingCaption.textContent = msg;
+      loadingScreen.style.display = 'flex';
+      void loadingScreen.offsetWidth;
+      loadingScreen.classList.remove('fade-out');
+    };
+
+    window.dismissLoadingScreen = dismissLoadingScreen;
+    window.showLoadingScreen = showLoadingScreen;
+
+    if (loadingScreen) {
+      if (document.querySelector('.start')) {
+        const wsGrid = document.getElementById('ws-grid');
+        const enhanceCards = () => {
+          document.querySelectorAll('.ws-card-go').forEach(go => {
+            if (!go.querySelector('svg')) {
+              go.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>`;
+            }
+          });
+        };
+
+        if (wsGrid) {
+          const obs = new MutationObserver(() => {
+            if (wsGrid.children.length > 0) {
+              obs.disconnect();
+              enhanceCards();
+              dismissLoadingScreen(350);
+            }
+          });
+          obs.observe(wsGrid, { childList: true });
+          setTimeout(enhanceCards, 200);
+        }
+        setTimeout(() => dismissLoadingScreen(100), 700);
+
+        document.addEventListener('click', e => {
+          const card = e.target.closest('.ws-card');
+          if (card) {
+            showLoadingScreen('Opening workspace…');
+          }
+        });
+      } else {
+        setTimeout(() => dismissLoadingScreen(150), 500);
+      }
+    }
+
     const isMobile = () => window.innerWidth <= 768;
     const sidebar = document.querySelector('.side, .sidebar');
     const appEl = document.querySelector('.app') || document.body;
@@ -160,6 +220,7 @@
           const calBtn = document.querySelector('#cal-btn');
           if (calBtn) calBtn.click();
         } else if (target === 'new') {
+          bottomBar.querySelectorAll('.mobile-tab-btn').forEach(b => b.classList.remove('active'));
           const newBtn = document.querySelector('#new-btn');
           if (newBtn) newBtn.click();
         } else if (target === 'search') {
@@ -173,12 +234,38 @@
       document.addEventListener('focusin', e => {
         if (e.target.matches('input, textarea, [contenteditable="true"], [contenteditable="plaintext-only"]')) {
           bottomBar.style.display = 'none';
+          document.body.classList.add('keyboard-open');
         }
       });
       document.addEventListener('focusout', () => {
         bottomBar.style.display = 'flex';
+        document.body.classList.remove('keyboard-open');
       });
     }
+
+    // In-app Material 3 feedback snackbar
+    function showMobileSnackbar(message) {
+      if (window.VayunAndroid && typeof window.VayunAndroid.showToast === 'function') {
+        window.VayunAndroid.showToast(message);
+        return;
+      }
+      let snackbar = document.getElementById('mobile-snackbar');
+      if (!snackbar) {
+        snackbar = document.createElement('div');
+        snackbar.id = 'mobile-snackbar';
+        snackbar.className = 'mobile-snackbar';
+        snackbar.setAttribute('role', 'status');
+        snackbar.setAttribute('aria-live', 'polite');
+        document.body.appendChild(snackbar);
+      }
+      snackbar.textContent = message;
+      snackbar.classList.add('visible');
+      clearTimeout(snackbar._timer);
+      snackbar._timer = setTimeout(() => {
+        snackbar.classList.remove('visible');
+      }, 3200);
+    }
+    window.showMobileSnackbar = showMobileSnackbar;
 
     // 6. Global Modal Tap-Outside to Dismiss
     document.addEventListener('click', e => {
@@ -203,11 +290,15 @@
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-template'] });
     syncThemeToSystem();
 
-    // 8. Update Storage Note on Mobile
-    const note = document.querySelector('.ws-storage-note, p.muted');
-    if (note && note.textContent.includes('PC')) {
-      note.textContent = note.textContent.replace('this PC', 'this phone (Offline)');
-    }
+    // 8. Update Storage Note on Mobile (Replace Desktop Copy)
+    const updateStorageNotes = () => {
+      document.querySelectorAll('.ws-storage-note, p.muted').forEach(note => {
+        if (note.textContent.includes('PC') || note.textContent.includes('this PC')) {
+          note.textContent = note.textContent.replace(/this PC/g, 'this device (100% private & offline)');
+        }
+      });
+    };
+    updateStorageNotes();
 
     // 9. Wire Native Share Button in Topbar
     const shareBtn = document.getElementById('share-btn');
@@ -257,10 +348,58 @@
         if (window.__vayunAndroid?.haptic) window.__vayunAndroid.haptic();
         if (window.api && typeof window.api.exportWorkspaceBackup === 'function') {
           const res = await window.api.exportWorkspaceBackup();
-          if (res) alert(`Backup saved: ${res}`);
+          if (res) showMobileSnackbar(`Workspace backup exported: ${res}`);
         }
       });
       sidebar.appendChild(backupBtn);
+    }
+
+    // 12. Start Page Empty State, Loading State, and Accessibility
+    const wsGrid = document.getElementById('ws-grid');
+    const newForm = document.getElementById('new-form');
+    if (wsGrid && newForm) {
+      const checkEmptyState = () => {
+        const cards = wsGrid.querySelectorAll('.ws-card');
+        let emptyState = document.getElementById('ws-empty-state');
+        if (cards.length === 0) {
+          if (!emptyState) {
+            emptyState = document.createElement('div');
+            emptyState.id = 'ws-empty-state';
+            emptyState.className = 'ws-empty';
+            emptyState.innerHTML = `
+              <div class="ws-empty-icon" aria-hidden="true">🍃</div>
+              <div class="ws-empty-title">No workspaces yet</div>
+              <div class="ws-empty-desc">Create your first private offline workspace below to begin taking notes and managing tasks.</div>
+            `;
+            wsGrid.appendChild(emptyState);
+          }
+        } else if (emptyState) {
+          emptyState.remove();
+        }
+      };
+
+      const gridObserver = new MutationObserver(checkEmptyState);
+      gridObserver.observe(wsGrid, { childList: true });
+      setTimeout(checkEmptyState, 250);
+
+      newForm.addEventListener('submit', () => {
+        const btn = newForm.querySelector('button[type="submit"]');
+        if (btn) {
+          btn.disabled = true;
+          const orig = btn.textContent;
+          btn.textContent = 'Creating workspace…';
+          if (typeof showLoadingScreen === 'function') {
+            showLoadingScreen('Creating workspace…');
+          }
+          setTimeout(() => {
+            btn.disabled = false;
+            btn.textContent = orig;
+            if (typeof dismissLoadingScreen === 'function') {
+              dismissLoadingScreen(0);
+            }
+          }, 4000);
+        }
+      });
     }
   });
 })();

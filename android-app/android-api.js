@@ -161,11 +161,15 @@
   function download(name, ext, content) {
     const clean = String(name).replace(/[\\/:*?"<>|]/g, '_') || 'Untitled';
     const file = `${clean}.${ext}`;
+    const type = { md: 'text/markdown', html: 'text/html', csv: 'text/csv', json: 'application/json' }[ext] || 'text/plain';
+    if (window.VayunAndroid && typeof window.VayunAndroid.shareFile === 'function') {
+      window.VayunAndroid.shareFile(file, content, type);
+      return file;
+    }
     if (window.VayunAndroid && typeof window.VayunAndroid.shareText === 'function') {
       window.VayunAndroid.shareText(file, content);
       return file;
     }
-    const type = { md: 'text/markdown', html: 'text/html', csv: 'text/csv', json: 'application/json' }[ext] || 'text/plain';
     const url = URL.createObjectURL(new Blob([content], { type: `${type};charset=utf-8` }));
     const a = Object.assign(document.createElement('a'), { href: url, download: file });
     document.body.append(a); a.click(); a.remove();
