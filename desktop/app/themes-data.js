@@ -32,6 +32,22 @@ window.FOLIO_APP_THEMES = {
   "accent": "#C8D2C5",
   "cover": "linear-gradient(120deg,#E6EBE3,#7F9083)"
  },
+ "aurum": {
+  "name": "Aurum",
+  "mode": "Dark",
+  "dark": true,
+  "bg": "#0B0A09",
+  "side": "#070606",
+  "surface": "#12100E",
+  "card": "#171513",
+  "text": "#F2EBDD",
+  "text2": "#CFC6B4",
+  "muted": "#958B7A",
+  "line": "#2A2620",
+  "lineSoft": "#1D1A16",
+  "accent": "#D6B36A",
+  "cover": "linear-gradient(120deg,#F1DDA8,#8F6F34)"
+ },
  "midnight": {
   "name": "Midnight",
   "mode": "Dark",

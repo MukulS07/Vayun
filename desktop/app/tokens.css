@@ -196,6 +196,23 @@
   --sel: rgba(214,226,212,0.06);
 }
 
+:root[data-app-theme="aurum"] {
+  --bg: #0B0A09;
+  --side: #070606;
+  --surface: #12100E;
+  --card: #171513;
+  --fg: #F2EBDD;
+  --fg-2: #CFC6B4;
+  --muted: #958B7A;
+  --line: #2A2620;
+  --line-soft: #1D1A16;
+  --hover: rgba(232,206,150,0.07);
+  --accent: #D6B36A;
+  --accent-ink: #111111;
+  --cover: linear-gradient(120deg,#F1DDA8,#8F6F34);
+  --sel: rgba(232,206,150,0.07);
+}
+
 :root[data-app-theme="midnight"] {
   --bg: #17171B;
   --side: #111114;

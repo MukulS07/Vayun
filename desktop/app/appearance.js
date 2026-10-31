@@ -12,7 +12,7 @@
     ['radius', 'Corners', [['sharp', 'Sharp'], ['soft', 'Soft'], ['round', 'Round']]],
     ['width', 'Page width', [['default', 'Default'], ['full', 'Full width']]],
   ];
-  const OFFICIAL = ['vayun', 'paper', 'midnight', 'sepia', 'forest', 'ocean', 'ember', 'grove', 'rose'];
+  const OFFICIAL = ['vayun', 'aurum', 'paper', 'midnight', 'sepia', 'forest', 'ocean', 'ember', 'grove', 'rose'];
 
   let modal = null;
 
@@ -37,8 +37,8 @@
       panel.innerHTML = '';
       panel.append(header(close));
 
-      panel.append(section('Folio themes', 'Official', gallery(OFFICIAL.map(id => [id, info[id]]), a.theme, id => set({ theme: id }))));
-      panel.append(section('Your workspace themes', 'Shared with everyone at Acme Studio', gallery([['acme', info.acme]], a.theme, id => set({ theme: id }))));
+      panel.append(section('Vayun themes', 'Official', gallery(OFFICIAL.map(id => [id, info[id]]), a.theme, id => set({ theme: id }))));
+      if (info.acme && a.theme === 'acme') panel.append(section('Your workspace themes', 'Shared with your team', gallery([['acme', info.acme]], a.theme, id => set({ theme: id }))));
 
       panel.append(row('Accent color', 'Buttons, links, selection and checkboxes', accentPicker(a.accent, c => set({ accent: c }), info[a.theme])));
       panel.append(row('Page font', 'Default for new pages; override per page', fontPicker(a.font, f => set({ font: f }))));
@@ -65,7 +65,7 @@
   function header(onClose) {
     const h = document.createElement('div');
     h.className = 'settings-head';
-    h.innerHTML = '<div><h2>Appearance</h2><p class="muted">Make Folio feel like yours. Changes preview live behind this window.</p></div>';
+    h.innerHTML = '<div><h2>Appearance</h2><p class="muted">Make Vayun feel like yours. Changes preview live behind this window.</p></div>';
     const x = document.createElement('button');
     x.type = 'button';
     x.className = 'icon-btn';
