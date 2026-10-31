@@ -31,7 +31,7 @@
     host.className = 'teampage';
 
     // The page remembers how the list is sorted and filtered. Filled in place, so every part of the page shares one object.
-    const VIEW_DEFAULTS = { group: 'none', sort: 'due', dir: 'asc', status: '', hideDone: false, overdue: false, mustDo: false, query: '', showMembers: false };
+    const VIEW_DEFAULTS = { group: 'none', sort: 'due', dir: 'asc', status: '', hideDone: false, overdue: false, mustDo: false, query: '', showMembers: false, showTools: false };
     const view = () => {
       const v = page.teamView || (page.teamView = {});
       for (const k of Object.keys(VIEW_DEFAULTS)) if (!(k in v)) v[k] = VIEW_DEFAULTS[k];
@@ -65,57 +65,75 @@
 
     // ---- header, controls ----
     function headerView() {
+      const v = view();
       const open = S.tasks.filter(t => t.status !== 'done' && (scope() === 'all' || t.assigneeUid === S.uid));
       const late = open.filter(t => T.isOverdue(t, today())).length;
       const sync = S.syncing ? 'Syncing…' : S.syncedAt ? `Updated ${new Date(S.syncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '';
       return h('div', { class: 'team-head' },
-        h('div', { class: 'team-head-main' },
+        h('div', { class: 'team-head-top' },
           S.teams.length > 1
-            ? h('select', { class: 'team-switch', 'aria-label': 'Team', onchange: async e => fail(await api.teamSelect(e.target.value)) }, S.teams.map(t => h('option', { value: t.id, selected: t.id === S.activeTeamId }, t.name)))
+            ? h('select', { class: 'team-switch', 'aria-label': 'Team', onchange: async e => fail(await api.teamSelect(e.target.value)) }, S.teams.map(t => h('option', { value: t.id, selected: t.id === S.team.id }, t.name)))
             : h('h2', { class: 'team-title' }, S.team.name),
-          roleBadge(S.role),
-          h('span', { class: 'small team-count' }, `${open.length} open${late ? ` · ${late} overdue` : ''}`)),
-        h('div', { class: 'team-head-tools' },
-          S.error ? h('span', { class: 'team-error', title: problem(S.error) }, problem(S.error).slice(0, 80)) : h('span', { class: 'small team-sync' }, sync),
-          h('button', { type: 'button', class: 'cal-link', onclick: async () => fail(await api.teamRefresh()), disabled: S.syncing }, 'Refresh'),
-          h('button', { type: 'button', class: 'cal-link', onclick: () => { view().showMembers = !view().showMembers; save(); draw(); } }, view().showMembers ? 'Hide people' : 'People'),
-          canLead() && h('button', { type: 'button', class: 'cal-new', onclick: () => editTask(null) }, '+ New task')));
+          canLead() && h('button', { type: 'button', class: 'team-add', onclick: () => editTask(null) }, '+ New task')),
+        h('div', { class: 'team-head-sub' },
+          h('span', { class: 'team-count' }, roleBadge(S.role), ` ${open.length} open`, late ? h('b', { class: 'late' }, ` · ${late} overdue`) : ''),
+          h('span', { class: 'team-head-links' },
+            S.error ? '' : h('span', { class: 'team-sync' }, sync),
+            h('button', { type: 'button', class: 'team-link', onclick: async () => fail(await api.teamRefresh()), disabled: S.syncing }, 'Refresh'),
+            h('button', { type: 'button', class: 'team-link team-people-btn', 'aria-expanded': String(Boolean(v.showMembers)), onclick: () => { v.showMembers = !v.showMembers; save(); draw(); } }, v.showMembers ? 'Hide people' : `People · ${S.team.memberIds.length}`))),
+        S.error ? h('p', { class: 'team-error', role: 'alert' }, problem(S.error)) : '');
     }
 
     function toolbarView() {
       const v = view();
-      const sel = (label, value, options, set) => h('select', { 'aria-label': label, onchange: e => { set(e.target.value); save(); drawList(); } },
-        options.map(([val, text]) => h('option', { value: val, selected: val === value }, text)));
+      const again = () => { save(); draw(); };
+      const scoped = scope() === 'mine' ? S.tasks.filter(t => t.assigneeUid === S.uid) : S.tasks;
+      const lateN = scoped.filter(t => t.status !== 'done' && T.isOverdue(t, today())).length;
+      const mustN = scoped.filter(t => t.mustDo && t.status !== 'done').length;
+      const chip = (label, key, n) => h('button', { type: 'button', class: `team-chip${v[key] ? ' on' : ''}`, 'aria-pressed': String(Boolean(v[key])), onclick: () => { v[key] = !v[key]; again(); } },
+        label, n ? h('span', { class: 'team-chip-n' }, String(n)) : '');
+      const sel = (label, value, options, set) => h('label', { class: 'team-field' }, h('span', {}, label),
+        h('select', { 'aria-label': label, onchange: e => { set(e.target.value); save(); drawList(); } }, options.map(([val, text]) => h('option', { value: val, selected: val === value }, text))));
+      const activeTools = [v.group !== 'none', v.sort !== 'due', v.dir !== 'asc', v.status !== ''].filter(Boolean).length;
       const query = h('input', { type: 'search', class: 'team-search', placeholder: 'Search tasks…', value: v.query, 'aria-label': 'Search tasks', oninput: e => { v.query = e.target.value; save(); drawList(); } });
-      const check = (label, key) => h('label', { class: 'team-check' }, h('input', { type: 'checkbox', checked: v[key], onchange: e => { v[key] = e.target.checked; save(); drawList(); } }), label);
-      return h('div', { class: 'team-bar' },
-        h('div', { class: 'cal-seg', role: 'group', 'aria-label': 'Whose tasks' },
-          [['mine', 'My tasks'], ['all', 'Everyone']].map(([k, label]) => h('button', { type: 'button', class: scope() === k ? 'on' : '', 'aria-pressed': String(scope() === k), onclick: () => { v.scope = k; save(); draw(); } }, label))),
-        sel('Group by', v.group, [['none', 'No grouping'], ['assignee', 'Group by person'], ['status', 'Group by status']], x => { v.group = x; }),
-        sel('Sort by', v.sort, SORTS, x => { v.sort = x; }),
-        h('button', { type: 'button', class: 'cal-link', title: 'Reverse the order', onclick: () => { v.dir = v.dir === 'asc' ? 'desc' : 'asc'; save(); draw(); } }, v.dir === 'asc' ? '↑ Ascending' : '↓ Descending'),
-        sel('Status', v.status, [['', 'Any status'], ...T.STATUSES.map(s => [s, T.STATUS_LABEL[s]])], x => { v.status = x; }),
-        check('Hide done', 'hideDone'), check('Overdue only', 'overdue'), check('Must do only', 'mustDo'),
-        query);
+      return h('div', { class: 'team-filters' },
+        h('div', { class: 'cal-seg team-scope', role: 'group', 'aria-label': 'Whose tasks' },
+          [['mine', 'My tasks'], ['all', 'Everyone']].map(([k, label]) => h('button', { type: 'button', class: scope() === k ? 'on' : '', 'aria-pressed': String(scope() === k), onclick: () => { v.scope = k; again(); } }, label))),
+        query,
+        h('div', { class: 'team-chips' },
+          chip('Overdue', 'overdue', lateN), chip('Must do', 'mustDo', mustN), chip('Hide done', 'hideDone', 0),
+          h('button', { type: 'button', class: `team-chip team-tools-btn${v.showTools ? ' on' : ''}`, 'aria-expanded': String(Boolean(v.showTools)), onclick: () => { v.showTools = !v.showTools; again(); } },
+            'Sort & group', activeTools ? h('span', { class: 'team-chip-n' }, String(activeTools)) : '')),
+        v.showTools ? h('div', { class: 'team-tools' },
+          sel('Group by', v.group, [['none', 'None'], ['assignee', 'Person'], ['status', 'Status']], x => { v.group = x; }),
+          sel('Sort by', v.sort, SORTS, x => { v.sort = x; }),
+          sel('Status', v.status, [['', 'Any'], ...T.STATUSES.map(s => [s, T.STATUS_LABEL[s]])], x => { v.status = x; }),
+          h('button', { type: 'button', class: 'team-link team-dir', title: 'Reverse the order', onclick: () => { v.dir = v.dir === 'asc' ? 'desc' : 'asc'; again(); } }, v.dir === 'asc' ? '↑ Ascending' : '↓ Descending')) : '');
     }
 
     // ---- the task list ----
+    const NEXT_STATUS = { todo: 'doing', doing: 'done', done: 'todo' };
     function taskRow(t, grouped) {
       const mine = t.assigneeUid === S.uid;
       const manage = T.canManageTask(S.team, S.uid, t); // an admin, or the lead who created it
       const canStatus = manage || mine;
-      const overdue = T.isOverdue(t, today());
+      const overdue = T.isOverdue(t, today()) && t.status !== 'done';
+      const first = memberName(t.assigneeUid).split(' ')[0];
+      const tick = h('button', { type: 'button', class: `team-tick st-${t.status}`, disabled: !canStatus,
+        'aria-label': `${t.title}: ${T.STATUS_LABEL[t.status]}. Tap to mark as ${T.STATUS_LABEL[NEXT_STATUS[t.status]]}`,
+        title: canStatus ? `Mark as ${T.STATUS_LABEL[NEXT_STATUS[t.status]]}` : 'Only the person it is given to, or whoever manages it, can change this',
+        onclick: async () => { if (!fail(await api.teamUpdateTask(t.id, { status: NEXT_STATUS[t.status] }))) draw(); } }, h('span', { class: 'team-tick-in' }));
       return h('div', { class: `team-task${t.status === 'done' ? ' done' : ''}${overdue ? ' overdue' : ''}${t.mustDo && t.status !== 'done' ? ' mustdo' : ''}` },
-        h('select', { class: `team-status st-${t.status}`, 'aria-label': `Status of ${t.title}`, disabled: !canStatus, title: canStatus ? 'Change the status' : 'Only the person it is given to, or whoever manages it, can change this',
-          onchange: async e => { if (!fail(await api.teamUpdateTask(t.id, { status: e.target.value }))) draw(); } },
-        T.STATUSES.map(s => h('option', { value: s, selected: s === t.status }, T.STATUS_LABEL[s]))),
-        h('div', { class: 'team-task-main' },
-          h('div', { class: 'team-task-title' }, t.mustDo ? h('span', { class: 'team-must', title: 'Stays on their landing screen until it is done' }, 'Must do') : '', t.title),
-          t.notes && h('div', { class: 'team-task-notes' }, t.notes.length > 140 ? t.notes.slice(0, 140) + '…' : t.notes)),
-        h('span', { class: `team-prio prio-${t.priority}` }, PRIORITY_LABEL[t.priority]),
-        t.dueDate ? h('span', { class: 'team-due' }, `${overdue ? 'Overdue · ' : ''}${shortDate(t.dueDate)}`) : h('span', { class: 'team-due none' }, 'No date'),
-        h('span', { class: 'team-assignee', title: memberName(t.assigneeUid) }, avatar(t.assigneeUid), grouped === 'assignee' ? '' : memberName(t.assigneeUid)),
-        manage ? h('button', { type: 'button', class: 'cal-link', onclick: () => editTask(t) }, 'Edit') : '');
+        tick,
+        h('div', { class: 'team-task-top' },
+          h('div', { class: 'team-task-title' }, t.mustDo && t.status !== 'done' ? h('span', { class: 'team-must', title: 'Stays on their landing screen until it is done' }, 'Must do') : '', t.title),
+          manage ? h('button', { type: 'button', class: 'team-edit', onclick: () => editTask(t) }, 'Edit') : ''),
+        t.notes && h('div', { class: 'team-task-notes' }, t.notes.length > 140 ? t.notes.slice(0, 140) + '…' : t.notes),
+        h('div', { class: 'team-task-meta' },
+          h('span', { class: `team-st st-${t.status}` }, T.STATUS_LABEL[t.status]),
+          h('span', { class: `team-prio prio-${t.priority}` }, h('i'), PRIORITY_LABEL[t.priority]),
+          t.dueDate ? h('span', { class: 'team-due' }, `${overdue ? 'Overdue · ' : ''}${shortDate(t.dueDate)}`) : h('span', { class: 'team-due none' }, 'No date'),
+          h('span', { class: 'team-assignee', title: memberName(t.assigneeUid) }, avatar(t.assigneeUid), grouped === 'assignee' ? '' : first)));
     }
 
     function drawList() {
@@ -209,7 +227,7 @@
       if (!S.canSync) return void host.append(notice('One more sign-in needed', 'Teams need a fresh sign-in on this PC. It takes a few seconds.', h('button', { type: 'button', class: 'cal-new', onclick: () => api.authSignIn() }, 'Sign in again')));
       if (!S.team) return void host.append(setupView());
       listBox = h('div', { class: 'team-list' });
-      host.append(headerView(), toolbarView(), listBox, view().showMembers ? membersView() : '');
+      host.append(headerView(), view().showMembers ? membersView() : '', toolbarView(), listBox);
       drawList();
     }
 
