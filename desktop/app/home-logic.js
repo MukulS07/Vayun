@@ -33,7 +33,9 @@
     }));
     const pins = [...new Set((Array.isArray(h.pins) ? h.pins : []).filter(p => typeof p === 'string'))];
     const hidden = (Array.isArray(h.hidden) ? h.hidden : []).filter(id => SECTIONS.some(s => s.id === id));
-    return { reminders, pins, hidden };
+    const out = { reminders, pins, hidden };
+    if (h.layout === 'planner' || h.layout === 'dashboard') out.layout = h.layout;
+    return out;
   }
   function normalizeReminder(input = {}) {
     const text = cleanText(input.text, 200);

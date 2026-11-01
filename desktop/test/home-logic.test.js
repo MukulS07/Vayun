@@ -112,6 +112,9 @@ test('stored home data is cleaned: bad reminders, duplicate pins and unknown sec
   assert.deepStrictEqual(clean.reminders, [{ id: 'a', text: 'Pay rent', date: '2026-10-30', done: true, createdAt: 0 }, { id: 'c', text: 'x', date: '', done: false, createdAt: 0 }]);
   assert.deepStrictEqual([clean.pins, clean.hidden], [['p1', 'p2'], ['overdue']]);
   assert.deepStrictEqual(H.cleanHome(undefined), { reminders: [], pins: [], hidden: [] });
+  assert.strictEqual(H.cleanHome({ layout: 'planner' }).layout, 'planner');
+  assert.strictEqual(H.cleanHome({ layout: 'dashboard' }).layout, 'dashboard');
+  assert.strictEqual(H.cleanHome({ layout: 'invalid' }).layout, undefined);
   assert.ok(H.normalizeReminder({ text: ' ' }).error);
   assert.ok(H.normalizeReminder({ text: 'x', date: '31/12' }).error);
   assert.deepStrictEqual(H.normalizeReminder({ text: ' Call  Priya ', date: '2026-11-02' }), { text: 'Call Priya', date: '2026-11-02' });
