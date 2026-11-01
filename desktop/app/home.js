@@ -164,7 +164,15 @@
 
     function customizePanel() {
       const home = ctx.home();
+      const currentLayout = home.layout === 'planner' ? 'planner' : 'dashboard';
       return h('div', { class: 'home-custom' },
+        h('div', { class: 'home-custom-layout-row' },
+          h('span', {}, h('strong', {}, 'Layout Style: '), h('span', { class: 'small' }, 'Switch between Dashboard and Daily Planner')),
+          h('div', { class: 'home-layout-seg', role: 'group', 'aria-label': 'Switch layout' },
+            h('button', { type: 'button', class: `home-seg-btn${currentLayout === 'dashboard' ? ' on' : ''}`, 'aria-pressed': String(currentLayout === 'dashboard'), onclick: () => { home.layout = 'dashboard'; ctx.save(); draw(); } }, '⊞ Dashboard'),
+            h('button', { type: 'button', class: `home-seg-btn${currentLayout === 'planner' ? ' on' : ''}`, 'aria-pressed': String(currentLayout === 'planner'), onclick: () => { home.layout = 'planner'; ctx.save(); draw(); } }, '▤ Daily Planner')
+          )
+        ),
         h('p', { class: 'small' }, 'Choose what this screen shows. To add a page here, open it and use ••• → Pin to Home.'),
         H.SECTIONS.map(s => h('label', { class: 'home-custom-row' },
           h('input', { type: 'checkbox', checked: !home.hidden.includes(s.id), onchange: e => { home.hidden = e.target.checked ? home.hidden.filter(x => x !== s.id) : [...home.hidden, s.id]; ctx.save(); draw(); } }),
@@ -175,12 +183,61 @@
       if (!alive) return;
       const r = compute();
       const s = r.summary;
+      const home = ctx.home();
+      const currentLayout = home.layout === 'planner' ? 'planner' : 'dashboard';
       const parts = [s.mustDo && `${s.mustDo} must do`, s.overdue && `${s.overdue} overdue`, s.dueSoon && `${s.dueSoon} due today or tomorrow`].filter(Boolean);
       const line = s.needYou ? `${s.needYou} ${s.needYou === 1 ? 'thing needs' : 'things need'} you: ${parts.join(' · ')}` : 'Nothing is overdue or due soon.';
       // the focus card shows the lead item, so the lists below leave it out
       const fk = r.focus && r.focus.item.key;
       const lists = r.sections.map(sec => ({ ...sec, items: sec.items.filter(i => i.key !== fk) })).filter(sec => sec.items.length || sec.more);
       host.innerHTML = '';
+
+      let bodyElements = [];
+      if (r.empty) {
+        bodyElements = [
+          h('div', { class: 'home-clear' },
+            h('h2', {}, 'You’re all clear'),
+            h('p', {}, 'Nothing needs you right now. Add a reminder below, or pin a page with ••• → Pin to Home.')
+          ),
+          addForm()
+        ];
+      } else if (currentLayout === 'planner') {
+        const agendaIds = new Set(['calendar', 'mustdo', 'overdue', 'soon', 'attention']);
+        const agendaLists = lists.filter(sec => agendaIds.has(sec.id));
+        const sideLists = lists.filter(sec => !agendaIds.has(sec.id));
+        const openReminders = (home.reminders || []).filter(x => !x.done).length;
+
+        const leftCol = h('div', { class: 'home-planner-agenda' },
+          r.focus ? focusCard(r.focus) : '',
+          agendaLists.length
+            ? agendaLists.map(sectionCard)
+            : (!r.focus ? h('div', { class: 'home-planner-empty' }, h('p', {}, 'No scheduled events or urgent tasks for today.')) : '')
+        );
+
+        const rightCol = h('div', { class: 'home-planner-side' },
+          h('div', { class: 'home-planner-stats' },
+            stat('Overdue', s.overdue, 'needs decision', s.overdue ? 'late' : ''),
+            stat('Due soon', s.dueSoon, 'today & tomorrow'),
+            stat('Events', s.events, 'scheduled today'),
+            stat('Reminders', openReminders, 'active reminders')
+          ),
+          h('div', { class: 'home-planner-box' },
+            h('h3', { class: 'home-planner-heading' }, 'Quick Reminders'),
+            addForm()
+          ),
+          sideLists.map(sectionCard)
+        );
+
+        bodyElements = [h('div', { class: 'home-planner-view' }, leftCol, rightCol)];
+      } else {
+        bodyElements = [
+          r.focus ? h('div', { class: 'home-top' }, focusCard(r.focus), h('div', { class: 'home-stats' },
+            stat('Overdue', s.overdue, 'needs a decision', s.overdue ? 'late' : ''), stat('Due soon', s.dueSoon, 'today and tomorrow'), stat('Today', s.events, s.events === 1 ? 'event' : 'events'))) : '',
+          h('div', { class: 'home-grid' }, lists.map(sectionCard)),
+          addForm()
+        ];
+      }
+
       host.append(
         h('div', { class: 'home-hero' },
           h('div', {},
@@ -188,15 +245,18 @@
             h('p', { class: 'home-eyebrow' }, new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })),
             h('h1', {}, userName ? `${greeting()}, ${userName}` : greeting()),
             h('p', { class: `home-summary${s.needYou ? ' urgent' : ''}` }, line + (s.events ? ` · ${s.events} event${s.events === 1 ? '' : 's'} today` : ''))),
-          h('button', { type: 'button', class: 'home-open', onclick: () => { customizing = !customizing; draw(); } }, customizing ? 'Done customizing' : 'Customize')),
+          h('div', { class: 'home-hero-actions' },
+            h('div', { class: 'home-layout-seg', role: 'group', 'aria-label': 'Switch home layout' },
+              h('button', { type: 'button', class: `home-seg-btn${currentLayout === 'dashboard' ? ' on' : ''}`, 'aria-pressed': String(currentLayout === 'dashboard'), onclick: () => { home.layout = 'dashboard'; ctx.save(); draw(); } }, '⊞ Dashboard'),
+              h('button', { type: 'button', class: `home-seg-btn${currentLayout === 'planner' ? ' on' : ''}`, 'aria-pressed': String(currentLayout === 'planner'), onclick: () => { home.layout = 'planner'; ctx.save(); draw(); } }, '▤ Daily Planner')
+            ),
+            h('button', { type: 'button', class: 'home-open', onclick: () => { customizing = !customizing; draw(); } }, customizing ? 'Done customizing' : 'Customize')
+          )
+        ),
         weekStrip(),
         customizing ? customizePanel() : '',
-        r.focus ? h('div', { class: 'home-top' }, focusCard(r.focus), h('div', { class: 'home-stats' },
-          stat('Overdue', s.overdue, 'needs a decision', s.overdue ? 'late' : ''), stat('Due soon', s.dueSoon, 'today and tomorrow'), stat('Today', s.events, s.events === 1 ? 'event' : 'events'))) : '',
-        r.empty
-          ? h('div', { class: 'home-clear' }, h('h2', {}, 'You’re all clear'), h('p', {}, 'Nothing needs you right now. Add a reminder below, or pin a page with ••• → Pin to Home.'))
-          : h('div', { class: 'home-grid' }, lists.map(sectionCard)),
-        addForm());
+        ...bodyElements
+      );
       if (teamReady && !toastDone && toastFor(r)) toastDone = true; // once per session, as soon as there is something to say
     }
 
