@@ -12,7 +12,7 @@
     ['radius', 'Corners', [['sharp', 'Sharp'], ['soft', 'Soft'], ['round', 'Round']]],
     ['width', 'Page width', [['default', 'Default'], ['full', 'Full width']]],
   ];
-  const OFFICIAL = ['vayun', 'aurum', 'paper', 'midnight', 'sepia', 'forest', 'ocean', 'ember', 'grove', 'rose'];
+  const OFFICIAL = ['vayun', 'aurum', 'ink', 'paper', 'midnight', 'sepia', 'forest', 'ocean', 'ember', 'grove', 'rose'];
 
   let modal = null;
 

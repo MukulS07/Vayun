@@ -48,6 +48,22 @@ window.FOLIO_APP_THEMES = {
   "accent": "#D6B36A",
   "cover": "linear-gradient(120deg,#F1DDA8,#8F6F34)"
  },
+ "ink": {
+  "name": "Ink",
+  "mode": "Dark",
+  "dark": true,
+  "bg": "#0E0E0D",
+  "side": "#0A0A09",
+  "surface": "#151514",
+  "card": "#151514",
+  "text": "#EDE9E0",
+  "text2": "#B6B1A5",
+  "muted": "#7F7A6F",
+  "line": "#2A2925",
+  "lineSoft": "#1C1B19",
+  "accent": "#FF5B36",
+  "cover": "linear-gradient(120deg,#2A2925,#0E0E0D)"
+ },
  "midnight": {
   "name": "Midnight",
   "mode": "Dark",
