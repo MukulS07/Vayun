@@ -30,7 +30,7 @@ button:focus-visible, [contenteditable]:focus-visible { outline:2px solid var(--
 /* Aurum: warm black, ivory text, champagne-gold accent. Gold only marks what you can act on; surfaces get a hairline top highlight. */
 :root[data-app-theme="aurum"] { --accent-fill: linear-gradient(135deg, #F4E4B6 0%, #D6B36A 46%, #9A783B 100%); --gold-glow: 0 6px 22px rgba(214,179,106,0.22); }
 :root[data-app-theme="aurum"] :is(.new-form button.primary, .ai-compose button.primary, .ai-settings button.primary, .ai-msg.user, .ws-card.current .ws-card-mark, .menu-primary, .cal-new, .home-add button, .settings-foot button.primary) { background:var(--accent-fill); color:#17120A; border-color:transparent; }
-:root[data-app-theme="aurum"] :is(.panel, .form, .settings, .menu, .slash-menu, .ws-card, .home-focus, .home-clear, .home-toast, .cal-grid) { box-shadow: inset 0 1px 0 rgba(255,238,200,0.05), 0 10px 34px rgba(0,0,0,0.38); }
+:root[data-app-theme="aurum"] :is(.panel, .form, .settings, .menu, .slash-menu, .ws-card, .home-focus, .home-clear, .home-toast, .cal-grid, .home-planner-box) { box-shadow: inset 0 1px 0 rgba(255,238,200,0.05), 0 10px 34px rgba(0,0,0,0.38); }
 :root[data-app-theme="aurum"] :is(#title, .home-hero h1, .home-focus h2, .home-clear h2) { font-family: 'Newsreader', Georgia, serif; font-weight: 500; letter-spacing: -0.01em; }
 :root[data-app-theme="aurum"] :is(.side-item.active, #tree a.active, .tab.on) { box-shadow: inset 2px 0 0 var(--accent); }
 :root[data-app-theme="aurum"] ::selection { background: rgba(214,179,106,0.28); }
@@ -283,6 +283,21 @@ body:has(> .app) { overflow:hidden; }
 .home-open:hover { background:var(--hover); }
 .home-open.primary { background:var(--fg); color:var(--bg); border-color:var(--fg); }
 .home-open.primary:hover { opacity:.88; background:var(--fg); }
+.home-hero-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.home-layout-seg { display:inline-flex; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; }
+.home-seg-btn { border:0; background:transparent; color:var(--muted); font-size:13px; font-weight:500; padding:6px 12px; border-radius:7px; cursor:pointer; transition:background .15s, color .15s; }
+.home-seg-btn:hover { color:var(--fg); background:var(--hover); }
+.home-seg-btn.on { color:var(--fg); background:var(--sel, var(--hover)); font-weight:600; box-shadow:0 1px 3px rgba(0,0,0,0.12); }
+.home-custom-layout-row { display:flex; justify-content:space-between; align-items:center; gap:14px; padding-bottom:12px; border-bottom:1px solid var(--line); margin-bottom:4px; flex-wrap:wrap; }
+
+/* Daily Planner layout */
+.home-planner-view { display:grid; grid-template-columns:minmax(0, 1.45fr) minmax(320px, 1fr); gap:20px; align-items:start; }
+.home-planner-agenda { display:flex; flex-direction:column; gap:16px; }
+.home-planner-side { display:flex; flex-direction:column; gap:16px; }
+.home-planner-stats { display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; }
+.home-planner-box { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px 20px; display:flex; flex-direction:column; gap:12px; }
+.home-planner-heading { margin:0; font:400 18px/1.2 'Newsreader', Georgia, serif; color:var(--fg); }
+.home-planner-empty { padding:32px 20px; text-align:center; color:var(--muted); border:1px dashed var(--line); border-radius:14px; font-size:14px; }
 .home-top { display:grid; grid-template-columns:minmax(0, 1.7fr) minmax(220px, 1fr); gap:16px; align-items:stretch; }
 .home-focus { background:var(--fg); color:var(--bg); border-radius:20px; padding:30px 32px; display:flex; flex-direction:column; justify-content:space-between; gap:28px; min-height:200px; }
 .home-focus .home-eyebrow { color:inherit; opacity:.7; }
@@ -337,8 +352,9 @@ body:has(> .app) { overflow:hidden; }
 .home-toast-actions { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
 @keyframes home-toast-in { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion: reduce) { .home-toast { animation:none; } }
+@media (max-width: 900px) { .home-planner-view { grid-template-columns:1fr; } }
 @media (max-width: 860px) { .home-top { grid-template-columns:1fr; } }
-@media (max-width: 760px) { .homepage { padding:18px; } .home-grid { grid-template-columns:1fr; } .home-hero h1 { font-size:32px; } }
+@media (max-width: 760px) { .homepage { padding:18px; } .home-grid { grid-template-columns:1fr; } .home-hero h1 { font-size:32px; } .home-planner-stats { grid-template-columns:1fr; } }
 
 /* Mindmap */
 .mm, .mm ul { list-style:none; margin:0; padding-left:28px; position:relative; }
@@ -769,7 +785,7 @@ body:not(.quick):not(:has(> .app))::before { content:''; position:fixed; top:0; 
 .home-mast, .home-week { display: none; }
 :root[data-app-theme="ink"] { --accent-ink: #1A0B06; --signal: #FF5B36; --mono: 'Geist Mono', ui-monospace, monospace; }
 :root[data-app-theme="ink"] body::before { content: ""; position: fixed; inset: 0; z-index: 9000; pointer-events: none; opacity: .045; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E"); }
-:root[data-app-theme="ink"] :is(.home-card, .home-stat, .home-clear, .home-custom, .ws-card, .panel, .form, .settings, .menu, .slash-menu, .home-toast) { border-radius: 8px; box-shadow: none; }
+:root[data-app-theme="ink"] :is(.home-card, .home-stat, .home-clear, .home-custom, .ws-card, .panel, .form, .settings, .menu, .slash-menu, .home-toast, .home-planner-box) { border-radius: 8px; box-shadow: none; }
 :root[data-app-theme="ink"] :is(#title, .home-hero h1, .home-focus h2, .home-clear h2, .home-card h2, .home-stat-n) { font-family: 'Newsreader', Georgia, serif; font-weight: 400; letter-spacing: -0.02em; }
 :root[data-app-theme="ink"] :is(.home-eyebrow, .side-head, .ws-storage-note, .home-count) { font-family: var(--mono); font-weight: 500; letter-spacing: .12em; text-transform: uppercase; font-size: 10.5px; }
 :root[data-app-theme="ink"] :is(.new-form button.primary, .home-open.primary, .ai-compose button.primary, .ai-settings button.primary, .ai-msg.user, .menu-primary, .cal-new, .home-add button, .settings-foot button.primary) { background: var(--accent); color: var(--accent-ink); border-color: transparent; box-shadow: none; }
