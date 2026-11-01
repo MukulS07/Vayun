@@ -121,7 +121,9 @@
     .agree[aria-checked="true"] .box { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
     .agree[aria-checked="true"] .box svg { opacity: 1; transform: none; }
     .agree .link { display: inline; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: 3px; font: inherit; }
-    .guest-foot { padding: 12px 22px calc(16px + 2px); }
+    .guest-foot { padding: 12px 22px calc(16px + 2px); display: flex; flex-direction: column; gap: 14px; border-top: 1px solid var(--line); background: var(--bg); }
+    .guest-foot .agree { margin: 0; }
+    .guest-body { padding-bottom: 16px; }
     .btn.go { background: var(--accent); color: var(--accent-ink); }
     .btn.go:disabled { background: var(--surface); color: var(--muted); opacity: 1; border: 1px solid var(--line); }
     .g { opacity: 0; transform: translateY(12px); }
@@ -214,12 +216,12 @@
         <div class="row"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg><div><b>Stored temporarily on this device</b><span>Everything is saved locally only. Clearing the app's data, uninstalling it or resetting the phone erases it.</span></div></div>
         <div class="row"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><div><b>No backup</b><span>Nothing is backed up for you. Save a copy from the sidebar (Backup Workspace), or sign in later to keep your work safe.</span></div></div>
       </div>
-      <div class="agree g" style="--k:4" id="agree" role="checkbox" aria-checked="false" tabindex="0">
+    </div>
+    <div class="guest-foot g" style="--k:5">
+      <div class="agree g" id="agree" role="checkbox" aria-checked="false" tabindex="0">
         <span class="box"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span>
         <span>I understand this and agree to the <button type="button" class="link" id="open-terms">Terms &amp; Conditions</button>.</span>
       </div>
-    </div>
-    <div class="guest-foot g" style="--k:5">
       <button type="button" class="btn go" id="guest-go" disabled>Continue</button>
     </div>
   </section>
@@ -261,7 +263,8 @@
       $('go-signin').onclick = function () { showSignin(true); };
       $('back').onclick = function () { showSignin(false); };
       var guestName = $('guest-name'), agree = $('agree'), go = $('guest-go');
-      function showGuest(on) { body.classList.toggle('guest', on); if (on) setTimeout(function () { guestName.focus(); }, 380); else guestName.blur(); }
+      function showGuest(on) { body.classList.toggle('guest', on); if (!on) guestName.blur(); }
+      guestName.addEventListener('focus', function () { setTimeout(function () { guestName.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 300); });
       function showTerms(on) { body.classList.toggle('terms', on); $('terms').setAttribute('aria-hidden', String(!on)); }
       function refresh() { go.disabled = !(guestName.value.trim().length > 0 && agree.getAttribute('aria-checked') === 'true'); }
       $('local').onclick = function () { showGuest(true); };
