@@ -17,7 +17,7 @@ const CSP = [
   `script-src 'self' ${FIREBASE_CDN} https://apis.google.com https://accounts.google.com`, // apis.google.com: the sign-in pop-up helper
   "style-src 'self' 'unsafe-inline' https://accounts.google.com",
   "img-src 'self' https: data:",
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com",
+  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.cloudfunctions.net",
   "frame-src https://*.firebaseapp.com https://accounts.google.com https://*.googleapis.com",
   "object-src 'none'",
   "base-uri 'self'",

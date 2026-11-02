@@ -274,6 +274,17 @@ service cloud.firestore {
       allow delete: if isReleaseAdmin();
     }
 
+    // Assistant: saved API keys (encrypted) and daily usage. No app or website reads or writes these directly: only the
+    // "ai" Cloud Function does, through the admin SDK, which skips these rules. The keys are ciphertext; the secret that
+    // decrypts them lives only on the server. (A superadmin could still open the raw documents through the fallback
+    // below, but would see ciphertext only.)
+    match /users/{uid}/aiKeys/{provider} {
+      allow read, write: if false;
+    }
+    match /aiUsage/{id} {
+      allow read, write: if false;
+    }
+
     // ===============================================================
     // Global Superadmin Fallback — Universal Raw Entity Editor
     // ===============================================================

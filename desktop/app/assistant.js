@@ -90,6 +90,8 @@
 
   async function showSettings(note) {
     const st = await api.aiStatus();
+    setBadge(st);
+    if (st.cloud) return showCloudSettings(st, note);
     const b = body();
     b.innerHTML = '';
     const form = el('form', 'ai-settings');
@@ -135,6 +137,81 @@
     };
     b.append(form);
     (st.hasKey ? model : key).focus();
+  }
+
+  const setBadge = st => { const b = panel && panel.querySelector('.ai-badge'); if (b) { b.textContent = st && st.cloud ? 'Vayun AI' : 'NVIDIA'; b.classList.toggle('cloud', Boolean(st && st.cloud)); } };
+
+  // Cloud mode (phones and the web): answers come from the Vayun AI server, with the person's own key (saved on the
+  // website, same Google account) or a shared daily allowance. Nothing to paste here.
+  function showCloudSettings(st, note) {
+    const b = body();
+    b.innerHTML = '';
+    const wrap = el('div', 'ai-settings ai-cloud');
+    wrap.append(el('p', 'ai-help', note || 'The Assistant works with your Vayun sign-in. There is nothing to set up.'));
+    if (!st.signedIn) {
+      wrap.append(el('p', 'ai-help', st.error || 'Sign in with Google to use the Assistant.'));
+      const signIn = el('button', 'primary', 'Sign in with Google');
+      signIn.type = 'button';
+      signIn.onclick = async () => { signIn.disabled = true; const r = await api.authSignIn(); if (r && r.error) alert(r.error); showSettings(); };
+      wrap.append(signIn);
+      b.append(wrap);
+      return;
+    }
+    const card = el('div', 'ai-card');
+    if (st.own.length) {
+      card.append(el('div', 'ai-card-title', 'Your own key'));
+      for (const k of st.own) {
+        const row = el('div', 'ai-keyrow');
+        row.append(el('span', 'ai-keyname', `${k.name} ····${k.last4}`));
+        const rm = el('button', null, 'Remove');
+        rm.type = 'button';
+        rm.onclick = async () => { rm.disabled = true; const r = await api.aiClearKey(k.provider); showSettings(r && r.error ? r.error : 'Key removed.'); };
+        row.append(rm);
+        card.append(row);
+      }
+      card.append(el('p', 'ai-help', 'Answers use your key, so there is no daily limit.'));
+    } else if (st.pool.available) {
+      card.append(el('div', 'ai-card-title', 'Free messages today'));
+      const meter = el('div', 'ai-meter');
+      const fill = el('i');
+      fill.style.width = `${Math.min(100, Math.round((st.pool.used / Math.max(1, st.pool.limit)) * 100))}%`;
+      meter.append(fill);
+      card.append(meter, el('p', 'ai-help', `${st.pool.left} of ${st.pool.limit} left. They reset tomorrow.`));
+    } else {
+      card.append(el('p', 'ai-help', 'No shared allowance is set up yet. Add your own key on the Vayun website.'));
+    }
+    wrap.append(card);
+
+    const seg = el('div', 'ai-seg');
+    seg.setAttribute('role', 'group');
+    seg.setAttribute('aria-label', 'Answer style');
+    for (const [v, label, hint] of [['auto', 'Auto', 'Quick for short asks, stronger for long ones'], ['fast', 'Fast', 'Quickest answers'], ['smart', 'Smart', 'Best for big plans and long notes']]) {
+      const btn = el('button', st.tier === v ? 'on' : '', label);
+      btn.type = 'button';
+      btn.title = hint;
+      btn.setAttribute('aria-pressed', String(st.tier === v));
+      btn.onclick = async () => { await api.aiSetPrefs({ tier: v }); showSettings(note); };
+      seg.append(btn);
+    }
+    wrap.append(el('label', null, 'Answer style'), seg);
+
+    const more = el('div', 'ai-card');
+    more.append(el('div', 'ai-card-title', 'Use your own key'),
+      el('p', 'ai-help', 'Add a key from OpenAI, Claude, Gemini, Groq, NVIDIA and others on the Vayun website, signed in with this same Google account. It shows up here by itself, with no daily limit.'));
+    if (st.siteUrl) {
+      const open = el('button', null, 'Open the website');
+      open.type = 'button';
+      open.onclick = () => window.open(st.siteUrl.replace(/\/$/, '') + '/ai-keys', '_blank');
+      more.append(open);
+    }
+    wrap.append(more);
+    if (st.hasKey) {
+      const back = el('button', 'primary', 'Back to chat');
+      back.type = 'button';
+      back.onclick = () => showChat();
+      wrap.append(back);
+    }
+    b.append(wrap);
   }
 
   function bubble(cls, text) {
@@ -197,7 +274,7 @@
       go.disabled = false;
       if (r.error) {
         bubble('bot error', r.error);
-        if (/key/i.test(r.error)) showSettings(r.error);
+        if (r.code === 'signin' || r.code === 'no-key' || (!r.code && /key/i.test(r.error))) showSettings(r.error);
         return;
       }
       const { reply, actions } = A.parseReply(r.content);
@@ -206,6 +283,7 @@
       const before = current?.id;
       const lines = valid.length ? apply(valid) : [];
       const m = bubble('bot', reply || (lines.length ? 'Done.' : 'I could not work out what to change.'));
+      if (r.source === 'pool' && typeof r.left === 'number' && r.left <= 3) m.append(el('div', 'ai-quota', `${r.left} free message${r.left === 1 ? '' : 's'} left today`));
       if (lines.length) {
         const done = el('ul', 'ai-done');
         for (const l of lines) done.append(el('li', null, l));
@@ -232,6 +310,7 @@
     document.body.classList.toggle('ai-open', open);
     if (!open) return;
     const st = await api.aiStatus();
+    setBadge(st);
     if (st.hasKey) showChat(); else showSettings();
   }
 
