@@ -980,3 +980,12 @@ body.ai-open .main { margin-right: 400px; }
 .ai-where a { color: var(--accent); }
 @media (max-width: 900px) { body.ai-open .main { margin-right: 0; } .ai-panel { width: 100vw; } }
 @media (prefers-reduced-motion: reduce) { .ai-pop, .ai-dots i { animation: none; } }
+
+/* Sidebar: pages with subpages fold up; the arrow turns when open and a folded page shows how many it holds */
+.tree-fold { flex: 0 0 18px; width: 18px; height: 18px; display: grid; place-items: center; border-radius: 4px; font-size: 15px; line-height: 1; color: var(--muted); cursor: pointer; transition: transform .15s ease, background .15s; }
+.tree-fold.none { visibility: hidden; cursor: default; }
+.tree-fold:not(.none):hover { background: var(--hover); color: var(--fg); }
+.tree-fold.open { transform: rotate(90deg); }
+#tree a { gap: 5px; }
+.tree-count { margin-left: auto; padding: 0 7px; border-radius: 999px; font-size: 11px; line-height: 18px; background: var(--hover); color: var(--muted); flex-shrink: 0; }
+@media (prefers-reduced-motion: reduce) { .tree-fold { transition: none; } }

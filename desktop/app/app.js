@@ -312,18 +312,38 @@ function renderCrumb() {
 function renderSidebar() {
   const tree = $('#tree');
   tree.innerHTML = '';
+  // Pages with subpages fold up. A database's rows start folded (there can be hundreds); other pages start open.
+  // The page you are on always keeps its parents open, so it never disappears from the list.
+  const kids = new Map();
+  for (const p of data.pages) kids.set(p.parentId, (kids.get(p.parentId) || 0) + 1);
+  const onPath = new Set();
+  for (let p = current, depth = 0; p && depth < 50; p = byId(p.parentId), depth++) onPath.add(p.id);
+  onPath.delete(current && current.id);
+  const isOpen = p => onPath.has(p.id) || (p.treeOpen === undefined ? !isDb(p) : p.treeOpen);
   const walk = (parentId, depth) => data.pages.filter(p => p.parentId === parentId).forEach(p => {
     const a = document.createElement('a');
     a.href = '#';
     const label = document.createElement('span');
     label.className = 'tree-label';
     label.textContent = p.title || 'Untitled';
-    a.append(icon(isDb(p) ? 'table' : p.kind === 'template' ? p.template : p.kind === 'calendar' ? 'calendar' : p.kind === 'team' ? 'team' : p.kind === 'home' ? 'home' : 'page'), label);
-    a.style.paddingLeft = `${12 + depth * 14}px`;
+    const count = kids.get(p.id) || 0;
+    const open = count > 0 && isOpen(p);
+    const fold = document.createElement('span');
+    fold.className = `tree-fold${count ? '' : ' none'}${open ? ' open' : ''}`;
+    if (count) {
+      fold.setAttribute('role', 'button');
+      fold.setAttribute('aria-label', `${open ? 'Fold' : 'Unfold'} ${p.title || 'Untitled'}`);
+      fold.setAttribute('aria-expanded', String(open));
+      fold.textContent = '›';
+      fold.onclick = e => { e.preventDefault(); e.stopPropagation(); p.treeOpen = !open; save(); renderSidebar(); };
+    }
+    a.append(fold, icon(isDb(p) ? 'table' : p.kind === 'template' ? p.template : p.kind === 'calendar' ? 'calendar' : p.kind === 'team' ? 'team' : p.kind === 'home' ? 'home' : 'page'), label);
+    if (count && !open) { const n = document.createElement('span'); n.className = 'tree-count'; n.textContent = count; a.append(n); }
+    a.style.paddingLeft = `${4 + depth * 14}px`;
     if (p === current) { a.className = 'active'; a.setAttribute('aria-current', 'page'); }
     a.onclick = e => { e.preventDefault(); openPage(p.id); };
     tree.append(a);
-    walk(p.id, depth + 1);
+    if (open) walk(p.id, depth + 1);
   });
   walk(null, 0);
 }
