@@ -29,7 +29,7 @@ const CSP = [
   "style-src 'self' 'unsafe-inline' https://accounts.google.com",
   "font-src 'self' data:",
   "img-src 'self' https: data:",
-  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com",
+  "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://*.cloudfunctions.net",
   "frame-src https://*.firebaseapp.com https://accounts.google.com https://*.googleapis.com",
   "object-src 'none'",
   "base-uri 'self'",
@@ -216,7 +216,8 @@ function androidConfig() {
     authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'vayun-12d1b.firebaseapp.com',
     projectId: process.env.FIREBASE_PROJECT_ID || 'vayun-12d1b',
     appId: process.env.FIREBASE_APP_ID || '1:578293090527:web:cce43dac8af2c70a94816a',
-    platform: 'android'
+    platform: 'android',
+    siteUrl: process.env.VAYUN_SITE_URL || ''
   };
   return `window.VAYUN_WEB_CONFIG = ${JSON.stringify(cfg)};\n`;
 }

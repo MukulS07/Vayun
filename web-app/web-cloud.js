@@ -54,6 +54,21 @@
   addEventListener('focus', () => team.focus());
   const obj = v => (v && typeof v === 'object' ? v : {});
 
+  // ---- Assistant server calls ----
+  const AI_BASE = `https://us-central1-${cfg.projectId}.cloudfunctions.net/ai`;
+  const aiPrefs = () => { try { const p = JSON.parse(localStorage.getItem('vayun:ai') || '{}'); return { tier: ['auto', 'fast', 'smart'].includes(p.tier) ? p.tier : 'auto' }; } catch { return { tier: 'auto' }; } };
+  async function ai(action, body) {
+    let token;
+    try { const { auth } = await firebase(); if (!auth.currentUser) return { error: 'Sign in with Google to use the Assistant.', code: 'signin' }; token = await auth.currentUser.getIdToken(); }
+    catch { return { error: 'Sign in with Google to use the Assistant.', code: 'signin' }; }
+    let res;
+    try { res = await fetch(`${AI_BASE}/${action}`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify(body || {}) }); }
+    catch { return { error: 'Could not reach the Assistant. Check your internet connection.', code: 'offline' }; }
+    const j = await res.json().catch(() => ({}));
+    if (!res.ok) return { error: (j.error && j.error.message) || 'The Assistant could not answer just now.', code: (j.error && j.error.code) || 'server', limit: j.error && j.error.limit };
+    return j;
+  }
+
   const statusOf = () => ({
     isConfigured: true, missing: [], user: current, canSync: Boolean(current),
     config: { projectId: cfg.projectId, authDomain: cfg.authDomain },
@@ -103,6 +118,18 @@
       if (uid) team.forget(uid);
       emit('auth:changed', null);
       return { ok: true };
+    },
+    // ---- Assistant: answered by the Vayun AI server, using the person's own saved key or the shared free allowance ----
+    aiStatus: async () => {
+      const s = await ai('status');
+      if (s.error) return { cloud: true, signedIn: s.code !== 'signin', needsSignIn: s.code === 'signin', hasKey: false, error: s.error, own: [], pool: { available: false, limit: 0, used: 0, left: 0 }, tier: aiPrefs().tier, siteUrl: cfg.siteUrl || '' };
+      return { cloud: true, signedIn: true, hasKey: s.own.length > 0 || s.pool.available, own: s.own, pool: s.pool, providers: s.providers, tier: aiPrefs().tier, siteUrl: cfg.siteUrl || '' };
+    },
+    aiSetPrefs: async prefs => { const t = ['auto', 'fast', 'smart'].includes(prefs && prefs.tier) ? prefs.tier : 'auto'; try { localStorage.setItem('vayun:ai', JSON.stringify({ tier: t })); } catch { /* private mode */ } return { tier: t }; },
+    aiClearKey: async provider => { const r = await ai('removeKey', { provider }); return r.error ? r : api.aiStatus(); },
+    aiChat: async messages => {
+      const r = await ai('chat', { messages, tier: aiPrefs().tier, maxTokens: 2000 });
+      return r.error ? { error: r.error, code: r.code } : { content: String(r.text || ''), source: r.source, left: r.left, limit: r.limit };
     },
     teamState: async () => { await firebase().catch(() => {}); return team.state(); },
     teamRefresh: async () => { await firebase().catch(() => {}); return team.refresh({ full: true, teams: true }); },

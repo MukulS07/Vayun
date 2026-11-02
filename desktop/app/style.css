@@ -884,3 +884,19 @@ body:not(.quick):not(:has(> .app))::before { content:''; position:fixed; top:0; 
 .team-rolehelp { font-size: 12px; line-height: 1.45; }
 .teampage .team-title { text-align: left; flex: 1; }
 .teampage .team-head { align-items: stretch; justify-content: flex-start; flex-wrap: nowrap; }
+
+/* Assistant, cloud mode: allowance meter, answer style, saved-key rows */
+.ai-card { margin: 10px 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.ai-card-title { margin-bottom: 6px; font-size: 13px; font-weight: 600; }
+.ai-card .ai-help { margin: 8px 0 0; }
+.ai-keyrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; }
+.ai-keyname { font: 500 13.5px 'Geist Mono', ui-monospace, monospace; }
+.ai-meter { height: 6px; border-radius: 999px; background: var(--hover); overflow: hidden; }
+.ai-meter i { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.ai-seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 6px 0 4px; }
+.ai-seg button { min-height: 38px; border: 0; border-radius: 0; background: transparent; color: var(--fg-2); font-size: 13.5px; }
+.ai-seg button.on { background: var(--sel); color: var(--accent); font-weight: 600; }
+.ai-quota { margin-top: 8px; font-size: 12px; color: var(--muted); }
+.ai-badge.cloud { background: var(--accent); color: var(--accent-ink); }
+.ai-card button { min-height: 36px; padding: 0 14px; margin-top: 8px; border: 1px solid var(--line); border-radius: 10px; }
+.ai-keyrow button { margin-top: 0; min-height: 32px; }
