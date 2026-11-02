@@ -285,8 +285,9 @@ app.whenReady().then(() => {
   });
   const ai = require('./ai');
   ipcMain.handle('ai:status', () => ai.status());
-  ipcMain.handle('ai:setKey', (_e, { key, model }) => ai.setKey(key, model));
-  ipcMain.handle('ai:clearKey', () => ai.clearKey());
+  ipcMain.handle('ai:setKey', (_e, { key }) => ai.setKey(key));
+  ipcMain.handle('ai:removeKey', (_e, provider) => ai.removeKey(provider));
+  ipcMain.handle('ai:select', (_e, sel) => ai.select(sel));
   ipcMain.handle('ai:chat', (_e, messages) => ai.chat(messages));
 
   const auth = require('./auth');
