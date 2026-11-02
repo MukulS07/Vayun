@@ -11,7 +11,8 @@ const banner = '// COPY of desktop/app/ai-providers.js. Do not edit here: change
 
 function sync() {
   fs.mkdirSync(path.dirname(to), { recursive: true });
-  fs.writeFileSync(to, banner + fs.readFileSync(from, 'utf8'));
+  // Always LF, so the copy never shows up as changed just because of Windows line endings.
+  fs.writeFileSync(to, banner + fs.readFileSync(from, 'utf8').split('\r\n').join('\n'));
   return to;
 }
 

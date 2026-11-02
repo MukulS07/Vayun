@@ -4,6 +4,15 @@ Every release is a git tag (`vX.Y.Z`) on the commit it was built from, and its i
 matching [GitHub Release](https://github.com/MukulS07/Vayun/releases). Installers are not committed to git
 (they are 140–270 MB, over GitHub's 100 MB file limit); the Release is where they are kept.
 
+## v1.0.8 — 2026-11-02
+> Two new themes, a clearer Team tab and smoother motion
+- **Two new themes: Aurum and Ink.** Aurum is warm black with a champagne-gold accent. Ink is matte black with a faint paper grain, serif numerals and one orange signal color. Pick either in Settings, Appearance, next to Vayun.
+- **A clearer Team tab.** One header with the team name, your role and the open and overdue counts. A short filter strip (My tasks or Everyone, search, and the Overdue, Must do and Hide done chips) replaces eight controls; sorting and grouping live behind **Sort & group**. Each task is a roomy card with the full title, and a round button changes its status in one tap (to do, doing, done). The People panel opens right under the header.
+- **Home in the Ink theme** shows the day as a large serif number with the week laid out beneath it, and greets you by name.
+- **Smoother, calmer motion.** The search palette, the quick-search window and the slash menu now open instantly, since people use them all day. Buttons give a stronger press and ease back on release, the page menu grows from its own button, and every dialog fades without movement when your system asks for reduced motion.
+- Appearance now says Vayun instead of Folio, and the sample team theme only shows when it is in use.
+- Under the hood: the Assistant gained a server mode for phones and the web (a pool of keys, saved keys per person and a daily limit). The desktop Assistant still uses your own NVIDIA key, exactly as before.
+
 ## v1.0.7 — 2026-10-28
 > Home screen, team roles and reminders
 - **Home: a landing screen that opens first, every time Vayun opens.** A dark *Start here* card leads with the one thing to do first, with counts beside it, and a small reminder popup appears when a must-do or overdue task is waiting (Open task or Snooze 1 hour). It follows whichever theme you pick. It shows what needs you today: **Must do** tasks, **Overdue** work, what is **due today and tomorrow**, **Important** (high-priority) work, **today's calendar** (your workspace, Google Calendar and the team), plus your own **reminders** and any pages you **pin** (••• → Pin to Home). Everything on it can be switched on or off with Customize. Tasks from your own Tasks databases show up there too.
