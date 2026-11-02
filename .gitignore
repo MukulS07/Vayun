@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 desktop/node_modules/
+functions/node_modules/
+functions/pool-keys.local.json
+functions/.env
 
 # Environment and credentials
 .env

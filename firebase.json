@@ -3,8 +3,27 @@
     "rules": "firestore.rules"
   },
   "emulators": {
-    "firestore": { "host": "127.0.0.1", "port": 8181 },
-    "ui": { "enabled": false },
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8181
+    },
+    "ui": {
+      "enabled": false
+    },
     "singleProjectMode": true
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "*.log"
+      ],
+      "predeploy": [
+        "node tools/sync-ai.js"
+      ]
+    }
+  ]
 }

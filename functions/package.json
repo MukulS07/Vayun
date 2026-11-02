@@ -1,0 +1,12 @@
+{
+  "name": "vayun-functions",
+  "private": true,
+  "description": "Vayun Assistant server: saved API keys (encrypted), the shared key pool and the daily limit.",
+  "main": "index.js",
+  "engines": { "node": "20" },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "google-auth-library": "^9.14.0",
+    "firebase-functions": "^6.1.0"
+  }
+}
