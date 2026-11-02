@@ -1424,6 +1424,25 @@ $('#notion-btn').onclick = async () => {
     (r.skipped.length ? `\nSkipped ${r.skipped.length} unsupported file(s).` : ''));
 };
 
+// A Google Form's responses (exported as Excel or CSV) become a database: one row per response. Importing the same
+// form again adds only the responses that are new.
+if (!api.importForm) $('#form-btn').hidden = true;
+$('#form-btn').onclick = async () => {
+  const r = await api.importForm();
+  if (!r) return;
+  if (r.error) return alert(`Could not import: ${r.error}`);
+  let res;
+  try { res = FolioFormImport.importForm(r.rows, data.pages, { name: r.name, uid }); }
+  catch (err) { return alert(`Could not import: ${err.message}`); }
+  data.pages.push(...res.pages);
+  save();
+  api.save(data);
+  openPage(res.db.id);
+  alert(res.created ? `Created "${res.db.title}" with ${res.added} response${res.added === 1 ? '' : 's'}. Move them through To do, Doing and Done on the board.`
+    : res.added ? `Added ${res.added} new response${res.added === 1 ? '' : 's'}${res.skipped ? ` (${res.skipped} already here)` : ''}.`
+    : 'Nothing new: every response in that file is already here.');
+};
+
 $('#star-btn').onclick = toggleStar;
 api.on('search:open', toggleSearch);
 api.on('page:open', id => (data ? openPage(id) : (pendingPageId = id)));

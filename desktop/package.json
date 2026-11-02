@@ -42,6 +42,7 @@
       "firebase-config.json",
       "pdf-import.js",
       "notion-import.js",
+      "form-import.js",
       "app/**/*",
       "package.json",
       "!**/*.test.js",

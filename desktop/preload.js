@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('api', {
   closeQuickSearch: () => ipcRenderer.send('quick:close'),
   importFiles: () => ipcRenderer.invoke('import:pick'),
   importNotion: () => ipcRenderer.invoke('import:notion'),
+  importForm: () => ipcRenderer.invoke('import:form'),
   listWorkspaces: () => ipcRenderer.invoke('ws:list'),
   activeWorkspaceName: () => ipcRenderer.invoke('ws:active'),
   createWorkspace: (name, template) => ipcRenderer.invoke('ws:create', { name, template }),

@@ -83,6 +83,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { pdfToBlocks } = require('./pdf-import');
 const { importNotionZip } = require('./notion-import');
+const { readFormFile } = require('./form-import');
 
 // The app was renamed from Pages to Vayun; keep reading and writing the existing data folder.
 // An explicit --user-data-dir (used by tests and separate profiles) still wins.
@@ -442,6 +443,16 @@ app.whenReady().then(() => {
     });
     if (canceled || !filePaths[0]) return null;
     try { return importNotionZip(fs.readFileSync(filePaths[0])); }
+    catch (err) { return { error: err.message }; }
+  });
+  ipcMain.handle('import:form', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWin, {
+      title: 'Import Google Form responses (Excel or CSV)',
+      properties: ['openFile'],
+      filters: [{ name: 'Excel or CSV', extensions: ['xlsx', 'csv'] }],
+    });
+    if (canceled || !filePaths[0]) return null;
+    try { return readFormFile(fs.readFileSync(filePaths[0]), filePaths[0]); }
     catch (err) { return { error: err.message }; }
   });
   ipcMain.handle('import:pick', async () => {
