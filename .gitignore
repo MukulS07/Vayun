@@ -100,3 +100,6 @@ Thumbs.db
 .reasonix*
 .rovodev*
 .vibe*
+
+# Android release APKs (kept in GitHub Releases, signed with the key in ~/.vayun-release)
+*.apk

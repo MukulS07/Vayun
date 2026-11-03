@@ -4,6 +4,15 @@ Every release is a git tag (`vX.Y.Z`) on the commit it was built from, and its i
 matching [GitHub Release](https://github.com/MukulS07/Vayun/releases). Installers are not committed to git
 (they are 140–270 MB, over GitHub's 100 MB file limit); the Release is where they are kept.
 
+## v1.0.9 — 2026-11-03
+> Forms with web links, a redesigned mind map and a first-run tour
+- **Forms inside Vayun.** Build a form (short and long answers, choice, checkboxes, dropdown, scale, date), fill it in, and watch the responses on a dashboard with charts, a month calendar and reminders. Export the answers to CSV.
+- **Share a form as a web link.** Click **Create web link** on a form and anyone with the link fills it in on their phone or computer, with no account. Their answers come back to the same dashboard when you open Responses or press **Sync responses**. You can update the questions, stop taking answers or remove the link at any time. It is built to stay inside Firebase's free plan: nothing runs in the background, each form is capped at 5,000 answers and 1,000 a day, and visitors are rate limited. One-time setup: [docs/forms-setup.md](docs/forms-setup.md).
+- **Bring in Google Forms.** Import a Google Form's response export (.xlsx or .csv) and Vayun turns it into a task board and dashboard. Importing a newer export updates the same entries instead of adding duplicates.
+- **A redesigned mind map** and a **first-run tour** that shows new people around.
+- **Sidebar:** pages with subpages fold away, databases start folded, and delete is now an icon.
+- **Assistant:** a model picker and a redesigned Assistant panel.
+
 ## v1.0.8 — 2026-11-02
 > Two new themes, a clearer Team tab and smoother motion
 - **Two new themes: Aurum and Ink.** Aurum is warm black with a champagne-gold accent. Ink is matte black with a faint paper grain, serif numerals and one orange signal color. Pick either in Settings, Appearance, next to Vayun.
