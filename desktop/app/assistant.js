@@ -1,5 +1,5 @@
-// Assistant side panel (Ctrl+J). Sends the request to the NVIDIA API through the main process,
-// applies the validated actions, and offers Undo for each run. Model text is only ever set as textContent.
+// Assistant side panel (Ctrl+J). Sends the request to the active AI service through the main process (or the Vayun AI
+// server on phones and the web), applies the validated actions, and offers Undo. Model text is only ever set as textContent.
 (function () {
   const A = FolioAssistant;
   let panel = null;
@@ -62,84 +62,213 @@
     return lines;
   }
 
+  const detect = raw => (window.FolioAiProviders ? window.FolioAiProviders.detectProvider(raw) : null);
+  const TIER_LABEL = { auto: 'Auto', fast: 'Fast', smart: 'Smart' };
+  const TIER_HINT = { auto: 'Quick for short asks, stronger for long ones', fast: 'Quickest answers', smart: 'Best for big plans and long notes' };
+  const QUICK = [
+    ['Make a checklist', 'for this week', 'Make a checklist for this week'],
+    ['Plan my week', 'days and priorities', 'Plan my week: create a page with a simple day-by-day plan and my top priorities'],
+    ['Study plan', 'a 7-day exam plan', 'Create a page with a 7-day exam study plan'],
+    ['Brainstorm ideas', '5 for a birthday party', 'Add 5 ideas for a birthday party'],
+    ['Summarize this page', 'key points as a list', 'Summarize this page as a short list of key points and add it to the page'],
+    ['Set up a planner', 'Life OS or Study OS', 'Create a Study OS planner'],
+  ];
+
+  let status = null;      // the latest answer from api.aiStatus()
+  let transcript = [];    // what the panel shows, so it can be redrawn when the panel is reopened
+  let popover = null;
+
   function build() {
     panel = el('aside', 'ai-panel');
     panel.setAttribute('aria-label', 'Assistant');
     panel.hidden = true;
     const head = el('div', 'ai-head');
     const title = el('div', 'ai-title');
-    title.append(el('span', 'ai-spark', '✦'), el('span', null, 'Assistant'), el('span', 'ai-badge', 'NVIDIA'));
+    title.append(el('span', 'ai-spark', '✦'), el('span', null, 'Assistant'));
+    const chip = el('button', 'ai-model');
+    chip.type = 'button';
+    chip.setAttribute('aria-haspopup', 'true');
+    chip.setAttribute('aria-label', 'Choose the model and answer style');
+    chip.hidden = true;
+    chip.onclick = e => { e.stopPropagation(); togglePopover(); };
     const gear = el('button', 'icon-btn', '⚙');
     gear.type = 'button';
     gear.setAttribute('aria-label', 'Assistant settings');
-    gear.onclick = () => showSettings();
+    gear.onclick = () => { closePopover(); showSettings(); };
     const close = el('button', 'icon-btn', '×');
     close.type = 'button';
     close.setAttribute('aria-label', 'Close assistant');
     close.onclick = () => toggle(false);
     const tools = el('div', 'ai-tools');
-    tools.append(gear, close);
+    tools.append(chip, gear, close);
     head.append(title, tools);
     const body = el('div', 'ai-body');
     panel.append(head, body);
-    panel.addEventListener('keydown', e => { if (e.key === 'Escape') toggle(false); });
+    panel.addEventListener('keydown', e => { if (e.key === 'Escape') { if (popover) closePopover(); else toggle(false); } });
+    panel.addEventListener('click', e => { if (popover && !popover.contains(e.target)) closePopover(); });
     document.body.append(panel);
   }
 
   const body = () => panel.querySelector('.ai-body');
 
+  // ---- the model chip and its menu ----
+  function chipLabel(st) {
+    if (!st || !st.hasKey && !st.cloud) return '';
+    if (st.cloud) return `Vayun AI · ${TIER_LABEL[st.tier] || 'Auto'}`;
+    const a = st.active || {};
+    return `${a.name || 'AI'} · ${a.model ? 'custom' : TIER_LABEL[a.tier] || 'Auto'}`;
+  }
+
+  function paintChip(st) {
+    status = st;
+    const chip = panel && panel.querySelector('.ai-model');
+    if (!chip) return;
+    const label = chipLabel(st);
+    chip.hidden = !label || (st.cloud && !st.signedIn);
+    chip.textContent = '';
+    chip.append(el('span', null, label), el('span', 'ai-caret', '▾'));
+  }
+
+  async function refresh() { const st = await api.aiStatus(); paintChip(st); return st; }
+
+  async function setTier(tier) {
+    const st = status || (await api.aiStatus());
+    if (st.cloud) await api.aiSetPrefs({ tier }); else await api.aiSelect({ tier });
+    const next = await refresh();
+    return next;
+  }
+
+  function closePopover() { if (popover) { popover.remove(); popover = null; } panel.querySelector('.ai-model')?.setAttribute('aria-expanded', 'false'); }
+
+  async function togglePopover() {
+    if (popover) return closePopover();
+    const st = await refresh();
+    const pop = el('div', 'ai-pop');
+    pop.setAttribute('role', 'menu');
+    pop.append(el('div', 'ai-pop-title', 'Answer style'));
+    const seg = el('div', 'ai-seg');
+    seg.setAttribute('role', 'group');
+    const tier = st.cloud ? st.tier : st.active.tier;
+    for (const t of ['auto', 'fast', 'smart']) {
+      const b = el('button', tier === t ? 'on' : '', TIER_LABEL[t]);
+      b.type = 'button';
+      b.title = TIER_HINT[t];
+      b.setAttribute('aria-pressed', String(tier === t));
+      b.onclick = async () => { await setTier(t); closePopover(); togglePopover(); };
+      seg.append(b);
+    }
+    pop.append(seg, el('p', 'ai-pop-hint', TIER_HINT[tier]));
+    if (!st.cloud && st.keys.length) {
+      pop.append(el('div', 'ai-pop-title', st.keys.length > 1 ? 'Service' : 'Connected service'));
+      for (const k of st.keys) {
+        const choice = st.choices.find(c => c.provider === k.provider);
+        const row = el('button', `ai-svc${st.active.provider === k.provider ? ' on' : ''}`);
+        row.type = 'button';
+        row.append(el('i', 'ai-radio'), el('span', 'ai-svc-name', k.name), el('span', 'ai-svc-key', k.last4 ? `····${k.last4}` : ''));
+        row.onclick = async () => { await api.aiSelect({ provider: k.provider }); await refresh(); closePopover(); togglePopover(); };
+        pop.append(row);
+        if (st.active.provider === k.provider && choice) {
+          const model = el('label', 'ai-pop-model');
+          model.append(el('span', null, 'Model'));
+          const input = el('input');
+          input.value = st.active.model || st.model;
+          input.spellcheck = false;
+          input.setAttribute('list', 'ai-models');
+          const list = el('datalist');
+          list.id = 'ai-models';
+          for (const m of choice.models) { const o = el('option'); o.value = m; list.append(o); }
+          input.onkeydown = async e => { if (e.key === 'Enter') { e.preventDefault(); await api.aiSelect({ model: input.value }); await refresh(); closePopover(); } };
+          input.onchange = async () => { await api.aiSelect({ model: input.value }); await refresh(); };
+          model.append(input, list);
+          pop.append(model, el('p', 'ai-pop-hint', 'Pick one from the list or type any model the service offers. Choose an answer style above to go back to automatic.'));
+        }
+      }
+    }
+    const manage = el('button', 'ai-pop-link', st.cloud ? 'Free messages and your own key…' : 'Add or remove keys…');
+    manage.type = 'button';
+    manage.onclick = () => { closePopover(); showSettings(); };
+    pop.append(manage);
+    panel.querySelector('.ai-head').append(pop);
+    popover = pop;
+    panel.querySelector('.ai-model')?.setAttribute('aria-expanded', 'true');
+  }
+
+  // ---- settings ----
   async function showSettings(note) {
-    const st = await api.aiStatus();
-    setBadge(st);
+    const st = await refresh();
     if (st.cloud) return showCloudSettings(st, note);
     const b = body();
     b.innerHTML = '';
-    const form = el('form', 'ai-settings');
-    form.append(el('p', 'ai-help', note || 'Connect the assistant to NVIDIA. Get a free API key at build.nvidia.com (profile menu → API Keys). The key is stored encrypted on this PC and is only sent to NVIDIA.'));
-    const keyLabel = el('label', null, 'API key');
+    const wrap = el('div', 'ai-settings');
+    wrap.append(el('h3', 'ai-h', st.hasKey ? 'Connected services' : 'Connect an AI service'));
+    wrap.append(el('p', 'ai-help', note || (st.hasKey
+      ? 'The Assistant uses the active service. If it runs out or is down, it quietly tries the next one.'
+      : 'Paste an API key from OpenAI, Claude, Gemini, Groq, NVIDIA, OpenRouter, xAI or AI/ML API. Vayun works out which service it is for. The key is stored encrypted on this PC and only sent to that service.')));
+    for (const k of st.keys) {
+      const card = el('div', 'ai-card');
+      const row = el('div', 'ai-keyrow');
+      const left = el('span', 'ai-keyname', `${k.name}${k.last4 ? ' ····' + k.last4 : ''}`);
+      row.append(left);
+      if (st.active.provider === k.provider) row.append(el('span', 'ai-tag', 'Active'));
+      else {
+        const use = el('button', null, 'Use');
+        use.type = 'button';
+        use.onclick = async () => { await api.aiSelect({ provider: k.provider }); showSettings(); };
+        row.append(use);
+      }
+      const rm = el('button', 'ai-danger', 'Remove');
+      rm.type = 'button';
+      rm.onclick = async () => { rm.disabled = true; await api.aiClearKey(k.provider); showSettings('Key removed.'); };
+      row.append(rm);
+      card.append(row);
+      wrap.append(card);
+    }
+    const form = el('form', 'ai-card ai-add');
+    form.append(el('div', 'ai-card-title', st.hasKey ? 'Add another key' : 'Add a key'));
     const key = el('input');
     key.type = 'password';
     key.autocomplete = 'off';
-    key.placeholder = st.hasKey ? 'Saved. Paste a new key to replace it' : 'nvapi-…';
-    keyLabel.append(key);
-    const modelLabel = el('label', null, 'Model');
-    const model = el('input');
-    model.value = st.model;
-    model.spellcheck = false;
-    const options = el('datalist');
-    options.id = 'ai-models';
-    for (const id of st.models || []) { const o = el('option'); o.value = id; options.append(o); }
-    model.setAttribute('list', 'ai-models');
-    modelLabel.append(model, options);
+    key.spellcheck = false;
+    key.placeholder = 'Paste your API key';
+    key.setAttribute('aria-label', 'API key');
+    const seen = el('p', 'ai-detect');
+    key.oninput = () => {
+      const p = key.value.trim() ? detect(key.value) : null;
+      seen.textContent = key.value.trim() ? (p ? `Looks like a ${p.name} key` : 'Not recognised yet. Check that you copied all of it.') : '';
+      seen.className = `ai-detect${p ? ' ok' : ''}`;
+    };
     const err = el('p', 'ai-error');
     err.hidden = true;
-    const row = el('div', 'ai-row');
-    const saveBtn = el('button', 'primary', 'Save');
-    saveBtn.type = 'submit';
-    row.append(saveBtn);
-    if (st.hasKey) {
-      const remove = el('button', null, 'Remove key');
-      remove.type = 'button';
-      remove.onclick = async () => { await api.aiClearKey(); showSettings('Key removed.'); };
-      const back = el('button', null, 'Back to chat');
-      back.type = 'button';
-      back.onclick = () => showChat();
-      row.append(back, remove);
-    }
-    form.append(keyLabel, modelLabel, err, row);
+    const save = el('button', 'primary', 'Test and save');
+    save.type = 'submit';
+    const help = el('details', 'ai-where');
+    help.append(el('summary', null, 'Where do I get a key?'));
+    const ul = el('ul');
+    for (const p of st.providers) { const li = el('li'); const a = el('a', null, p.name); a.href = p.keyHelp; a.target = '_blank'; a.rel = 'noreferrer'; li.append(a); ul.append(li); }
+    help.append(ul);
+    form.append(key, seen, err, save, help);
     form.onsubmit = async e => {
       e.preventDefault();
-      if (!key.value.trim() && !st.hasKey) { err.textContent = 'Paste your NVIDIA API key.'; err.hidden = false; return; }
-      const r = await api.aiSetKey(key.value, model.value);
-      key.value = '';
+      if (!key.value.trim()) return;
+      save.disabled = true;
+      save.textContent = 'Checking the key…';
+      const r = await api.aiSetKey(key.value);
+      save.disabled = false;
+      save.textContent = 'Test and save';
       if (r.error) { err.textContent = r.error; err.hidden = false; return; }
-      showChat();
+      key.value = '';
+      showSettings(r.warning || `${r.added.name} key ending ${r.added.last4} is saved.`);
     };
-    b.append(form);
-    (st.hasKey ? model : key).focus();
+    wrap.append(form);
+    if (st.hasKey) {
+      const back = el('button', 'primary', 'Back to chat');
+      back.type = 'button';
+      back.onclick = () => showChat();
+      wrap.append(back);
+    }
+    b.append(wrap);
+    if (!st.hasKey) key.focus();
   }
-
-  const setBadge = st => { const b = panel && panel.querySelector('.ai-badge'); if (b) { b.textContent = st && st.cloud ? 'Vayun AI' : 'NVIDIA'; b.classList.toggle('cloud', Boolean(st && st.cloud)); } };
 
   // Cloud mode (phones and the web): answers come from the Vayun AI server, with the person's own key (saved on the
   // website, same Google account) or a shared daily allowance. Nothing to paste here.
@@ -147,6 +276,7 @@
     const b = body();
     b.innerHTML = '';
     const wrap = el('div', 'ai-settings ai-cloud');
+    wrap.append(el('h3', 'ai-h', 'Assistant'));
     wrap.append(el('p', 'ai-help', note || 'The Assistant works with your Vayun sign-in. There is nothing to set up.'));
     if (!st.signedIn) {
       wrap.append(el('p', 'ai-help', st.error || 'Sign in with Google to use the Assistant.'));
@@ -163,7 +293,7 @@
       for (const k of st.own) {
         const row = el('div', 'ai-keyrow');
         row.append(el('span', 'ai-keyname', `${k.name} ····${k.last4}`));
-        const rm = el('button', null, 'Remove');
+        const rm = el('button', 'ai-danger', 'Remove');
         rm.type = 'button';
         rm.onclick = async () => { rm.disabled = true; const r = await api.aiClearKey(k.provider); showSettings(r && r.error ? r.error : 'Key removed.'); };
         row.append(rm);
@@ -185,15 +315,15 @@
     const seg = el('div', 'ai-seg');
     seg.setAttribute('role', 'group');
     seg.setAttribute('aria-label', 'Answer style');
-    for (const [v, label, hint] of [['auto', 'Auto', 'Quick for short asks, stronger for long ones'], ['fast', 'Fast', 'Quickest answers'], ['smart', 'Smart', 'Best for big plans and long notes']]) {
-      const btn = el('button', st.tier === v ? 'on' : '', label);
+    for (const t of ['auto', 'fast', 'smart']) {
+      const btn = el('button', st.tier === t ? 'on' : '', TIER_LABEL[t]);
       btn.type = 'button';
-      btn.title = hint;
-      btn.setAttribute('aria-pressed', String(st.tier === v));
-      btn.onclick = async () => { await api.aiSetPrefs({ tier: v }); showSettings(note); };
+      btn.title = TIER_HINT[t];
+      btn.setAttribute('aria-pressed', String(st.tier === t));
+      btn.onclick = async () => { await api.aiSetPrefs({ tier: t }); showSettings(note); };
       seg.append(btn);
     }
-    wrap.append(el('label', null, 'Answer style'), seg);
+    wrap.append(el('div', 'ai-card-title', 'Answer style'), seg);
 
     const more = el('div', 'ai-card');
     more.append(el('div', 'ai-card-title', 'Use your own key'),
@@ -214,66 +344,101 @@
     b.append(wrap);
   }
 
-  function bubble(cls, text) {
-    const log = panel.querySelector('.ai-log');
-    const m = el('div', `ai-msg ${cls}`, text);
-    log.append(m);
-    log.scrollTop = log.scrollHeight;
+  // ---- chat ----
+  // One row of the transcript: { cls, text, lines, note, quota, undo: { run, done } }
+  function drawEntry(entry) {
+    const m = el('div', `ai-msg ${entry.cls}`);
+    if (entry.cls.startsWith('bot') && !entry.cls.includes('error')) m.append(el('span', 'ai-avatar', '✦'));
+    const text = el('div', 'ai-text', entry.text);
+    m.append(text);
+    if (entry.lines && entry.lines.length) {
+      const done = el('ul', 'ai-done');
+      for (const l of entry.lines) done.append(el('li', null, l));
+      m.append(done);
+      if (entry.undo) {
+        const undo = el('button', 'ai-undo', entry.undo.done ? 'Undone' : '↶ Undo');
+        undo.type = 'button';
+        undo.disabled = Boolean(entry.undo.done);
+        undo.onclick = () => { entry.undo.run(); entry.undo.done = true; undo.disabled = true; undo.textContent = 'Undone'; };
+        m.append(undo);
+      }
+    }
+    if (entry.note) m.append(el('div', 'ai-note', entry.note));
+    if (entry.quota) m.append(el('div', 'ai-quota', entry.quota));
     return m;
   }
-
-  const EXAMPLES = ['Make a checklist for this week', 'Create a page with a 7-day exam study plan', 'Add 5 ideas for a birthday party', 'Create a Study OS planner'];
 
   function showChat() {
     const b = body();
     b.innerHTML = '';
     const log = el('div', 'ai-log');
     log.setAttribute('aria-live', 'polite');
-    if (!history.length) {
-      log.append(el('p', 'ai-help', 'Tell me what to do. I can write checklists and notes into this page, create pages, rename or open pages, and set up planners.'));
-      const ex = el('div', 'ai-examples');
-      for (const t of EXAMPLES) {
-        const chip = el('button', 'ai-example', t);
-        chip.type = 'button';
-        chip.onclick = () => { input.value = t; send(); };
-        ex.append(chip);
-      }
-      log.append(ex);
-    }
     const form = el('form', 'ai-compose');
+    const box = el('div', 'ai-box');
     const input = el('textarea');
-    input.rows = 2;
+    input.rows = 1;
     input.placeholder = 'Ask or tell the assistant…';
     input.setAttribute('aria-label', 'Message to the assistant');
+    const grow = () => { input.style.height = 'auto'; input.style.height = `${Math.min(input.scrollHeight, 140)}px`; };
+    input.oninput = grow;
     input.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } };
-    const go = el('button', 'primary', 'Send');
-    go.type = 'submit';
     const mic = el('button', 'ai-mic', '🎙');
     mic.type = 'button';
     mic.title = 'Speak instead of typing (Windows voice typing). Press Send when done.';
     mic.setAttribute('aria-label', 'Dictate');
     mic.onclick = async () => { input.focus(); const r = await api.startDictation(); if (r?.error) mic.title = r.error; };
-    form.append(input, mic, go);
+    const go = el('button', 'ai-send', '↑');
+    go.type = 'submit';
+    go.setAttribute('aria-label', 'Send');
+    box.append(input, mic, go);
+    const hint = el('div', 'ai-hint');
+    hint.append(el('span', null, 'Enter to send · Shift+Enter for a new line'), el('span', 'ai-hint-model', status && status.model ? status.model : ''));
+    form.append(box, hint);
     form.onsubmit = e => { e.preventDefault(); send(); };
     b.append(log, form);
+
+    if (!transcript.length) {
+      const hero = el('div', 'ai-hero');
+      hero.append(el('h3', null, 'What should we work on?'), el('p', 'ai-help', 'I can write into this page, create and rename pages, plan, and set up planners. Changes can be undone.'));
+      const grid = el('div', 'ai-quick');
+      for (const [title, sub, prompt] of QUICK) {
+        const card = el('button', 'ai-quick-card');
+        card.type = 'button';
+        card.append(el('b', null, title), el('span', null, sub));
+        card.onclick = () => { input.value = prompt; send(); };
+        grid.append(card);
+      }
+      hero.append(grid);
+      log.append(hero);
+    } else {
+      for (const entry of transcript) log.append(drawEntry(entry));
+      log.scrollTop = log.scrollHeight;
+    }
     input.focus();
+
+    const add = entry => { transcript.push(entry); const node = drawEntry(entry); log.append(node); log.scrollTop = log.scrollHeight; return node; };
 
     async function send() {
       const text = input.value.trim();
       if (!text || busy) return;
       busy = true;
       go.disabled = true;
-      log.querySelector('.ai-examples')?.remove();
+      log.querySelector('.ai-hero')?.remove();
       input.value = '';
-      bubble('user', text);
-      const wait = bubble('bot thinking', 'Thinking…');
-      const ctx = { view: mode, subpages: data.pages.filter(p => p.parentId === current?.id).map(p => p.title), page: current && { title: current.title, kind: current.kind, blocks: current.blocks }, pageTitles: data.pages.filter(p => !p.props).map(p => p.title) };
+      grow();
+      add({ cls: 'user', text });
+      const wait = el('div', 'ai-msg bot thinking');
+      wait.append(el('span', 'ai-avatar', '✦'), el('span', 'ai-dots'));
+      wait.querySelector('.ai-dots').append(el('i'), el('i'), el('i'));
+      log.append(wait);
+      log.scrollTop = log.scrollHeight;
+      const ctx = { view: mode, subpages: data.pages.filter(p => p.parentId === current?.id).map(p => p.title), page: current && { title: current.title, kind: current.kind, blocks: current.blocks }, pageTitles: data.pages.map(p => p.title) };
       const r = await api.aiChat(A.buildMessages(text, ctx, history));
       wait.remove();
       busy = false;
       go.disabled = false;
       if (r.error) {
-        bubble('bot error', r.error);
+        add({ cls: 'bot error', text: r.error });
         if (r.code === 'signin' || r.code === 'no-key' || (!r.code && /key/i.test(r.error))) showSettings(r.error);
         return;
       }
@@ -282,22 +447,17 @@
       const snapshot = JSON.parse(JSON.stringify(data.pages));
       const before = current?.id;
       const lines = valid.length ? apply(valid) : [];
-      const m = bubble('bot', reply || (lines.length ? 'Done.' : 'I could not work out what to change.'));
-      if (r.source === 'pool' && typeof r.left === 'number' && r.left <= 3) m.append(el('div', 'ai-quota', `${r.left} free message${r.left === 1 ? '' : 's'} left today`));
+      const entry = { cls: 'bot', text: reply || (lines.length ? 'Done.' : 'I could not work out what to change.'), lines };
       if (lines.length) {
-        const done = el('ul', 'ai-done');
-        for (const l of lines) done.append(el('li', null, l));
-        const undo = el('button', 'ai-undo', 'Undo');
-        undo.type = 'button';
-        undo.onclick = () => {
-          data.pages = snapshot;
-          openPage(byId(before) ? before : data.pages[0].id, mode === 'mindmap' ? 'mindmap' : 'doc');
-          save();
-          undo.disabled = true;
-          undo.textContent = 'Undone';
-        };
-        m.append(done, undo);
+        entry.undo = { done: false, run: () => { data.pages = snapshot; openPage(byId(before) ? before : data.pages[0].id, mode === 'mindmap' ? 'mindmap' : 'doc'); save(); } };
       }
+      if (r.switchedFrom && status && status.choices) {
+        const from = (status.keys.find(k => k.provider === r.switchedFrom) || {}).name || 'The active service';
+        const by = (status.keys.find(k => k.provider === r.provider) || {}).name || r.provider;
+        entry.note = `${from} could not answer, so ${by} did.`;
+      }
+      if (r.source === 'pool' && typeof r.left === 'number' && r.left <= 3) entry.quota = `${r.left} free message${r.left === 1 ? '' : 's'} left today`;
+      add(entry);
       history.push({ role: 'user', content: text }, { role: 'assistant', content: JSON.stringify({ reply, actions: valid }) });
       history = history.slice(-12);
       input.focus();
@@ -308,9 +468,8 @@
     if (!panel) build();
     panel.hidden = !open;
     document.body.classList.toggle('ai-open', open);
-    if (!open) return;
-    const st = await api.aiStatus();
-    setBadge(st);
+    if (!open) { closePopover(); return; }
+    const st = await refresh();
     if (st.hasKey) showChat(); else showSettings();
   }
 

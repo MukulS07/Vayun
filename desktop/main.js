@@ -83,6 +83,8 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { pdfToBlocks } = require('./pdf-import');
 const { importNotionZip } = require('./notion-import');
+const { readFormFile } = require('./form-import');
+const { createFormsCloud } = require('./forms-cloud');
 
 // The app was renamed from Pages to Vayun; keep reading and writing the existing data folder.
 // An explicit --user-data-dir (used by tests and separate profiles) still wins.
@@ -285,8 +287,9 @@ app.whenReady().then(() => {
   });
   const ai = require('./ai');
   ipcMain.handle('ai:status', () => ai.status());
-  ipcMain.handle('ai:setKey', (_e, { key, model }) => ai.setKey(key, model));
-  ipcMain.handle('ai:clearKey', () => ai.clearKey());
+  ipcMain.handle('ai:setKey', (_e, { key }) => ai.setKey(key));
+  ipcMain.handle('ai:removeKey', (_e, provider) => ai.removeKey(provider));
+  ipcMain.handle('ai:select', (_e, sel) => ai.select(sel));
   ipcMain.handle('ai:chat', (_e, messages) => ai.chat(messages));
 
   const auth = require('./auth');
@@ -441,6 +444,23 @@ app.whenReady().then(() => {
     });
     if (canceled || !filePaths[0]) return null;
     try { return importNotionZip(fs.readFileSync(filePaths[0])); }
+    catch (err) { return { error: err.message }; }
+  });
+  // Public form links: the server rules and Firestore costs are in functions/forms-core.js.
+  const formsCloud = createFormsCloud({ getToken: () => require('./auth').getFirebaseToken(), getProjectId: () => require('./auth').loadConfig().projectId });
+  ipcMain.handle('forms:publish', (_e, input) => formsCloud.publish(obj(input)));
+  ipcMain.handle('forms:pull', (_e, input) => formsCloud.pull(obj(input)));
+  ipcMain.handle('forms:open', (_e, input) => formsCloud.setOpen(obj(input)));
+  ipcMain.handle('forms:remove', (_e, input) => formsCloud.remove(obj(input)));
+  ipcMain.handle('forms:link', (_e, id) => formsCloud.link(String(id ?? '')));
+  ipcMain.handle('import:form', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWin, {
+      title: 'Import Google Form responses (Excel or CSV)',
+      properties: ['openFile'],
+      filters: [{ name: 'Excel or CSV', extensions: ['xlsx', 'csv'] }],
+    });
+    if (canceled || !filePaths[0]) return null;
+    try { return readFormFile(fs.readFileSync(filePaths[0]), filePaths[0]); }
     catch (err) { return { error: err.message }; }
   });
   ipcMain.handle('import:pick', async () => {

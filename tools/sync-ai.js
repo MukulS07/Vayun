@@ -1,20 +1,22 @@
-// Copies the shared AI provider module into functions/ so a deploy carries it (functions/ is deployed on its own).
-// desktop/app/ai-providers.js is the one real copy. Run automatically before `firebase deploy` (see firebase.json) and
+// Copies the shared modules into functions/ so a deploy carries them (functions/ is deployed on its own).
+// desktop/app/<name> is the one real copy of each. Run automatically before `firebase deploy` (see firebase.json) and
 // by the tests. Usage: node tools/sync-ai.js
 const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.join(__dirname, '..');
-const from = path.join(root, 'desktop', 'app', 'ai-providers.js');
-const to = path.join(root, 'functions', 'ai-providers.js');
-const banner = '// COPY of desktop/app/ai-providers.js. Do not edit here: change the original and run `node tools/sync-ai.js`.\n';
+const SHARED = ['ai-providers.js', 'forms-logic.js'];
+const banner = name => `// COPY of desktop/app/${name}. Do not edit here: change the original and run \`node tools/sync-ai.js\`.\n`;
 
 function sync() {
-  fs.mkdirSync(path.dirname(to), { recursive: true });
-  // Always LF, so the copy never shows up as changed just because of Windows line endings.
-  fs.writeFileSync(to, banner + fs.readFileSync(from, 'utf8').split('\r\n').join('\n'));
-  return to;
+  fs.mkdirSync(path.join(root, 'functions'), { recursive: true });
+  return SHARED.map(name => {
+    const to = path.join(root, 'functions', name);
+    // Always LF, so the copy never shows up as changed just because of Windows line endings.
+    fs.writeFileSync(to, banner(name) + fs.readFileSync(path.join(root, 'desktop', 'app', name), 'utf8').split('\r\n').join('\n'));
+    return to;
+  });
 }
 
-if (require.main === module) console.log('wrote', path.relative(root, sync()));
+if (require.main === module) for (const f of sync()) console.log('wrote', path.relative(root, f));
 module.exports = { sync };

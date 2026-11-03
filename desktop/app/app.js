@@ -126,16 +126,45 @@ function createDatabase() {
   $('#title').focus();
 }
 
-function deletePage() {
-  const ids = [current.id];
+// Deletes a page and everything under it, after asking. Works for any page in the sidebar, not only the open one.
+// A form is a page of its own kind: the questions, the responses and the dashboard live on it (forms.js).
+function createForm() {
+  const page = { id: uid(), title: '', parentId: null, kind: 'form', blocks: [], form: FolioForms.newForm(uid) };
+  data.pages.push(page);
+  openPage(page.id);
+}
+
+// Adds events to the workspace calendar (made if it does not exist yet), skipping ones already there. Returns how many were added.
+function addCalendarEvents(events) {
+  let cal = data.pages.find(p => p.kind === 'calendar');
+  if (!cal) { cal = { id: uid(), title: 'Calendar', parentId: null, kind: 'calendar', events: [], blocks: [] }; data.pages.push(cal); }
+  cal.events = cal.events || [];
+  let added = 0;
+  for (const { key, ...e } of events) {
+    if (cal.events.some(x => x.title === e.title && x.startDate === e.startDate)) continue;
+    cal.events.push({ id: 'l' + uid(), source: 'local', ...e });
+    added++;
+  }
+  if (added) save();
+  return added;
+}
+
+function deletePageById(id) {
+  const page = byId(id);
+  if (!page) return;
+  const ids = [id];
   for (let i = 0; i < ids.length; i++) data.pages.forEach(p => { if (p.parentId === ids[i]) ids.push(p.id); });
   const extra = ids.length > 1 ? ` and ${ids.length - 1} item(s) inside` : '';
-  if (!confirm(`Delete "${current.title || 'Untitled'}"${extra}? This cannot be undone.`)) return;
-  const parentId = current.parentId;
+  if (!confirm(`Delete "${page.title || 'Untitled'}"${extra}? This cannot be undone.`)) return;
+  const parentId = page.parentId;
+  const wasOpen = ids.includes(current.id);
   data.pages = data.pages.filter(p => !ids.includes(p.id));
   data.recent = data.recent.filter(r => !ids.includes(r));
-  openPage(parentId && byId(parentId) ? parentId : data.pages[0]?.id);
+  openTabs = openTabs.filter(t => !ids.includes(t));
+  if (wasOpen) openPage(parentId && byId(parentId) ? parentId : data.pages[0]?.id);
+  else { save(); render(); }
 }
+function deletePage() { deletePageById(current.id); }
 
 // Template pages (Life OS, Study OS) render in their own container with their own widgets.
 let activeTemplate = null;
@@ -163,6 +192,16 @@ function renderTemplate() {
     activeTemplate = FolioCalendar.mount(host, current, { getPages: () => data.pages, dateProp, openRow: id => openPage(id), onChange: () => save(), openTeam });
   } else if (current.kind === 'team') {
     activeTemplate = FolioTeam.mount(host, current, { onChange: () => save() });
+  } else if (current.kind === 'form') {
+    activeTemplate = FolioFormsUI.mount(host, current, {
+      onChange: () => save(),
+      onTitle: () => { save(); renderSidebar(); renderCrumb(); renderTabs(); },
+      addEvents: addCalendarEvents,
+      pickFile: api.importForm ? () => api.importForm() : null,
+      cloud: api.formsPublish ? { publish: api.formsPublish, pull: api.formsPull, setOpen: api.formsOpen, remove: api.formsRemove, link: api.formsLink } : null,
+      openLink: url => api.openExternal(url),
+      exportCsv: async csv => { const path = await api.exportFile(current.title || 'Form', 'csv', csv); if (path) alert(`Saved ${path}`); },
+    });
   } else if (current.kind === 'home') {
     activeTemplate = FolioHome.mount(host, current, { data: () => data, home: homeData, save, openPage: id => openPage(id), openCalendar, openTeam, markRowDone });
   }
@@ -174,7 +213,7 @@ function render() {
   renderMeta();
   renderFavs();
   renderToolbar();
-  if (current.kind === 'template' || current.kind === 'calendar' || current.kind === 'team' || current.kind === 'home') { renderTemplate(); return; }
+  if (current.kind === 'template' || current.kind === 'calendar' || current.kind === 'team' || current.kind === 'home' || current.kind === 'form') { renderTemplate(); return; }
   unmountTemplate();
   $('#tpl').hidden = true;
   $('#title').hidden = false;
@@ -288,6 +327,8 @@ function commandItems() {
     cmd('Open calendar', openCalendar),
     cmd('Open team', openTeam),
     cmd('Open Home', openHome),
+    cmd('New form', createForm),
+    cmd('Take the tour', () => FolioGuide.start()),
     cmd('Toggle light / dark', toggleLightDark),
     cmd('Change theme…', () => $('#theme-btn').click()),
     cmd('New Life OS page', () => FolioPicker.open(createTemplatePage, { template: 'life' })),
@@ -312,18 +353,52 @@ function renderCrumb() {
 function renderSidebar() {
   const tree = $('#tree');
   tree.innerHTML = '';
+  // Pages with subpages fold up. A database's rows start folded (there can be hundreds); other pages start open.
+  // The page you are on always keeps its parents open, so it never disappears from the list.
+  const kids = new Map();
+  for (const p of data.pages) kids.set(p.parentId, (kids.get(p.parentId) || 0) + 1);
+  const onPath = new Set();
+  for (let p = current, depth = 0; p && depth < 50; p = byId(p.parentId), depth++) onPath.add(p.id);
+  onPath.delete(current && current.id);
+  const isOpen = p => onPath.has(p.id) || (p.treeOpen === undefined ? !isDb(p) : p.treeOpen);
   const walk = (parentId, depth) => data.pages.filter(p => p.parentId === parentId).forEach(p => {
     const a = document.createElement('a');
     a.href = '#';
     const label = document.createElement('span');
     label.className = 'tree-label';
     label.textContent = p.title || 'Untitled';
-    a.append(icon(isDb(p) ? 'table' : p.kind === 'template' ? p.template : p.kind === 'calendar' ? 'calendar' : p.kind === 'team' ? 'team' : p.kind === 'home' ? 'home' : 'page'), label);
-    a.style.paddingLeft = `${12 + depth * 14}px`;
+    const count = kids.get(p.id) || 0;
+    const open = count > 0 && isOpen(p);
+    const fold = document.createElement('span');
+    fold.className = `tree-fold${count ? '' : ' none'}${open ? ' open' : ''}`;
+    if (count) {
+      fold.setAttribute('role', 'button');
+      fold.setAttribute('aria-label', `${open ? 'Fold' : 'Unfold'} ${p.title || 'Untitled'}`);
+      fold.setAttribute('aria-expanded', String(open));
+      fold.textContent = '›';
+      fold.onclick = e => { e.preventDefault(); e.stopPropagation(); p.treeOpen = !open; save(); renderSidebar(); };
+    }
+    a.append(fold, icon(isDb(p) ? 'table' : p.kind === 'template' ? p.template : p.kind === 'calendar' ? 'calendar' : p.kind === 'team' ? 'team' : p.kind === 'home' ? 'home' : p.kind === 'form' ? 'form' : 'page'), label);
+    if (count && !open) { const n = document.createElement('span'); n.className = 'tree-count'; n.textContent = count; a.append(n); }
+    if (p.kind !== 'home') {
+      // a trash icon that shows when the row is hovered or focused
+      const del = document.createElement('span');
+      del.className = 'tree-del';
+      del.setAttribute('role', 'button');
+      del.tabIndex = 0;
+      del.title = 'Delete page';
+      del.setAttribute('aria-label', `Delete ${p.title || 'Untitled'}`);
+      del.append(icon('trash'));
+      const run = e => { e.preventDefault(); e.stopPropagation(); deletePageById(p.id); };
+      del.onclick = run;
+      del.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') run(e); };
+      a.append(del);
+    }
+    a.style.paddingLeft = `${4 + depth * 14}px`;
     if (p === current) { a.className = 'active'; a.setAttribute('aria-current', 'page'); }
     a.onclick = e => { e.preventDefault(); openPage(p.id); };
     tree.append(a);
-    walk(p.id, depth + 1);
+    if (open) walk(p.id, depth + 1);
   });
   walk(null, 0);
 }
@@ -337,6 +412,8 @@ const ICONS = {
   calendar: 'M4 6h16v14H4z M4 10h16 M8 3v5 M16 3v5',
   team: 'M9 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M2 20c0-3.3 3-5 7-5s7 1.7 7 5 M17 11a2.5 2.5 0 1 0 0-5 M18 15c2.5 0 4 1.5 4 4',
   home: 'M3 11l9-7 9 7 M5 10v10h14V10 M10 20v-6h4v6',
+  form: 'M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h5',
+  trash: 'M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6',
 };
 function icon(name) {
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -364,7 +441,7 @@ function renderToolbar() {
   bar.innerHTML = '';
   const add = (...els) => els.forEach(el => bar.append(el));
   const more = [];
-  if (current.kind !== 'template' && current.kind !== 'calendar' && current.kind !== 'team' && current.kind !== 'home') {
+  if (current.kind !== 'template' && current.kind !== 'calendar' && current.kind !== 'team' && current.kind !== 'home' && current.kind !== 'form') {
     if (isDb(current)) {
       const v = viewOf(current);
       for (const t of VIEW_TYPES) add(button(t[0].toUpperCase() + t.slice(1), () => { current.view = { ...v, type: t }; render(); save(); }, { active: v.type === t, id: `view-${t}` }));
@@ -376,7 +453,7 @@ function renderToolbar() {
       mic.onmousedown = e => e.preventDefault(); // keep the caret in the block being edited
       add(mic);
     }
-    add(button('Mindmap', () => { mode = mode === 'mindmap' ? 'doc' : 'mindmap'; render(); }, { id: 'mm-btn', active: mode === 'mindmap' }));
+    add(button('Mindmap', () => { mode = mode === 'mindmap' ? 'doc' : 'mindmap'; mmShownFor = null; render(); }, { id: 'mm-btn', active: mode === 'mindmap' }));
     more.push(button('Add subpage', () => createPage(current.id), { id: 'sub-btn' }));
     const exp = isDb(current) ? [['CSV', 'csv']] : [['HTML', 'html'], ['Markdown', 'md']];
     for (const [label, ext] of exp) more.push(button(`Export ${label}`, () => exportCurrent(ext), { id: `exp-${ext}` }));
@@ -1046,41 +1123,28 @@ async function addProperty() {
   render();
 }
 
-/* Mindmap: the current page and its subpages as a tree */
-
-// Mindmap: the current page and its subpages on a canvas. Drag nodes, pan, zoom, and edit from the keyboard.
-// Positions are saved per page (mm); pages without one sit in the automatic tidy layout.
+/* Mind map: the page sits in the centre, its own text (headings, bullets, to-dos) and its subpages are the branches.
+   Drag nodes, pan, zoom, and edit from the keyboard. A dragged node keeps its place (page.mmPos, or current.mmBlocks for
+   lines of text); everything else sits in the automatic balanced layout. */
 const MM_COLORS = ['#8ea2ff', '#f2b35c', '#6fd3a0', '#e97b8f', '#b59cff'];
-const MM_W = 200, MM_H = 40, MM_GAPX = 80, MM_GAPY = 16;
-let mmSel = null, mmView = { x: 40, y: 40, k: 1 }, mmDrag = null, mmShownFor = null, mmLast = { pos: new Map(), edges: [] };
-
-// Tidy tree: children sit to the right of their parent, leaves stack top to bottom, parents centre on their children.
-function mmLayout(tree) {
-  const pos = new Map();
-  let row = 0;
-  const place = (node, depth) => {
-    const kids = byId(node.id).collapsed ? [] : node.children;
-    const ys = kids.map(k => place(k, depth + 1));
-    const y = ys.length ? (ys[0] + ys[ys.length - 1]) / 2 : row++ * (MM_H + MM_GAPY);
-    pos.set(node.id, { x: depth * (MM_W + MM_GAPX), y });
-    return y;
-  };
-  if (tree) place(tree, 0);
-  return pos;
-}
+let mmSel = null, mmView = { x: 0, y: 0, k: 1 }, mmDrag = null, mmShownFor = null, mmLast = { pos: new Map(), edges: [], nodes: new Map(), tree: null };
+const isBlockId = id => typeof id === 'string' && id.startsWith('b:');
+const mmNodeOf = id => mmLast.nodes.get(id);
+// What is remembered about one line of text in the map (its place, whether it is folded): kept on the centre page.
+const mmBlockState = id => { const st = (current.mmBlocks = current.mmBlocks || {}); const k = id.slice(2); return (st[k] = st[k] || {}); };
+const mmShowsContent = () => current.mmContent !== false;
 
 function mmPositions(tree) {
-  const auto = mmLayout(tree);
-  const pos = new Map();
-  const edges = [];
-  const walk = (node, parent) => {
-    const p = byId(node.id);
-    pos.set(node.id, p.mm ? { ...p.mm } : auto.get(node.id));
-    if (parent) edges.push([parent.id, node.id]);
-    if (!p.collapsed) node.children.forEach(c => walk(c, node));
-  };
-  if (tree) walk(tree, null);
-  return { pos, edges };
+  const { pos, edges } = FolioMindmap.layout(tree);
+  const nodes = new Map();
+  const walk = n => { nodes.set(n.id, n); n.children.forEach(walk); };
+  if (tree) walk(tree);
+  for (const [id, box] of pos) {
+    const n = nodes.get(id);
+    const m = n.kind === 'page' ? byId(id).mmPos : n.kind === 'block' ? (current.mmBlocks || {})[n.blockId] : null;
+    if (m && Number.isFinite(m.x) && Number.isFinite(m.y)) pos.set(id, { ...box, x: m.x, y: m.y });
+  }
+  return { pos, edges, nodes, tree };
 }
 
 function applyMmView() {
@@ -1094,146 +1158,195 @@ function applyMmView() {
 function mmFit() {
   const box = document.querySelector('.mm-view');
   if (!box || !mmLast.pos.size) return;
-  const xs = [...mmLast.pos.values()].map(p => p.x), ys = [...mmLast.pos.values()].map(p => p.y);
-  const w = Math.max(...xs) + MM_W - Math.min(...xs), h = Math.max(...ys) + MM_H - Math.min(...ys);
-  const k = Math.max(0.3, Math.min(1.2, Math.min((box.clientWidth - 80) / w, (box.clientHeight - 80) / h)));
-  mmView = { k, x: (box.clientWidth - w * k) / 2 - Math.min(...xs) * k, y: (box.clientHeight - h * k) / 2 - Math.min(...ys) * k };
+  const boxes = [...mmLast.pos.values()];
+  const x0 = Math.min(...boxes.map(p => p.x)), x1 = Math.max(...boxes.map(p => p.x + p.w));
+  const y0 = Math.min(...boxes.map(p => p.y)), y1 = Math.max(...boxes.map(p => p.y + p.h));
+  const w = x1 - x0, h = y1 - y0;
+  const k = Math.max(0.25, Math.min(1.2, Math.min((box.clientWidth - 80) / w, (box.clientHeight - 80) / h)));
+  mmView = { k, x: (box.clientWidth - w * k) / 2 - x0 * k, y: (box.clientHeight - h * k) / 2 - y0 * k };
   applyMmView();
 }
 
 function mmZoomAt(factor, cx, cy) {
-  const k0 = mmView.k, k1 = Math.min(2.5, Math.max(0.3, k0 * factor));
+  const k0 = mmView.k, k1 = Math.min(2.5, Math.max(0.25, k0 * factor));
   mmView.x = cx - (cx - mmView.x) * (k1 / k0);
   mmView.y = cy - (cy - mmView.y) * (k1 / k0);
   mmView.k = k1;
   applyMmView();
 }
-
-function mmSelect(id) { mmSel = id; renderMindmap(); }
+const mmZoomCentre = factor => { const v = document.querySelector('.mm-view'); if (v) mmZoomAt(factor, v.clientWidth / 2, v.clientHeight / 2); };
 
 function mmAddChild(parentId) {
+  const parent = parentId && !isBlockId(parentId) && byId(parentId) ? parentId : current.id;
   const id = uid();
-  data.pages.push({ id, title: '', parentId, blocks: [{ id: uid(), type: 'text', text: '' }] });
-  byId(parentId).collapsed = false;
+  data.pages.push({ id, title: '', parentId: parent, blocks: [{ id: uid(), type: 'text', text: '' }] });
+  byId(parent).collapsed = false;
   save();
   mmSel = id;
+  renderSidebar();
   renderMindmap();
   mmRename(id, true);
 }
 
 function mmAddSibling(id) {
-  const parent = byId(id).parentId;
-  if (!parent) return mmAddChild(id);
+  const parent = !isBlockId(id) && byId(id) && byId(id).parentId;
+  if (!parent || id === current.id) return mmAddChild(current.id);
   mmAddChild(parent);
 }
 
+// Edits a node's text in place: a page's title, or the line of text on the page that the node shows.
 function mmRename(id, fresh = false) {
   const el = document.querySelector(`.mm-node[data-id="${id}"] .mm-title`);
-  if (!el) return;
-  const old = byId(id).title;
+  const n = mmNodeOf(id);
+  if (!el || !n || n.kind === 'more') return;
+  const block = n.kind === 'block' ? current.blocks.find(b => b.id === n.blockId) : null;
+  const old = block ? block.text : byId(id).title;
   el.contentEditable = 'plaintext-only';
-  if (fresh) el.textContent = '';
+  el.textContent = fresh ? '' : old;
   el.focus();
   if (!fresh) getSelection().selectAllChildren(el);
   const done = commit => {
     el.contentEditable = 'false';
-    if (commit && byId(id)) byId(id).title = el.textContent.trim();
-    else if (byId(id)) el.textContent = old;
+    const text = el.textContent.trim();
+    if (commit && block && text) block.text = text;
+    else if (commit && !block && byId(id)) byId(id).title = text;
     save();
     renderSidebar();
     renderMindmap();
   };
   el.onkeydown = e => {
-    e.stopPropagation(); // keep Enter/Escape from reaching the mindmap's own key handler
+    e.stopPropagation(); // keep Enter/Escape from reaching the mind map's own key handler
     if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
-    if (e.key === 'Escape') { e.preventDefault(); done(false); }
+    if (e.key === 'Escape') { e.preventDefault(); el.textContent = old; done(false); }
   };
   el.onblur = () => { if (el.isContentEditable) done(true); };
 }
 
 function mmSetColor(id, color) {
+  if (isBlockId(id) || !byId(id) || id === current.id) return;
   byId(id).mmColor = color;
   save();
   renderMindmap();
 }
 
 function mmAutoLayout() {
-  for (const p of data.pages) if (isDescendant(p.id, current.id) || p.id === current.id) delete p.mm;
+  for (const p of data.pages) if (isDescendant(p.id, current.id) || p.id === current.id) delete p.mmPos;
+  for (const st of Object.values(current.mmBlocks || {})) { delete st.x; delete st.y; }
   save();
   renderMindmap();
+  mmFit();
+}
+
+function mmDeleteSelected() {
+  const n = mmSel && mmNodeOf(mmSel);
+  if (!n || n.root || n.kind === 'more') return;
+  if (n.kind === 'block') {
+    current.blocks = current.blocks.filter(b => b.id !== n.blockId);
+    if (!current.blocks.length) current.blocks = [{ id: uid(), type: 'text', text: '' }];
+    if (current.mmBlocks) delete current.mmBlocks[n.blockId];
+    mmSel = null;
+    save();
+    return renderMindmap();
+  }
+  deleteNode(n.id);
+}
+
+// Opens the page in the editor. For a line of text, with the cursor on that line.
+function mmOpen(id) {
+  const n = mmNodeOf(id);
+  if (!n) return;
+  if (n.kind === 'page' && !n.root) return openPage(id);
+  mode = 'doc';
+  render();
+  if (n.kind === 'block') renderBlocks(n.blockId, Infinity);
 }
 
 function mmToolbar() {
   const bar = document.createElement('div');
   bar.className = 'mm-tools';
-  const sel = mmSel && byId(mmSel) ? mmSel : null;
-  const b = (label, fn, extra) => button(label, fn, extra);
+  const n = mmSel && mmNodeOf(mmSel);
+  const isPage = !n || n.kind === 'page';
+  const b = (label, fn, extra, off, hint) => { const x = button(label, fn, extra); x.disabled = !!off; if (hint) x.title = hint; return x; };
   bar.append(
-    b('+ Child', () => sel && mmAddChild(sel), { id: 'mm-add' }),
-    b('+ Sibling', () => sel && mmAddSibling(sel), { id: 'mm-sib' }),
-    b('Rename', () => sel && mmRename(sel), { id: 'mm-rename' }),
-    b('Open', () => sel && openPage(sel), { id: 'mm-open' }),
-    b('Delete', () => sel && deleteNode(sel), { id: 'mm-del' }),
+    b('+ Branch', () => mmAddChild(n && n.kind === 'page' ? n.id : current.id), { id: 'mm-add' }, !isPage, 'New subpage under the selected branch (or the centre). Tab'),
+    b('+ Sibling', () => n && mmAddSibling(n.id), { id: 'mm-sib' }, !n || n.kind !== 'page' || n.root, 'New subpage next to the selected one. Enter'),
+    b('Rename', () => n && mmRename(n.id), { id: 'mm-rename' }, !n || n.kind === 'more', 'Edit the text. F2'),
+    b('Open', () => n && mmOpen(n.id), { id: 'mm-open' }, !n || n.kind === 'more', 'Open the page, or jump to this line of text'),
+    b('Delete', mmDeleteSelected, { id: 'mm-del' }, !n || n.root || n.kind === 'more', 'Delete'),
   );
   for (const c of MM_COLORS) {
     const sw = document.createElement('button');
     sw.type = 'button';
     sw.className = 'mm-sw';
     sw.style.background = c;
-    sw.title = 'Node colour';
-    sw.onclick = () => sel && mmSetColor(sel, c);
+    sw.title = 'Branch colour';
+    sw.disabled = !n || n.kind !== 'page' || n.root;
+    sw.onclick = () => n && mmSetColor(n.id, c);
     bar.append(sw);
   }
   bar.append(
-    b('Auto layout', mmAutoLayout, { id: 'mm-auto' }),
-    b('−', () => mmZoomAt(1 / 1.2, document.querySelector('.mm-view').clientWidth / 2, document.querySelector('.mm-view').clientHeight / 2), { id: 'mm-out' }),
-    b('100%', mmFit, { id: 'mm-fit' }),
-    b('+', () => mmZoomAt(1.2, document.querySelector('.mm-view').clientWidth / 2, document.querySelector('.mm-view').clientHeight / 2), { id: 'mm-in' }),
+    b('Page text', () => { current.mmContent = !mmShowsContent(); save(); renderMindmap(); mmFit(); }, { id: 'mm-content', active: mmShowsContent() }, false, 'Show the headings and lines of this page as branches'),
+    b('Auto layout', mmAutoLayout, { id: 'mm-auto' }, false, 'Put every branch back in its tidy place'),
+    b('−', () => mmZoomCentre(1 / 1.2), { id: 'mm-out' }),
+    b('100%', mmFit, { id: 'mm-fit' }, false, 'Fit everything in the window'),
+    b('+', () => mmZoomCentre(1.2), { id: 'mm-in' }),
   );
   return bar;
+}
+
+function mmPath(a, b) { return FolioMindmap.curve(mmLast.pos.get(a), mmLast.pos.get(b)); }
+
+function mmDrawLines() {
+  const svg = document.querySelector('.mm-lines');
+  if (!svg) return;
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  for (const [a, b] of mmLast.edges) {
+    if (!mmLast.pos.get(a) || !mmLast.pos.get(b)) continue;
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', mmPath(a, b));
+    path.style.stroke = mmNodeOf(b).color || 'var(--muted)';
+    svg.append(path);
+  }
 }
 
 function renderMindmap() {
   const box = $('#mindmap');
   box.innerHTML = '';
-  const tree = mindmapTree(data.pages, current.id);
-  if (mmShownFor !== current.id) { mmShownFor = current.id; mmSel = null; mmView = { x: 40, y: 40, k: 1 }; }
+  const fresh = mmShownFor !== current.id;
+  if (fresh) { mmShownFor = current.id; mmSel = null; }
+  const tree = FolioMindmap.paintBranches(FolioMindmap.buildTree(data.pages, current.id, { content: mmShowsContent() }));
   mmLast = mmPositions(tree);
+  if (mmSel && !mmLast.nodes.has(mmSel)) mmSel = null;
   box.append(mmToolbar());
 
   const view = document.createElement('div');
   view.className = 'mm-view';
   const canvas = document.createElement('div');
   canvas.className = 'mm-canvas';
-  const svgNS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(svgNS, 'svg');
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('class', 'mm-lines');
-  for (const [a, b] of mmLast.edges) {
-    const p1 = mmLast.pos.get(a), p2 = mmLast.pos.get(b);
-    if (!p1 || !p2) continue;
-    const x1 = p1.x + MM_W, y1 = p1.y + MM_H / 2, x2 = p2.x, y2 = p2.y + MM_H / 2, mid = (x2 - x1) / 2;
-    const path = document.createElementNS(svgNS, 'path');
-    path.setAttribute('d', `M${x1} ${y1} C${x1 + mid} ${y1} ${x2 - mid} ${y2} ${x2} ${y2}`);
-    svg.append(path);
-  }
   canvas.append(svg);
 
   for (const [id, p] of mmLast.pos) {
-    const page = byId(id);
+    const n = mmNodeOf(id);
     const node = document.createElement('div');
-    node.className = 'mm-node' + (id === mmSel ? ' sel' : '') + (id === current.id ? ' root' : '');
+    node.className = `mm-node mm-${n.kind}` + (n.root ? ' root' : '') + (n.heading ? ' head' : '') + (n.done ? ' done' : '') + (id === mmSel ? ' sel' : '');
     node.dataset.id = id;
-    node.style.left = `${p.x}px`;
-    node.style.top = `${p.y}px`;
-    node.style.borderLeftColor = page.mmColor || 'var(--line)';
+    node.style.cssText = `left:${p.x}px;top:${p.y}px;width:${p.w}px;min-height:${p.h}px;`;
+    if (n.color && !n.root) node.style.borderLeftColor = n.color;
     const title = document.createElement('span');
     title.className = 'mm-title';
-    title.textContent = page.title || 'Untitled';
+    title.textContent = n.title;
     node.append(title);
-    const kids = byId(id) && data.pages.filter(c => c.parentId === id).length;
-    if (kids) {
-      const t = button(page.collapsed ? `▸ ${kids}` : '▾', () => { page.collapsed = !page.collapsed; save(); renderMindmap(); });
+    if (n.children.length && !n.root) {
+      const t = button(n.collapsed ? `▸ ${n.children.length}` : '▾', () => {
+        if (n.kind === 'page') byId(id).collapsed = !n.collapsed; else mmBlockState(id).collapsed = !n.collapsed;
+        save();
+        renderMindmap();
+      });
       t.className = 'mm-count';
+      t.title = n.collapsed ? 'Show the branches' : 'Fold the branches';
       t.onpointerdown = e => e.stopPropagation();
       node.append(t);
     }
@@ -1244,17 +1357,28 @@ function renderMindmap() {
       mmDrag = { type: 'node', id, px: e.clientX, py: e.clientY, x: p.x, y: p.y, moved: false };
       node.classList.add('sel');
     };
-    node.ondblclick = () => openPage(id);
+    node.ondblclick = () => mmOpen(id);
     canvas.append(node);
+  }
+  if (mmLast.nodes.size === 1) {
+    const hint = document.createElement('div');
+    hint.className = 'mm-hint';
+    const h = document.createElement('b');
+    h.textContent = 'This page has nothing to map yet';
+    const t = document.createElement('span');
+    t.textContent = 'Write headings and lists on the page and they appear here as branches, or press + Branch to add a subpage.';
+    hint.append(h, t);
+    view.append(hint);
   }
   view.append(canvas);
   box.append(view);
+  mmDrawLines();
   view.addEventListener('pointerdown', e => {
-    if (e.target !== view && e.target !== canvas && e.target !== svg) return;
+    if (e.target.closest('.mm-node')) return;
     mmSel = null;
     mmDrag = { type: 'pan', px: e.clientX, py: e.clientY, vx: mmView.x, vy: mmView.y };
     view.classList.add('panning');
-    renderMindmap();
+    document.querySelectorAll('.mm-node.sel').forEach(x => x.classList.remove('sel'));
   });
   view.addEventListener('wheel', e => {
     e.preventDefault();
@@ -1262,7 +1386,7 @@ function renderMindmap() {
     mmZoomAt(e.deltaY < 0 ? 1.1 : 1 / 1.1, e.clientX - r.left, e.clientY - r.top);
   }, { passive: false });
   applyMmView();
-  if (mmView.x === 40 && mmView.y === 40 && mmView.k === 1 && mmLast.pos.size > 1) mmFit();
+  if (fresh) mmFit();
 }
 
 // Drag and pan are tracked on the window so the pointer can leave a node.
@@ -1276,11 +1400,14 @@ window.addEventListener('pointermove', e => {
   const dx = (e.clientX - mmDrag.px) / mmView.k, dy = (e.clientY - mmDrag.py) / mmView.k;
   if (!mmDrag.moved && Math.hypot(dx, dy) < 4) return;
   mmDrag.moved = true;
-  byId(mmDrag.id).mm = { x: mmDrag.x + dx, y: mmDrag.y + dy };
-  const node = document.querySelector(`.mm-node[data-id="${mmDrag.id}"]`);
-  if (node) { node.style.left = `${mmDrag.x + dx}px`; node.style.top = `${mmDrag.y + dy}px`; }
-  mmLast.pos.set(mmDrag.id, { ...byId(mmDrag.id).mm });
-  renderLinesOnly();
+  const n = mmNodeOf(mmDrag.id);
+  if (!n || n.kind === 'more') return;
+  const at = { x: mmDrag.x + dx, y: mmDrag.y + dy };
+  if (n.kind === 'page') byId(n.id).mmPos = at; else Object.assign(mmBlockState(n.id), at);
+  mmLast.pos.set(n.id, { ...mmLast.pos.get(n.id), ...at });
+  const el = document.querySelector(`.mm-node[data-id="${n.id}"]`);
+  if (el) { el.style.left = `${at.x}px`; el.style.top = `${at.y}px`; }
+  mmDrawLines();
 });
 window.addEventListener('pointerup', () => {
   if (!mmDrag) return;
@@ -1288,34 +1415,19 @@ window.addEventListener('pointerup', () => {
   mmDrag = null;
   document.querySelector('.mm-view')?.classList.remove('panning');
   if (was.type === 'node' && was.moved) save();
-  if (was.type === 'node' && !was.moved) renderMindmap();
+  if (was.type === 'node' && !was.moved) renderMindmap(); // a click: refresh the toolbar for the selected node
 });
 
-// Redraws connector lines only, while a node is being dragged.
-function renderLinesOnly() {
-  const svg = document.querySelector('.mm-lines');
-  if (!svg) return;
-  svg.innerHTML = '';
-  const svgNS = 'http://www.w3.org/2000/svg';
-  for (const [a, b] of mmLast.edges) {
-    const p1 = mmLast.pos.get(a), p2 = mmLast.pos.get(b);
-    if (!p1 || !p2) continue;
-    const x1 = p1.x + MM_W, y1 = p1.y + MM_H / 2, x2 = p2.x, y2 = p2.y + MM_H / 2, mid = (x2 - x1) / 2;
-    const path = document.createElementNS(svgNS, 'path');
-    path.setAttribute('d', `M${x1} ${y1} C${x1 + mid} ${y1} ${x2 - mid} ${y2} ${x2} ${y2}`);
-    svg.append(path);
-  }
-}
-
-// Keyboard editing on the mindmap: Tab child, Enter sibling, F2 rename, Delete remove.
+// Keyboard editing on the mind map: Tab branch, Enter sibling, F2 rename, Delete remove.
 document.addEventListener('keydown', e => {
-  if (mode !== 'mindmap' || !mmSel || !byId(mmSel)) return;
+  if (mode !== 'mindmap' || !mmSel || !mmNodeOf(mmSel)) return;
   const t = e.target;
   if (t.isContentEditable || ['INPUT', 'SELECT', 'TEXTAREA'].includes(t.tagName)) return;
-  if (e.key === 'Tab') { e.preventDefault(); mmAddChild(mmSel); }
-  else if (e.key === 'Enter') { e.preventDefault(); mmAddSibling(mmSel); }
-  else if (e.key === 'F2') { e.preventDefault(); mmRename(mmSel); }
-  else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteNode(mmSel); }
+  const n = mmNodeOf(mmSel);
+  if (e.key === 'Tab' && n.kind === 'page') { e.preventDefault(); mmAddChild(n.id); }
+  else if (e.key === 'Enter' && n.kind === 'page') { e.preventDefault(); mmAddSibling(n.id); }
+  else if (e.key === 'F2' && n.kind !== 'more') { e.preventDefault(); mmRename(n.id); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); mmDeleteSelected(); }
 });
 /* Search modal (in-window, like Notion's openSearchModalInNotion) */
 
@@ -1389,6 +1501,7 @@ $('#title').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !isDb(current)) { e.preventDefault(); renderBlocks(current.blocks[0]?.id); }
 });
 $('#new-btn').onclick = () => createPage(null);
+$('#new-form-btn').onclick = createForm;
 $('#new-db-btn').onclick = createDatabase;
 $('#cal-btn').onclick = openCalendar;
 $('#team-btn').onclick = openTeam;
@@ -1424,6 +1537,41 @@ $('#notion-btn').onclick = async () => {
     (r.skipped.length ? `\nSkipped ${r.skipped.length} unsupported file(s).` : ''));
 };
 
+// A Google Form's responses (exported as Excel or CSV) become a database: one row per response. Importing the same
+// form again adds only the responses that are new.
+if (!api.importForm) $('#form-btn').hidden = true;
+$('#form-btn').onclick = async () => {
+  const r = await api.importForm();
+  if (!r) return;
+  if (r.error) return alert(`Could not import: ${r.error}`);
+  let res;
+  try { res = FolioFormImport.importForm(r.rows, data.pages, { name: r.name, uid }); }
+  catch (err) { return alert(`Could not import: ${err.message}`); }
+  data.pages.push(...res.pages);
+  save();
+  api.save(data);
+  openPage(res.db.id);
+  alert(res.created ? `Created "${res.db.title}" with ${res.added} response${res.added === 1 ? '' : 's'}. Move them through To do, Doing and Done on the board.`
+    : res.added ? `Added ${res.added} new response${res.added === 1 ? '' : 's'}${res.skipped ? ` (${res.skipped} already here)` : ''}.`
+    : 'Nothing new: every response in that file is already here.');
+};
+
+// The same export, shown as a dashboard: a form page with a chart for every question. Importing a newer export of the
+// same form into that page (Responses tab) adds the new responses and updates the changed ones.
+if (!api.importForm) $('#form-dash-btn').hidden = true;
+$('#form-dash-btn').onclick = async () => {
+  const r = await api.importForm();
+  if (!r) return;
+  if (r.error) return alert(`Could not import: ${r.error}`);
+  let made;
+  try { made = FolioForms.fromTable(r.rows, { uid }); } catch (err) { return alert(`Could not import: ${err.message}`); }
+  const page = { id: uid(), title: r.name, parentId: null, kind: 'form', blocks: [], form: made.form };
+  data.pages.push(page);
+  save();
+  api.save(data);
+  openPage(page.id);
+};
+
 $('#star-btn').onclick = toggleStar;
 api.on('search:open', toggleSearch);
 api.on('page:open', id => (data ? openPage(id) : (pendingPageId = id)));
@@ -1443,7 +1591,10 @@ if (api.isMac) {
   applyTheme();
   if (pendingPageId) openPage(pendingPageId); // something asked for a specific page (for example Quick Search)
   else openHome(); // otherwise every opening starts on the landing screen
+  // a brand new workspace gets the tour once (guide.js loads after this file, so wait for the page to finish loading)
+  if (window.FolioGuide) FolioGuide.maybeStart(); else addEventListener('load', () => FolioGuide.maybeStart(), { once: true });
 })();
+$('#tour-btn').onclick = () => FolioGuide.start();
 
 // Workspace switcher: the sidebar header shows the active workspace and goes back to the start page.
 api.activeWorkspaceName().then(name => { document.querySelector('.ws-name').textContent = name; });

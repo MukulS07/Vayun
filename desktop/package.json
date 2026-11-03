@@ -1,7 +1,7 @@
 {
   "name": "pages-desktop",
   "productName": "Vayun",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Vayun - local notes, planners and an AI assistant",
   "author": "Mukul Sharma",
   "private": true,
@@ -42,6 +42,8 @@
       "firebase-config.json",
       "pdf-import.js",
       "notion-import.js",
+      "form-import.js",
+      "forms-cloud.js",
       "app/**/*",
       "package.json",
       "!**/*.test.js",

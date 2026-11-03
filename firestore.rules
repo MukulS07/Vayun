@@ -285,6 +285,15 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Public forms (the "forms" Cloud Function): a published form, its counters and its responses. Visitors and the
+    // owner's app both go through the function, which checks the rules in forms-core.js and skips these with the admin SDK.
+    match /publicForms/{formId} {
+      allow read, write: if false;
+      match /responses/{n} {
+        allow read, write: if false;
+      }
+    }
+
     // ===============================================================
     // Global Superadmin Fallback — Universal Raw Entity Editor
     // ===============================================================
