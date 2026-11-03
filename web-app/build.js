@@ -9,7 +9,7 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const appDir = path.join(root, 'desktop', 'app');
 // Loaded before any screen script, in this order: the Firebase settings, the browser `api`, the team code, the cloud parts.
-const SHIMS = ['web-config.js', 'web-api.js', 'web-team.js', 'web-cloud.js'];
+const SHIMS = ['web-config.js', 'web-api.js', 'web-team.js', 'web-cloud.js', 'web-forms.js'];
 const FIREBASE_CDN = 'https://www.gstatic.com';
 // What the page may talk to: Firebase sign-in, Firestore (teams) and Google Calendar; nothing else.
 const CSP = [
@@ -80,7 +80,7 @@ function build(outDir) {
   copyDir(appDir, outDir);
   fs.writeFileSync(path.join(outDir, 'web-config.js'), webConfig());
   fs.writeFileSync(path.join(outDir, 'web-team.js'), teamBundle());
-  for (const f of ['web-api.js', 'web-cloud.js']) fs.copyFileSync(path.join(__dirname, f), path.join(outDir, f));
+  for (const f of ['web-api.js', 'web-cloud.js', 'web-forms.js']) fs.copyFileSync(path.join(__dirname, f), path.join(outDir, f));
   return outDir;
 }
 

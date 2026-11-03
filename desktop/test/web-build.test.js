@@ -14,7 +14,7 @@ const scripts = html => [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[
 test('both pages load the web api before any screen script, and every script they name exists', () => {
   for (const name of ['index.html', 'start.html']) {
     const list = scripts(page(name));
-    assert.deepStrictEqual(list.slice(0, 4), ['web-config.js', 'web-api.js', 'web-team.js', 'web-cloud.js'], name);
+    assert.deepStrictEqual(list.slice(0, 5), ['web-config.js', 'web-api.js', 'web-team.js', 'web-cloud.js', 'web-forms.js'], name);
     for (const s of list) assert.ok(fs.existsSync(path.join(out, s)), `${name} names ${s}`);
   }
 });
