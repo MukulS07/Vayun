@@ -1,0 +1,5 @@
+Timestamp,Email Address,Task,Priority,Due date,Assigned to,Details
+11/02/2026 10:21:33,asha@example.com,Fix the login page,High,11/05/2026,Asha,"The button does nothing on phones, see the screenshot I sent last week to the team channel."
+11/02/2026 11:00:00,ravi@example.com,Order stickers,Low,11/20/2026,Ravi,
+11/03/2026 09:10:00,meera@example.com,Update the pricing page,High,11/07/2026,Asha,
+11/04/2026 08:00:00,dev@example.com,Book the venue,Medium,11/09/2026,Meera,Need a hall for 40 people near the station.

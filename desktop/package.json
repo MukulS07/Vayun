@@ -43,6 +43,7 @@
       "pdf-import.js",
       "notion-import.js",
       "form-import.js",
+      "forms-cloud.js",
       "app/**/*",
       "package.json",
       "!**/*.test.js",
