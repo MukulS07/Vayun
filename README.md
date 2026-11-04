@@ -37,6 +37,15 @@ Pre-built binaries are automatically compiled via GitHub Actions:
 
 > *Note for macOS:* Because Vayun is independently developed without an expensive Apple Developer ID, if Gatekeeper shows *"Vayun can't be opened"*, simply right-click `Vayun.app` → click **Open**, or go to **System Settings → Privacy & Security** and click **Open Anyway**.
 
+**Faster on macOS and Linux — one command** (picks the right file for your computer and clears the Gatekeeper warning):
+```bash
+curl -fsSL https://raw.githubusercontent.com/MukulS07/Vayun/master/tools/install.sh | bash
+```
+Homebrew users can use the cask in [tools/homebrew](tools/homebrew/vayun.rb) once it is published to a tap.
+
+### 🐧 Linux (x64)
+Download **`Vayun-<version>-<arch>.AppImage`** (any distro: `chmod +x` and run) or the **`.deb`** (Debian, Ubuntu) from [**Releases**](https://github.com/MukulS07/Vayun/releases/latest), or use the one-line command above.
+
 ### 🪟 Windows (x64)
 1. Download **`Vayun-Setup-<version>.exe`** from [**Releases**](https://github.com/MukulS07/Vayun/releases/latest).
 2. Run the installer to add Vayun to your Start Menu and Desktop.
@@ -45,7 +54,7 @@ Pre-built binaries are automatically compiled via GitHub Actions:
 
 ### 🌐 On the web
 
-Vayun also runs in a browser tab, with the same screens as the desktop app: Home, pages and databases, themes, Google sign-in, Google Calendar and Teams. Pages are kept in that browser. The assistant and Notion and PDF import are desktop-only for now. How it is built and put on a website: [web-app/README.md](web-app/README.md).
+Vayun also runs in a browser tab, with the same screens as the desktop app: Home, pages and databases, themes, Google sign-in, Google Calendar and Teams. Pages are kept in that browser. It is also installable: on a phone, tablet or Chromebook use **Add to Home Screen** / **Install app**, and on desktop Chrome or Edge use the install icon in the address bar. The assistant and Notion and PDF import are desktop-only for now. How it is built and put on a website: [web-app/README.md](web-app/README.md).
 
 ---
 

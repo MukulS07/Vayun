@@ -48,3 +48,16 @@ test('the team bundle runs in a browser-like sandbox and yields the real team se
 test('the web config carries no Google Calendar client secret', () => {
   assert.ok(!/GOCSPX|clientSecret/i.test(page('web-config.js')));
 });
+
+test('the web app is installable: manifest, icons, service worker and the page links', () => {
+  const m = JSON.parse(page('manifest.webmanifest'));
+  assert.strictEqual(m.display, 'standalone');
+  assert.ok(m.icons.every(i => fs.existsSync(path.join(out, i.src))), 'every manifest icon exists');
+  for (const name of ['index.html', 'start.html']) {
+    assert.ok(page(name).includes('<link rel="manifest" href="manifest.webmanifest">'), name);
+    assert.ok(scripts(page(name)).includes('pwa.js'), name);
+  }
+  const sw = page('sw.js');
+  assert.ok(/origin !== self\.location\.origin\) return/.test(sw), 'cross-origin (Firebase, Google) requests are never cached');
+  assert.ok(/req\.method !== 'GET'/.test(sw));
+});

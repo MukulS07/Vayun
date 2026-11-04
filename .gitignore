@@ -46,6 +46,7 @@ android-app/.gradle/
 
 # Graphify & tool outputs
 graphify-out/
+graphify-out-old-*/
 
 # Sample screenshots
 desktop/samples/*.png

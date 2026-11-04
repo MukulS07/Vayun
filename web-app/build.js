@@ -24,12 +24,53 @@ const CSP = [
 ].join('; ');
 const SKIP = new Set(['quick.html', 'quick.js']); // the desktop's global quick-search window
 
+// ---- installable app (PWA) ----
+// A manifest and a small service worker make "Install app" / "Add to Home Screen" work on phones, tablets, Chromebooks
+// and desktop Chrome/Edge. The worker is network-first, so a visit online always gets the newest build; the cache is
+// only the offline fallback. Only same-origin GETs are cached; Firebase and Google calls are never touched.
+const PWA_HEAD = [
+  '<link rel="manifest" href="manifest.webmanifest">',
+  '<meta name="theme-color" content="#ffffff">',
+  '<link rel="apple-touch-icon" href="brand/vayun-icon.png">',
+  '<meta name="apple-mobile-web-app-capable" content="yes">',
+  '<meta name="mobile-web-app-capable" content="yes">',
+].join('\n');
+const PWA_REGISTER = `<script src="pwa.js"></script>`;
+const MANIFEST = {
+  name: 'Vayun', short_name: 'Vayun', description: 'Notes, planners and an AI assistant',
+  start_url: './index.html', scope: './', display: 'standalone', background_color: '#ffffff', theme_color: '#ffffff',
+  icons: [
+    { src: 'brand/vayun-icon.png', sizes: '1024x1024', type: 'image/png', purpose: 'any' },
+    { src: 'brand/vayun-icon.png', sizes: '1024x1024', type: 'image/png', purpose: 'maskable' },
+  ],
+};
+const PWA_REGISTER_JS = `if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+`;
+function serviceWorker(version) {
+  return `const CACHE = 'vayun-${version}';
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', e => e.waitUntil(
+  caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
+self.addEventListener('fetch', e => {
+  const req = e.request;
+  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  e.respondWith(fetch(req).then(res => {
+    if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+    return res;
+  }).catch(() => caches.match(req).then(hit => hit || caches.match('index.html'))));
+});
+`;
+}
+
 function patchHtml(html) {
   const tags = SHIMS.map(f => `<script src="${f}"></script>`).join('\n');
   // The shim goes first among the scripts, so `window.api` exists before any screen asks for it.
   const firstScript = html.search(/<script\b/);
   if (firstScript < 0) throw new Error('page has no script tag');
   let out = html.slice(0, firstScript) + tags + '\n' + html.slice(firstScript);
+  out = out.replace('</head>', PWA_HEAD + '\n</head>').replace('</body>', PWA_REGISTER + '\n</body>');
   out = out.replace('<title>Vayun</title>', '<title>Vayun on the web</title>');
   out = out.replace(/<meta http-equiv="Content-Security-Policy" content="[^"]*">/, `<meta http-equiv="Content-Security-Policy" content="${CSP}">`);
   return out;
@@ -80,6 +121,9 @@ function build(outDir) {
   copyDir(appDir, outDir);
   fs.writeFileSync(path.join(outDir, 'web-config.js'), webConfig());
   fs.writeFileSync(path.join(outDir, 'web-team.js'), teamBundle());
+  fs.writeFileSync(path.join(outDir, 'manifest.webmanifest'), JSON.stringify(MANIFEST, null, 2));
+  fs.writeFileSync(path.join(outDir, 'pwa.js'), PWA_REGISTER_JS);
+  fs.writeFileSync(path.join(outDir, 'sw.js'), serviceWorker(Date.now().toString(36)));
   for (const f of ['web-api.js', 'web-cloud.js', 'web-forms.js']) fs.copyFileSync(path.join(__dirname, f), path.join(outDir, f));
   return outDir;
 }
