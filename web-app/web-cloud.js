@@ -134,7 +134,7 @@
       const uid = current && current.uid;
       try { const { auth, A } = await firebase(); await A.signOut(auth); } catch { /* already signed out */ }
       current = null;
-      try { sessionStorage.removeItem('vayun-gcal-token'); } catch { /* ignore */ }
+      try { sessionStorage.removeItem('vayun-gcal-token'); sessionStorage.removeItem('vayun-gform-token'); } catch { /* ignore */ }
       if (uid) team.forget(uid);
       emit('auth:changed', null);
       return { ok: true };
@@ -299,6 +299,61 @@
       await gapi('DELETE', '/calendars/' + encodeURIComponent(calId) + '/events/' + encodeURIComponent(googleId));
       return { ok: true };
     }),
+  });
+
+  // ---- Live Google Form sync (also used by the Android app, which runs this same file) ----
+  // Same idea as Calendar above: signing in again with the two read-only Forms permissions gives this page a short-lived
+  // access token (about an hour) kept for this tab only, and the page then asks Google for the form's responses itself.
+  // Nothing goes through Firebase or Vayun's servers.
+  const FORM_TOKEN_KEY = 'vayun-gform-token';
+  const readFormToken = () => { try { const t = JSON.parse(sessionStorage.getItem(FORM_TOKEN_KEY) || 'null'); return t && t.expires > Date.now() && t.uid === (current && current.uid) ? t : null; } catch { return null; } };
+  const fStatus = () => { const t = readFormToken(); return { isConfigured: true, connected: Boolean(t), email: t ? t.email : '' }; };
+  const formLogic = () => window.FolioGFormSync;
+  const formAgain = () => Object.assign(new Error('Google needs to be linked again. Press Connect Google.'), { disconnected: true });
+
+  async function formFetchJson(url) {
+    const t = readFormToken();
+    if (!t) throw formAgain();
+    const r = await fetch(url, { headers: { Authorization: 'Bearer ' + t.token, Accept: 'application/json' } });
+    if (r.status === 401) { sessionStorage.removeItem(FORM_TOKEN_KEY); emit('gform:changed', fStatus()); }
+    return { status: r.status, body: await r.json().catch(() => ({})) };
+  }
+
+  Object.assign(api, {
+    gformStatus: async () => fStatus(),
+    gformConnect: async () => {
+      try {
+        const { auth, A } = await firebase();
+        const provider = new A.GoogleAuthProvider();
+        formLogic().SCOPES.forEach(s => provider.addScope(s));
+        if (current && current.email) provider.setCustomParameters({ login_hint: current.email });
+        const r = await A.signInWithPopup(auth, provider);
+        toUser(r.user);
+        const cred = A.GoogleAuthProvider.credentialFromResult(r);
+        if (!cred || !cred.accessToken) return { error: 'Google did not give Vayun access to your forms. Try again and allow the permissions.' };
+        sessionStorage.setItem(FORM_TOKEN_KEY, JSON.stringify({ token: cred.accessToken, uid: r.user.uid, email: r.user.email || '', expires: Date.now() + 55 * 60 * 1000 }));
+        const st = fStatus();
+        emit('gform:changed', st);
+        team.start();
+        return { ok: true, ...st };
+      } catch (e) {
+        const code = (e && e.code) || '';
+        if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return { error: 'Sign-in was cancelled.' };
+        if (code === 'auth/popup-blocked') return { error: 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.' };
+        if (code === 'auth/unauthorized-domain') return { error: 'This website address is not allowed to sign in yet. Add it under Authentication, Settings, Authorized domains in the Firebase console.' };
+        return { error: 'Could not link Google. ' + (e && e.message ? e.message : '') };
+      }
+    },
+    gformDisconnect: async () => { sessionStorage.removeItem(FORM_TOKEN_KEY); const st = fStatus(); emit('gform:changed', st); return st; },
+    // input: { formId, since } -> { form, responses } | { error, disconnected? }
+    gformFetch: async input => {
+      try {
+        const S = formLogic();
+        const id = S.parseFormId(input && input.formId);
+        if (id.error) return { error: id.error };
+        return await S.fetchAll(formFetchJson, id.id, { since: input && typeof input.since === 'string' ? input.since : '' });
+      } catch (e) { return { error: e.message || 'Could not reach Google.', disconnected: Boolean(e.disconnected) }; }
+    },
   });
 
   // Start Firebase at once if a session may already exist, so a returning person is signed in when the page opens.

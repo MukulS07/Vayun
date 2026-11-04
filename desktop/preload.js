@@ -1,6 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
-const EVENTS = ['search:open', 'page:open', 'page:new', 'quick:shown', 'auth:changed', 'gcal:changed', 'team:changed', 'update:available'];
+const EVENTS = ['search:open', 'page:open', 'page:new', 'quick:shown', 'auth:changed', 'gcal:changed', 'gform:changed', 'team:changed', 'update:available'];
 
 contextBridge.exposeInMainWorld('api', {
   platform: process.platform,
@@ -34,6 +34,10 @@ contextBridge.exposeInMainWorld('api', {
   authSignOut: () => ipcRenderer.invoke('auth:signOut'),
   authSetConfig: config => ipcRenderer.invoke('auth:setConfig', config),
   authClearConfig: () => ipcRenderer.invoke('auth:clearConfig'),
+  gformStatus: () => ipcRenderer.invoke('gform:status'),
+  gformConnect: () => ipcRenderer.invoke('gform:connect'),
+  gformDisconnect: () => ipcRenderer.invoke('gform:disconnect'),
+  gformFetch: input => ipcRenderer.invoke('gform:fetch', input),
   gcalStatus: () => ipcRenderer.invoke('gcal:status'),
   gcalConnect: () => ipcRenderer.invoke('gcal:connect'),
   gcalDisconnect: () => ipcRenderer.invoke('gcal:disconnect'),

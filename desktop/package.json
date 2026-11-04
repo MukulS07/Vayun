@@ -34,6 +34,7 @@
       "auth-logic.js",
       "gcal.js",
       "gcal-logic.js",
+      "gforms.js",
       "gcal-client.json",
       "team-service.js",
       "team-store-memory.js",
