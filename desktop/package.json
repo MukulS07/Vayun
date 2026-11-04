@@ -4,6 +4,7 @@
   "version": "1.0.9",
   "description": "Vayun - local notes, planners and an AI assistant",
   "author": "Mukul Sharma",
+  "homepage": "https://vayun-workspace.vercel.app",
   "private": true,
   "main": "main.js",
   "scripts": {
