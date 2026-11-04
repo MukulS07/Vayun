@@ -16,7 +16,8 @@
     "dist:mac:arm64": "electron-builder --mac --arm64",
     "dist:mac:universal": "electron-builder --mac --universal",
     "dist:mac:all": "electron-builder --mac --arm64 --universal --x64",
-    "dist:all": "electron-builder -mw"
+    "dist:linux": "electron-builder --linux AppImage deb",
+    "dist:all": "electron-builder -mwl"
   },
   "build": {
     "appId": "com.vayun.desktop",
@@ -98,6 +99,17 @@
     "win": {
       "target": "nsis",
       "icon": "app/brand/vayun-icon.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office",
+      "icon": "app/brand/vayun-icon.png",
+      "maintainer": "Mukul Sharma",
+      "synopsis": "Notes, planners and an AI assistant",
+      "artifactName": "Vayun-${version}-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,

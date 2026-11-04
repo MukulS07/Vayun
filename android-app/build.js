@@ -19,6 +19,7 @@ const SHIMS = [
   'android-api.js',
   'android-team.js',
   'android-cloud.js',
+  'android-forms.js',
   'android-theme.js'
 ];
 
@@ -249,6 +250,7 @@ fs.copyFileSync(path.join(__dirname, 'android-theme.js'), path.join(targetOut, '
 fs.copyFileSync(path.join(__dirname, 'android-mobile.css'), path.join(targetOut, 'android-mobile.css'));
 fs.copyFileSync(path.join(__dirname, 'welcome.html'), path.join(targetOut, 'welcome.html'));
 fs.copyFileSync(path.join(root, 'web-app', 'web-cloud.js'), path.join(targetOut, 'android-cloud.js'));
+fs.copyFileSync(path.join(root, 'web-app', 'web-forms.js'), path.join(targetOut, 'android-forms.js'));
 
 // Sync assets to native Android project
 const nativeAssets = path.join(__dirname, 'app', 'src', 'main', 'assets', 'www');

@@ -1,6 +1,6 @@
 {
   "name": "vayun-android",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vayun Android application - Local-first workspace with teams and cloud sync",
   "private": true,
   "scripts": {

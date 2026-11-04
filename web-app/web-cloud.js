@@ -69,12 +69,32 @@
     return j;
   }
 
+  // Public form links (the "forms" function, see docs/forms-setup.md): the same calls the desktop app makes.
+  const FORMS_BASE = `https://us-central1-${cfg.projectId}.cloudfunctions.net/forms`;
+  async function forms(action, body) {
+    let token;
+    try { const { auth } = await firebase(); if (!auth.currentUser) return { error: 'Sign in with Google to share forms.' }; token = await auth.currentUser.getIdToken(); }
+    catch { return { error: 'Sign in with Google to share forms.' }; }
+    let res;
+    try { res = await fetch(`${FORMS_BASE}/${action}`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify(body || {}) }); }
+    catch { return { error: 'Could not reach the server. Check your connection.' }; }
+    const j = await res.json().catch(() => null);
+    if (!res.ok) return { error: (j && j.error && j.error.message) || `The server said no (${res.status}).` };
+    return j || { error: 'The server sent something unexpected.' };
+  }
+  const formLink = id => `${FORMS_BASE}/f/${encodeURIComponent(id)}`;
+
   const statusOf = () => ({
     isConfigured: true, missing: [], user: current, canSync: Boolean(current),
     config: { projectId: cfg.projectId, authDomain: cfg.authDomain },
   });
 
   Object.assign(api, {
+    formsPublish: async a => { const r = await forms('publish', a); return r.error ? r : { id: r.id, count: r.count, link: formLink(r.id) }; },
+    formsPull: a => forms('pull', a),
+    formsOpen: a => forms('open', a),
+    formsRemove: a => forms('remove', a),
+    formsLink: async id => formLink(id),
     authStatus: async () => statusOf(),
     authSignIn: async () => {
       try {
