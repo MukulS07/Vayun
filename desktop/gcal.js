@@ -270,4 +270,4 @@ function openLink(link) {
   } catch { /* ignore */ }
 }
 
-module.exports = { status, connect, disconnect, list, create, update, remove, openLink };
+module.exports = { loadConfig, status, connect, disconnect, list, create, update, remove, openLink };

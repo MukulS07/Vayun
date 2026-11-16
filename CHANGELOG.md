@@ -4,6 +4,14 @@ Every release is a git tag (`vX.Y.Z`) on the commit it was built from, and its i
 matching [GitHub Release](https://github.com/MukulS07/Vayun/releases). Installers are not committed to git
 (they are 140–270 MB, over GitHub's 100 MB file limit); the Release is where they are kept.
 
+## v1.1.0 — 2026-11-16
+> Live Google Form sync, install on Linux and from one command, and a fix for big Notion imports
+- **Live Google Form sync.** Click **Google Form (live sync)**, paste your form's link (the one ending in `/edit`) and Vayun makes a board from the responses. New responses are added when you press **Sync Google Form**, and about every 90 seconds while the board is open. It works on desktop, the web and Android, talks to Google directly (nothing goes through Vayun's servers or Firebase) and never adds a response twice. One-time Google setup for the owner: [docs/forms-setup.md](docs/forms-setup.md).
+- **Linux.** Vayun now comes as an AppImage (any distro) and a `.deb` (Debian, Ubuntu).
+- **One-command install on Mac and Linux.** `curl -fsSL https://raw.githubusercontent.com/MukulS07/Vayun/master/tools/install.sh | bash` picks the right file for your computer and clears the macOS Gatekeeper warning. A Homebrew cask template is in `tools/homebrew`.
+- **Install the web app on any device.** The web app can be added to the home screen of a phone, tablet or Chromebook, and installed from Chrome or Edge on a computer, and it opens offline.
+- **Fixed: "Export is too large to import".** Large Notion exports full of images and attachments no longer fail; only the pages and databases count towards the size limit.
+
 ## v1.0.9 — 2026-11-03
 > Forms with web links, a redesigned mind map and a first-run tour
 - **Forms inside Vayun.** Build a form (short and long answers, choice, checkboxes, dropdown, scale, date), fill it in, and watch the responses on a dashboard with charts, a month calendar and reminders. Export the answers to CSV.

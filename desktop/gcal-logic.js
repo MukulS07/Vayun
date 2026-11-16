@@ -54,12 +54,12 @@ function makePkce() {
   return { verifier, challenge: b64url(crypto.createHash('sha256').update(verifier).digest()) };
 }
 
-function buildAuthUrl({ clientId, redirectUri, state, challenge, loginHint }) {
+function buildAuthUrl({ clientId, redirectUri, state, challenge, loginHint, scopes = SCOPES }) {
   const q = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
-    scope: SCOPES.join(' '),
+    scope: scopes.join(' '),
     state,
     code_challenge: challenge,
     code_challenge_method: 'S256',

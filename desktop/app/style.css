@@ -1165,3 +1165,7 @@ body.ai-open .main { margin-right: 400px; }
 .fm-linkrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .fm-linkbox { flex: 1 1 260px; min-width: 0; font: 13px ui-monospace, Consolas, monospace; color: inherit; background: var(--bg-soft, transparent); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 .fm-share .fm-hint { margin-top: 8px; }
+.gform-sync { display:inline-flex; align-items:center; gap:8px; margin-left:auto; }
+.gform-sync button { padding:5px 10px; border:1px solid var(--line); border-radius:8px; background:var(--card); cursor:pointer; }
+.gform-sync button:disabled { opacity:.6; cursor:default; }
+.gform-note { font-size:12px; color:var(--muted, #888); }

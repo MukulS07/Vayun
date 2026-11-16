@@ -43,3 +43,23 @@ So the free plan covers roughly 10,000 submitted responses a day. Limits that ke
 
 To change a limit, edit `LIMITS` and redeploy. A form's own total and daily caps are copied into its document when it is
 first published, so edit those two fields on the document (`cap`, `dayCap`) to change an existing form.
+
+## Live Google Form sync (one-time Google setup)
+
+Vayun can keep a board in step with a Google Form: **Google Form (live sync)** in the sidebar, paste the form's link
+(the one ending in `/edit`), and new responses are added when you press **Sync**, and about every 90 seconds while the
+board is open. It works the same on desktop, the web and Android, and talks to Google directly: nothing goes through
+Vayun's servers or Firebase.
+
+For this to work for people, the Vayun owner must do this once in the Google Cloud project that holds the Vayun sign-in:
+
+1. **APIs & Services, Library:** enable the **Google Forms API**.
+2. **OAuth consent screen, Data access:** add the scopes `forms.body.readonly` and `forms.responses.readonly`.
+   Google treats these as sensitive, so until the app is verified people see an "unverified app" warning.
+3. Desktop uses the same OAuth client as Google Calendar (`gcal-client.json`); the web and Android apps use the Firebase
+   Google sign-in. Nothing else to configure.
+
+Without step 1 the app says "The Google Forms API is not switched on for Vayun yet."
+
+Limits: a question added to the form after the board was made is not added as a column (link a fresh board for that);
+the web and Android apps ask the person to press Connect Google again about once an hour.

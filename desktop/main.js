@@ -294,6 +294,7 @@ app.whenReady().then(() => {
 
   const auth = require('./auth');
   const gcal = require('./gcal');
+  const gforms = require('./gforms');
   ipcMain.handle('auth:status', () => auth.status());
   // Teams: a local copy of the active team plus gentle checks for changes (team-service.js). VAYUN_TEAM_BACKEND=memory
   // swaps Firestore for a built-in demo team so the page can be tried without Firebase.
@@ -339,18 +340,23 @@ app.whenReady().then(() => {
   ipcMain.handle('auth:signIn', async () => {
     const before = auth.getUser()?.uid;
     const r = await auth.signIn();
-    if (r?.ok && before && r.user?.uid !== before) { await gcal.disconnect(); team.forget(before); }
+    if (r?.ok && before && r.user?.uid !== before) { await gcal.disconnect(); await gforms.disconnect(); team.forget(before); }
     return r;
   });
   ipcMain.handle('auth:signOut', async () => {
     const uid = auth.getUser()?.uid;
     const r = auth.signOut();
     await gcal.disconnect();
+    await gforms.disconnect();
     team.forget(uid);
     return r;
   });
   ipcMain.handle('auth:setConfig', (_e, cfg) => auth.setConfig(cfg));
   ipcMain.handle('auth:clearConfig', () => auth.clearConfig());
+  ipcMain.handle('gform:status', () => gforms.status());
+  ipcMain.handle('gform:connect', () => gforms.connect());
+  ipcMain.handle('gform:disconnect', () => gforms.disconnect());
+  ipcMain.handle('gform:fetch', (_e, input) => gforms.fetchResponses(obj(input)));
   ipcMain.handle('gcal:status', () => gcal.status());
   ipcMain.handle('gcal:connect', () => gcal.connect());
   ipcMain.handle('gcal:disconnect', () => gcal.disconnect());

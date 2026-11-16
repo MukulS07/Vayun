@@ -145,15 +145,26 @@
 
   // rows: array of arrays, the first being the questions. pages: the workspace's pages (to find an earlier import).
   // Returns { db, pages (new ones to add), added, skipped, created }.
-  function importForm(rows, pages, { name = 'Form responses', uid } = {}) {
+  // Live sync from Google passes formId (the board is found by it, so a renamed or reordered question does not start a
+  // second board) and keys (one stable id per row, so a response is never added twice, whatever its text).
+  function importForm(rows, pages, { name = 'Form responses', uid, formId = '', keys = null } = {}) {
     if (typeof uid !== 'function') throw new Error('uid is required');
-    const { headers, body } = readTable(rows);
+    let { headers, body } = readTable(rows);
+    if (keys && keys.length !== body.length) keys = null;
     const sig = sameHeaders(headers);
-    const earlier = (pages || []).find(p => p.kind === 'database' && p.source && p.source.kind === 'form' && p.source.sig === sig);
-    return earlier ? addToExisting(earlier, headers, body, pages, uid) : createNew(headers, body, name, uid, sig);
+    const forms = (pages || []).filter(p => p.kind === 'database' && p.source && p.source.kind === 'form');
+    const linked = formId ? forms.find(p => p.source.googleFormId === formId) : null;
+    if (linked && Array.isArray(linked.source.headers)) {
+      // Line the columns up with the ones the board was made from; questions added since are left out.
+      const at = linked.source.headers.map(h => headers.findIndex(x => x.toLowerCase() === h.toLowerCase()));
+      body = body.map(r => at.map(i => (i < 0 ? '' : r[i])));
+      headers = linked.source.headers.slice();
+    }
+    const earlier = linked || (formId ? null : forms.find(p => p.source.sig === sig));
+    return earlier ? addToExisting(earlier, headers, body, pages, uid, keys) : createNew(headers, body, name, uid, sig, formId, keys);
   }
 
-  function createNew(headers, body, name, uid, sig) {
+  function createNew(headers, body, name, uid, sig, formId = '', keys = null) {
     const { roles, types, order } = chooseColumns(headers, body);
     const col = i => body.map(r => r[i]);
     const schema = [];
@@ -180,21 +191,21 @@
     const db = {
       id: uid(), title: name, parentId: null, kind: 'database', schema, blocks: [],
       view: { type: 'board', group: statusId },
-      source: { kind: 'form', sig, map, addedStatus },
+      source: { kind: 'form', sig, map, addedStatus, ...(formId && { googleFormId: formId, headers: headers.slice() }) },
     };
-    const { out, skipped } = buildRows(db, headers, body, order, roles.title, new Set(), uid);
+    const { out, skipped } = buildRows(db, headers, body, order, roles.title, new Set(), uid, keys);
     return { db, pages: [db, ...out], added: out.length, skipped, created: true };
   }
 
-  function addToExisting(db, headers, body, pages, uid) {
+  function addToExisting(db, headers, body, pages, uid, keys = null) {
     const { roles, order } = chooseColumns(headers, body);
     const known = new Set(pages.filter(p => p.parentId === db.id && p.formKey).map(p => p.formKey));
     const titleCol = db.source.map.indexOf('title');
-    const { out, skipped } = buildRows(db, headers, body, order, titleCol >= 0 ? titleCol : roles.title, known, uid);
+    const { out, skipped } = buildRows(db, headers, body, order, titleCol >= 0 ? titleCol : roles.title, known, uid, keys);
     return { db, pages: out, added: out.length, skipped, created: false };
   }
 
-  function buildRows(db, headers, body, order, titleCol, known, uid) {
+  function buildRows(db, headers, body, order, titleCol, known, uid, keys = null) {
     const out = [];
     let skipped = 0;
     const seen = new Map();
@@ -203,7 +214,7 @@
       const base = hash(cells.join('\u0001'));
       const dup = seen.get(base) || 0;
       seen.set(base, dup + 1);
-      const key = `${base}#${dup}`;
+      const key = keys ? keys[n] : `${base}#${dup}`;
       if (known.has(key)) { skipped++; return; }
       const props = {};
       db.source.map.forEach((target, i) => {

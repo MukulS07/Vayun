@@ -66,3 +66,20 @@ test('entry names only become titles; nothing is written to disk', () => {
   assert.deepStrictEqual(r.pages.map(p => p.title), ['evil', 'ok']);
   assert.deepStrictEqual(r.skipped, []);
 });
+
+test('only the pages and databases count towards the size limits, not images and attachments', () => {
+  const z = new AdmZip();
+  z.addFile('Plan ' + ID + '.md', Buffer.from('# Plan\nhello', 'utf8'));
+  z.addFile('Plan/photo.png', Buffer.alloc(50000)); // far over the 1000-byte limit below, but it is never read
+  z.addFile('Plan/doc.pdf', Buffer.alloc(50000));
+  const r = importNotionZip(z.toBuffer(), { maxBytes: 1000 });
+  assert.strictEqual(r.pages.length, 1);
+  assert.strictEqual(r.skipped.length, 2);
+});
+
+test('too much text, or too many pages, is still refused with a clear message', () => {
+  const big = zipOf({ ['A ' + ID + '.md']: 'x'.repeat(5000) });
+  assert.throws(() => importNotionZip(big, { maxBytes: 1000 }), /too large to import/);
+  const many = zipOf({ ['A ' + ID + '.md']: 'a', ['B ' + ID2 + '.md']: 'b' });
+  assert.throws(() => importNotionZip(many, { maxEntries: 1 }), /too many pages/);
+});

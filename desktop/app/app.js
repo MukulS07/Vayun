@@ -863,6 +863,7 @@ function renderDatabase() {
   };
   [flt, fProp, sProp, sDir, gProp].forEach(el => el.addEventListener(el === flt ? 'input' : 'change', apply));
   bar.append(flt, fProp, sProp, sDir, gProp);
+  if (db.source && db.source.googleFormId && window.FolioGFormSync && api.gformFetch) bar.append(gformBar(db));
   box.append(bar);
 
   const body = document.createElement('div');
@@ -1571,6 +1572,96 @@ $('#form-dash-btn').onclick = async () => {
   api.save(data);
   openPage(page.id);
 };
+
+// A Google Form kept in step with Google: the board is made from the form's own link, and the responses that arrive
+// later are added when the person taps Sync, and about every minute and a half while that board is open. Google is
+// asked directly (see gform* in the api); Vayun's servers and Firebase are not involved.
+if (!api.gformFetch) $('#gform-live-btn').hidden = true;
+let gformBusy = false;
+
+// formId: the Google form; db: the board to add to (none the first time). Returns { error } or { added, created, db }.
+async function pullGoogleForm(formId, db) {
+  if (gformBusy) return { busy: true, added: 0 };
+  gformBusy = true;
+  try {
+    const since = db && db.source && db.source.syncedTo ? db.source.syncedTo : '';
+    const r = await api.gformFetch({ formId, since });
+    if (r.error) return r;
+    const t = FolioGFormSync.toTable(r.form, r.responses);
+    if (t.rows.length < 2) {
+      if (db) { db.source.syncedAt = Date.now(); return { added: 0, db }; }
+      return { error: 'That form has no responses yet. Once someone fills it in, link it again.' };
+    }
+    const res = FolioFormImport.importForm(t.rows, data.pages, { name: t.name, uid, formId, keys: t.keys });
+    data.pages.push(...res.pages);
+    res.db.source.syncedAt = Date.now();
+    if (t.latest && t.latest > (res.db.source.syncedTo || '')) res.db.source.syncedTo = t.latest;
+    save();
+    api.save(data);
+    return { added: res.added, created: res.created, db: res.db };
+  } catch (err) {
+    return { error: err.message || 'Could not sync that form.' };
+  } finally { gformBusy = false; }
+}
+
+async function ensureGoogleLink() {
+  const st = await api.gformStatus();
+  if (st && st.connected) return null;
+  const c = await api.gformConnect();
+  return c && c.error ? c.error : null;
+}
+
+$('#gform-live-btn').onclick = async () => {
+  const a = await askForm('Live Google Form', [{ name: 'link', label: 'Link to your Google Form (the address ending in /edit)' }]);
+  if (!a) return;
+  const id = FolioGFormSync.parseFormId(a.link);
+  if (id.error) return alert(id.error);
+  const linkErr = await ensureGoogleLink();
+  if (linkErr) return alert(linkErr);
+  const res = await pullGoogleForm(id.id, data.pages.find(p => p.kind === 'database' && p.source && p.source.googleFormId === id.id) || null);
+  if (res.error) return alert(res.error);
+  openPage(res.db.id);
+  alert(res.created ? `Created "${res.db.title}" with ${res.added} response${res.added === 1 ? '' : 's'}. New responses will appear here on their own while this board is open.`
+    : res.added ? `Added ${res.added} new response${res.added === 1 ? '' : 's'}.` : 'Nothing new: this board already has every response.');
+};
+
+// The Sync button and status line on a linked board, plus the quiet refresh while it is open.
+let gformPoll = null;
+function gformBar(db) {
+  const wrap = document.createElement('span');
+  wrap.className = 'gform-sync';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = 'Sync Google Form';
+  const note = document.createElement('span');
+  note.className = 'gform-note';
+  const when = () => (db.source.syncedAt ? `Last synced ${new Date(db.source.syncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '');
+  note.textContent = when();
+  const run = async quiet => {
+    btn.disabled = true;
+    note.textContent = 'Syncing…';
+    let res = await pullGoogleForm(db.source.googleFormId, db);
+    if (res.disconnected && !quiet) {
+      const linkErr = await ensureGoogleLink();
+      res = linkErr ? { error: linkErr } : await pullGoogleForm(db.source.googleFormId, db);
+    }
+    btn.disabled = false;
+    if (res.busy) { note.textContent = when(); return; }
+    if (res.error) { note.textContent = res.disconnected ? 'Press Sync to connect Google again.' : res.error; return; }
+    note.textContent = when();
+    if (res.added && current && current.id === db.id) renderDatabase();
+  };
+  btn.onclick = () => run(false);
+  wrap.append(btn, note);
+  if (gformPoll) clearInterval(gformPoll.timer);
+  const id = db.id;
+  gformPoll = { id, timer: setInterval(() => {
+    if (!current || current.id !== id) { clearInterval(gformPoll && gformPoll.timer); return; }
+    if (document.hidden || btn.disabled || !document.body.contains(btn)) return;
+    run(true);
+  }, FolioGFormSync.POLL_MS) };
+  return wrap;
+}
 
 $('#star-btn').onclick = toggleStar;
 api.on('search:open', toggleSearch);
