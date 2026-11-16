@@ -36,6 +36,8 @@ function notes(changelog, tag) {
     `| Windows | \`Vayun-Setup-${v}.exe\` |`,
     `| Mac with Apple Silicon (M1 to M4) | \`Vayun-${v}-arm64.dmg\` |`,
     `| Mac with an Intel chip, or if unsure | \`Vayun-${v}-universal.dmg\` |`,
+    `| Linux (any distro) | \`Vayun-${v}-x86_64.AppImage\` |`,
+    `| Debian or Ubuntu | \`Vayun-${v}-amd64.deb\` |`,
   ].join('\n');
   return [
     s.tagline ? `### ${s.tagline}` : '',
