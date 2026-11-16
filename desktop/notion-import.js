@@ -3,8 +3,9 @@
 const AdmZip = require('adm-zip');
 const { randomUUID } = require('node:crypto');
 
-const MAX_BYTES = 200 * 1024 * 1024; // refuse zips that would expand past this
-const MAX_ENTRIES = 20000;
+const MAX_BYTES = 200 * 1024 * 1024; // refuse text (.md and .csv) that would expand past this
+const MAX_ENTRIES = 20000; // pages and databases; images and other attachments are not read, so they do not count
+const MAX_ZIP_ENTRIES = 500000; // everything in the zip, attachments included
 const uid = () => 'n' + randomUUID().slice(0, 8);
 const stripId = name => name.replace(/ [0-9a-f]{32}$/i, '').trim();
 
@@ -70,12 +71,25 @@ function cellValue(prop, raw = '') {
   return v;
 }
 
-function importNotionZip(buffer) {
+// Only the .md and .csv files are read; a Notion export is mostly images and attachments, which are skipped, so
+// only the text counts towards the limits. (limits is for tests.)
+function importNotionZip(buffer, { maxBytes = MAX_BYTES, maxEntries = MAX_ENTRIES } = {}) {
   const zip = new AdmZip(buffer);
   const entries = zip.getEntries();
-  if (entries.length > MAX_ENTRIES) throw new Error('Export has too many files.');
-  const total = entries.reduce((n, e) => n + e.header.size, 0);
-  if (total > MAX_BYTES) throw new Error('Export is too large to import.');
+  if (entries.length > MAX_ZIP_ENTRIES) throw new Error('Export has too many files.');
+  const isText = e => !e.isDirectory && /\.(md|csv)$/i.test(e.entryName);
+  const textEntries = entries.filter(isText);
+  if (textEntries.length > maxEntries) throw new Error('Export has too many pages.');
+  if (textEntries.reduce((n, e) => n + e.header.size, 0) > maxBytes) throw new Error('The pages in this export are too large to import (over 200 MB of text).');
+  let read = 0;
+
+  // The sizes in a zip's header can be wrong, so what is really unpacked is counted too.
+  const readText = e => {
+    const text = e.getData().toString('utf8');
+    read += Buffer.byteLength(text);
+    if (read > maxBytes) throw new Error('The pages in this export are too large to import (over 200 MB of text).');
+    return text;
+  };
 
   const pages = [];
   const byKey = new Map(); // path without extension -> page or database
@@ -88,7 +102,7 @@ function importNotionZip(buffer) {
     if (name.startsWith('/') || name.split('/').includes('..')) { skipped.push(name); continue; }
     const m = name.match(/\.(md|csv)$/i);
     if (!m) { skipped.push(name); continue; }
-    files.push({ name, ext: m[1].toLowerCase(), key: name.slice(0, -m[0].length), dirKey: name.includes('/') ? name.slice(0, name.lastIndexOf('/')) : '', text: e.getData().toString('utf8') });
+    files.push({ name, ext: m[1].toLowerCase(), key: name.slice(0, -m[0].length), dirKey: name.includes('/') ? name.slice(0, name.lastIndexOf('/')) : '', text: readText(e) });
   }
 
   // Pass 1: create every page and database, so parents can be resolved afterwards.
